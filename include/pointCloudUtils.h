@@ -44,6 +44,7 @@ struct DistQuery
 struct Tensor
 {
 	Matrix3d hessian;
+    Matrix3d tensor;
 	vec3f axis[3];
 	double eigenVal[3];
 	double axisLen[3];
@@ -53,6 +54,7 @@ struct Tensor
 	Tensor(const Tensor& ts)
 	{
 		hessian = ts.hessian;
+        tensor = ts.tensor;
 		for (int i = 0; i < 3; i++)
 		{
 			axis[i] = ts.axis[i];
@@ -64,6 +66,7 @@ struct Tensor
 	Tensor& operator =(const Tensor& ts)
 	{
 		hessian = ts.hessian;
+        tensor = ts.tensor;
 		for (int i = 0; i < 3; i++)
 		{
 			axis[i] = ts.axis[i];
@@ -255,6 +258,7 @@ public:
 	void addSubdivisionEdges(Graph& g);
 
     Matrix3d lerpHessian(const vec3f& pos);
+    Matrix3d lerpTensor(const vec3f& pos);
 	void calcPointTensor();
 	void buildGraphFromPoints();
 

@@ -629,6 +629,33 @@ void PointCloudUtils::calcTensorMetric(Tensor& ts)
     //ts.axisLen[0] = (1.0 + alpha1 * s1) * scale;
     //ts.axisLen[1] = (1.0 + alpha2 * s2) * scale;
     //ts.axisLen[2] = 1.0 * scale;
+    
+    Matrix3d vec , d;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            vec(j , i) = ts.axis[i][j];
+            d(i , j) = 0;
+        }
+        d(i , i) = ts.axisLen[i];
+    }
+    ts.tensor = vec * d * vec.inverse();
+    /*
+    Matrix3d mat = vec * d * vec.inverse();
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            ts.tensor(i , j) = mat(i , j);
+    */
+    /*
+    writeLog("================\n");
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+            writeLog("%.6f " , ts.tensor(i , j));
+        writeLog("\n");
+    }
+    */
 }
 
 void PointCloudUtils::calcHessian(double*** &f)
@@ -642,7 +669,7 @@ void PointCloudUtils::calcHessian(double*** &f)
 			calcSecondOrderDerivative(f , i , j , ddf[i][j]);
 	}
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (int i = 0; i <= gridRes.x; i++)
 	{
 		for (int j = 0; j <= gridRes.y; j++)
@@ -762,6 +789,11 @@ float PointCloudUtils::calcEdgeWeight(const vec3f& _v ,
 	float len_v = _v.length();
 	vec3f v = _v / len_v;
 
+    Vector3d dv(v.x , v.y , v.z);
+    
+    float w = len_v * 0.5f * (sqrt(dv.transpose() * st.tensor * dv) +
+                              sqrt(dv.transpose() * ed.tensor * dv));
+    /*
 	float cos_theta = std::min(1.f , std::abs(v.dot(st.axis[0])));
 	float sin_theta = sqrt(1.f - cos_theta * cos_theta);
 	vec3f v_proj = v - st.axis[0] * cos_theta;
@@ -772,27 +804,7 @@ float PointCloudUtils::calcEdgeWeight(const vec3f& _v ,
 	float w = sqrt(st.axisLen[0] * SQR(cos_theta) + 
 		st.axisLen[1] * SQR(sin_theta * cos_phi) + 
 		st.axisLen[2] * SQR(sin_theta * sin_phi));
-    /*
-    Matrix3d vec , d , mat;
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            vec(j , i) = st.axis[i][j];
-            d(i , j) = 0;
-        }
-        d(i , i) = st.axisLen[i];
-    }
-    mat = vec * d * vec.inverse();
-    Vector3d vv;
-    for (int i = 0; i < 3; i++)
-        vv(i) = v[i];
-    float ww = sqrt(vv.transpose() * mat * vv);
-    if (std::abs(w - ww) < 1e-6)
-        printf("yes\n");
-    else
-        printf("no: %.6f , %.6f\n" , w , ww);
-    */
+    
 	v = -v;
 	cos_theta = std::min(1.f , std::abs(v.dot(ed.axis[0])));
 	sin_theta = sqrt(1.f - cos_theta * cos_theta);
@@ -807,6 +819,8 @@ float PointCloudUtils::calcEdgeWeight(const vec3f& _v ,
 
 	w *= len_v * 0.5f;
     
+    writeLog("%.6f %.6f\n" , w , ww);
+    */
 	return w;
 }
 
@@ -1102,6 +1116,30 @@ Matrix3d PointCloudUtils::lerpHessian(const vec3f& pos)
     return hesMat;
 }
 
+Matrix3d PointCloudUtils::lerpTensor(const vec3f &pos)
+{
+    int xi = clampx((int)((pos.x - box.lb.x) / gridSize.x) , 0 , gridRes.x - 1);
+    int yi = clampx((int)((pos.y - box.lb.y) / gridSize.y) , 0 , gridRes.y - 1);
+    int zi = clampx((int)((pos.z - box.lb.z) / gridSize.z) , 0 , gridRes.z - 1);
+    
+    vec3f v;
+    v.x = (pos.x - xval[xi]) / (xval[xi + 1] - xval[xi]);
+    v.y = (pos.y - yval[yi]) / (yval[yi + 1] - yval[yi]);
+    v.z = (pos.z - zval[zi]) / (zval[zi + 1] - zval[zi]);
+    
+    Matrix3d tensorMat;
+    tensorMat = (1 - v.x) * (1 - v.y) * (1 - v.z) * tensor[xi][yi][zi].tensor +
+        (1 - v.x) * (1 - v.y) * v.z * tensor[xi][yi][zi + 1].tensor +
+        (1 - v.x) * v.y * (1 - v.z) * tensor[xi][yi + 1][zi].tensor +
+        (1 - v.x) * v.y * v.z * tensor[xi][yi + 1][zi + 1].tensor +
+        v.x * (1 - v.y) * (1 - v.z) * tensor[xi + 1][yi][zi].tensor +
+        v.x * (1 - v.y) * v.z * tensor[xi + 1][yi][zi + 1].tensor +
+        v.x * v.y * (1 - v.z) * tensor[xi + 1][yi + 1][zi].tensor +
+        v.x * v.y * v.z * tensor[xi + 1][yi + 1][zi + 1].tensor;
+    
+    return tensorMat;
+}
+
 void PointCloudUtils::calcPointTensor()
 {
 	timer.PushCurrentTime();
@@ -1122,7 +1160,7 @@ void PointCloudUtils::calcPointTensor()
 
 		index2Point.push_back(pos);
 		point2Index[hashVal] = nodes;
-
+        
 		Matrix3d hesMat;
 		hesMat = lerpHessian(pos);
 
@@ -1131,8 +1169,32 @@ void PointCloudUtils::calcPointTensor()
 
 		calcTensorDecomposition(ts);
 		calcTensorMetric(ts);
-
-		pointTensor.push_back(ts);
+        
+        
+        Tensor tsx;
+        tsx.tensor = lerpTensor(pos);
+        /*
+        writeLog("=================\n");
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                writeLog("%.6f " , ts.tensor(i , j));
+            }
+            writeLog("\n");
+        }
+        writeLog("-----------------\n");
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                writeLog("%.6f " , tsx.tensor(i , j));
+            }
+            writeLog("\n");
+        }
+        writeLog("\n");
+        */
+		pointTensor.push_back(tsx);
 
 		nodes++;
 	}
@@ -1143,23 +1205,32 @@ void PointCloudUtils::calcPointTensor()
     }
 	timer.PopAndDisplayTime("\nInterpolate point tensors: %.6f\n");
 	
-/*
+    /*
 	for (int i = 0; i < nodes; i++)
 	{
-		fprintf(fp , "========%d=========\n" , i);
+		writeLog("========%d=========\n" , i);
 		vec3f pos = index2Point[i];
-		fprintf(fp , "------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
+		writeLog("------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
 
 		Tensor ts = pointTensor[i];
 		for (int a = 0; a < 3; a++)
 		{
-			fprintf(fp , "(%.6lf,%.6lf,%.6lf), eigenVal = %.6lf, renderLen = %.6lf, length = %.6lf, renderLen = %.6lf\n" , 
+			writeLog("(%.6lf,%.6lf,%.6lf), eigenVal = %.6lf, renderLen = %.6lf, length = %.6lf, renderLen = %.6lf\n" ,
 				ts.axis[a].x , ts.axis[a].y , ts.axis[a].z , 
 				ts.eigenVal[a] , pcRenderer->calcHessianRenderLength(ts.eigenVal[a]) ,
 				ts.axisLen[a] , pcRenderer->calcMetricRenderLength(ts.axisLen[a]));
 		}
+        writeLog("------------------\n");
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                writeLog("%.6f " , ts.tensor(i , j));
+            }
+            writeLog("\n");
+        }
 	}
-*/
+    */
 }
 
 void PointCloudUtils::buildGraphFromPoints()
@@ -1173,17 +1244,18 @@ void PointCloudUtils::buildGraphFromPoints()
 	{
 		KnnQuery query(50);
 		tree->searchKnn(0 , pcData[i].pos , query);
-		Tensor& st = pointTensor[i];
+        //Tensor& st = pointTensor[i];
 		for (int k = 0; k < query.knnPoints.size(); k++)
 		{
 			double hashVal = point2double(query.knnPoints[k].point->pos);
 			int j = point2Index[hashVal];
 			if (i == j)
 				continue;
-			Tensor& ed = pointTensor[j];
-
+            //Tensor& ed = pointTensor[j];
 			vec3f v = index2Point[j] - index2Point[i];
-			float w = calcEdgeWeight(v , st , ed);
+			float w;
+            w = calcEdgeWeight(v , pointTensor[i] , pointTensor[j]);
+            //w = calcEdgeWeight(v , st , ed);
 			pointGraph[i].push_back(Edge(j , w));
 		}
 	}
