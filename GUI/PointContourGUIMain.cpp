@@ -201,7 +201,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     StaticText5 = new wxStaticText(ScrolledWindow1, ID_STATICTEXT5, _("Filter Radius"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
     FlexGridSizer7->Add(StaticText5, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer7->Add(47,30,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FilterRadius = new wxTextCtrl(ScrolledWindow1, ID_TEXTCTRL5, _("5"), wxDefaultPosition, wxSize(40,30), 0, wxDefaultValidator, _T("ID_TEXTCTRL5"));
+    FilterRadius = new wxTextCtrl(ScrolledWindow1, ID_TEXTCTRL5, _("10"), wxDefaultPosition, wxSize(40,30), 0, wxDefaultValidator, _T("ID_TEXTCTRL5"));
     FlexGridSizer7->Add(FilterRadius, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(FlexGridSizer7, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer6 = new wxFlexGridSizer(0, 4, 0, 0);

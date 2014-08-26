@@ -272,6 +272,8 @@ public:
 	vec3i nearestGridPoint(const vec3f& pos);
 
     void laplacianSmooth(Path& path);
+    vec3f calcGradient(const vec3f& v , const Matrix3d& ts);
+    void gradientDescentSmooth(Path& path);
     
 	// visualization
 	PointCloudRenderer *pcRenderer;

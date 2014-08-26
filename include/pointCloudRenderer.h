@@ -61,7 +61,6 @@ public:
 	void callListPoints();
 	void callListSurfelDisc();
 	void callListSelectionBuffer();
-	void callListStoredPaths();
 
 	void renderPoints();
 	void renderSurfelDisc();
@@ -73,6 +72,7 @@ public:
 	void renderSelectedPoints();
 	void renderCurrentPath();
 	void renderStoredPaths();
+    void renderPathForComp();
 
 	void render();
 
@@ -94,6 +94,7 @@ public:
 
 	std::vector<vec3f> selectedPoints;
 	Path pathVertex;
+    std::vector<Path> pathForComp;
 	std::vector<Path> storedPaths;
 	vec3f *pickedPoint;
 	vec3f *lastPoint;

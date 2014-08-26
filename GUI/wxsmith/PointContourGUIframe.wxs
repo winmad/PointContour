@@ -245,7 +245,7 @@
 											</object>
 											<object class="sizeritem">
 												<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="FilterRadius" member="yes">
-													<value>5</value>
+													<value>10</value>
 													<size>40,30</size>
 													<handler function="OnFilterRadiusText" entry="EVT_TEXT" />
 												</object>

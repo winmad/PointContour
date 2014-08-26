@@ -68,6 +68,10 @@ void PointCloudRenderer::init()
 
 	callListPoints();
 	callListSurfelDisc();
+    
+    pathForComp.resize(2);
+    pathForComp[0].clear();
+    pathForComp[1].clear();
 }
 
 void PointCloudRenderer::drawPoint(const vec3f& pos)
@@ -418,15 +422,36 @@ void PointCloudRenderer::renderCurrentPath()
 void PointCloudRenderer::renderStoredPaths()
 {
 	glColor3f(0.f , 0.f , 1.f);
-	glLineWidth(3.f);
+	glLineWidth(2.f);
 	glEnable(GL_LINE_STIPPLE);
 	glLineStipple(2, 0xffff);
-
+    
 	for (int i = 0; i < storedPaths.size(); i++)
 	{
 		drawLines(storedPaths[i]);
 	}
     
+    glDisable(GL_LINE_STIPPLE);
+}
+
+void PointCloudRenderer::renderPathForComp()
+{
+    if (pathForComp.size() < 2)
+        return;
+    
+    glColor3f(1.f , 0.f , 0.f);
+    glLineWidth(2.f);
+    
+    glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    
+	drawLines(pathForComp[0]);
+	
+    glColor3f(0.f , 1.f , 0.f);
+    
+    drawLines(pathForComp[1]);
+    
+    glDisable(GL_LINE_STIPPLE);
 }
 
 void PointCloudRenderer::render()
@@ -438,6 +463,7 @@ void PointCloudRenderer::render()
 	renderSelectedPoints();
 	renderCurrentPath();
 	renderStoredPaths();
+    renderPathForComp();
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -593,9 +619,14 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                     pathVertex[i].y , pathVertex[i].z);
             }
             */
-            for (int i = 0; i < 1; i++)
+            pathForComp[0] = pathVertex;
+            pathForComp[1] = pathVertex;
+            for (int i = 0; i < 2; i++)
+                pcUtils->laplacianSmooth(pathForComp[1]);
+            for (int i = 0; i < 2; i++)
             {
-                pcUtils->laplacianSmooth(pathVertex);
+                //pcUtils->laplacianSmooth(pathVertex);
+                pcUtils->gradientDescentSmooth(pathVertex);
             }
             /*
             writeLog("---------after smoothing-------------\n");
@@ -644,6 +675,8 @@ void PointCloudRenderer::clearPaths()
 	selectedPoints.clear();
 	storedPaths.clear();
 	pathVertex.clear();
+    pathForComp[0].clear();
+    pathForComp[1].clear();
 
 	pickedPoint = NULL;
 	lastPoint = NULL;

@@ -786,13 +786,13 @@ vec3i PointCloudUtils::nearestGridPoint(const vec3f& pos)
 float PointCloudUtils::calcEdgeWeight(const vec3f& _v , 
 	const Tensor& st , const Tensor& ed)
 {
-	float len_v = _v.length();
-	vec3f v = _v / len_v;
+	//float len_v = _v.length();
+	//vec3f v = _v / len_v;
 
-    Vector3d dv(v.x , v.y , v.z);
+    Vector3d dv(_v.x , _v.y , _v.z);
     
-    float w = len_v * 0.5f * (sqrt(dv.transpose() * st.tensor * dv) +
-                              sqrt(dv.transpose() * ed.tensor * dv));
+    float w = 0.5f * (sqrt(dv.transpose() * st.tensor * dv) +
+                      sqrt(dv.transpose() * ed.tensor * dv));
     /*
 	float cos_theta = std::min(1.f , std::abs(v.dot(st.axis[0])));
 	float sin_theta = sqrt(1.f - cos_theta * cos_theta);
@@ -1170,9 +1170,9 @@ void PointCloudUtils::calcPointTensor()
 		calcTensorDecomposition(ts);
 		calcTensorMetric(ts);
         
+        //Tensor tsx;
+        //tsx.tensor = lerpTensor(pos);
         
-        Tensor tsx;
-        tsx.tensor = lerpTensor(pos);
         /*
         writeLog("=================\n");
         for (int i = 0; i < 3; i++)
@@ -1194,7 +1194,7 @@ void PointCloudUtils::calcPointTensor()
         }
         writeLog("\n");
         */
-		pointTensor.push_back(tsx);
+		pointTensor.push_back(ts);
 
 		nodes++;
 	}
@@ -1350,16 +1350,98 @@ void PointCloudUtils::laplacianSmooth(Path &path)
     if (path.size() <= 2)
         return;
     Path oldPath(path);
-    vec3f p , v;
 #pragma omp parallel for
     for (int i = 1; i < path.size() - 1; i++)
     {
-        p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
-        v = (p - oldPath[i]) * 0.33f;
+        vec3f p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
+        vec3f v = (p - oldPath[i]) * 0.33f;
         path[i] = oldPath[i] + v;
     }
     path[0] = oldPath[0];
     path[path.size() - 1] = oldPath[path.size() - 1];
+}
+
+vec3f PointCloudUtils::calcGradient(const vec3f& v , const Matrix3d& tensor)
+{
+    Vector3d dv(v.x , v.y , v.z);
+    Vector3d grad = tensor * dv;
+    vec3f res(grad(0) , grad(1) , grad(2));
+    res *= 0.5f / sqrt(dv.transpose() * tensor * dv);
+    return res;
+}
+
+float calcAnisDist(vec3f& pos1 , Matrix3d& t1 , vec3f& pos2 ,
+                   Matrix3d& t2 , vec3f& pos3 , Matrix3d& t3)
+{
+    float res = 0.f;
+    vec3f v = pos2 - pos1;
+    Vector3d dv(v.x , v.y , v.z);
+    float tp = dv.transpose() * t1 * dv;
+    res += tp;
+    tp = dv.transpose() * t2 * dv;
+    res += tp;
+    v = pos3 - pos2;
+    for (int i = 0; i < 3; i++)
+        dv(i) = v[i];
+    tp = dv.transpose() * t2 * dv;
+    res += tp;
+    tp = dv.transpose() * t3 * dv;
+    res += tp;
+    return res * 0.5f;
+}
+
+void PointCloudUtils::gradientDescentSmooth(Path& path)
+{
+    if (path.size() <= 2)
+        return;
+    Path oldPath(path);
+    std::vector<Matrix3d> ts;
+    ts.resize(path.size());
+#pragma omp parallel for
+    for (int i = 0; i < path.size(); i++)
+        ts[i] = lerpTensor(path[i]);
+    
+#pragma omp parallel for
+    for (int i = 1; i < path.size() - 1; i++)
+    {
+        vec3f grad(0.f) , v , p , mid;
+        v = oldPath[i] - oldPath[i - 1];
+        grad += calcGradient(v , ts[i - 1]) +
+            calcGradient(v , ts[i]);
+        v = oldPath[i] - oldPath[i + 1];
+        grad += calcGradient(v , ts[i]) +
+            calcGradient(v , ts[i + 1]);
+        
+        p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
+        mid = p - oldPath[i];
+        float len = mid.length() * 0.3f;
+        path[i] = oldPath[i] - grad / grad.length() * len;
+    }
+    path[0] = oldPath[0];
+    path[path.size() - 1] = oldPath[path.size() - 1];
+    
+    //for (int i = 0; i < path.size(); i++)
+    //    ts[i] = lerpTensor(path[i]);
+    printf("========================\n");
+    for (int i = 1; i < path.size() - 1; i++)
+    {
+        vec3f grad(0.f) , v , p , mid;
+        v = path[i] - path[i - 1];
+        grad += calcGradient(v , ts[i - 1]) +
+            calcGradient(v , ts[i]);
+        v = path[i + 1] - path[i];
+        grad += calcGradient(v , ts[i]) +
+            calcGradient(v , ts[i + 1]);
+        printf("pos = (%.6f,%.6f,%.6f), grad = (%.6f,%.6f,%.6f), norm = %.6f\n" ,
+               path[i].x , path[i].y , path[i].z ,
+               grad.x , grad.y , grad.z , grad.length());
+        
+        float f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] , oldPath[i] ,
+                                ts[i] , oldPath[i + 1] , ts[i + 1]);
+        float f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] , path[i] ,
+                                ts[i] , oldPath[i + 1] , ts[i + 1]);
+        printf("prev f = %.8f , now f = %.8f\n" , f0 , f1);
+    }
 }
 
 void PointCloudUtils::calcFirstOrderDerivative(double*** &f , const int& dir , double*** &df)
