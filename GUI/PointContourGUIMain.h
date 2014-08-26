@@ -20,6 +20,7 @@
 #include <wx/splitter.h>
 #include <wx/glcanvas.h>
 #include <wx/slider.h>
+#include <wx/choice.h>
 #include <wx/button.h>
 #include <wx/frame.h>
 #include <wx/statusbr.h>
@@ -68,6 +69,7 @@ class PointContourGUIFrame: public wxFrame
         void OnPosYText(wxCommandEvent& event);
         void OnPosZText(wxCommandEvent& event);
         void OnAlphaNText(wxCommandEvent& event);
+        void OnSmoothingChoiceSelect(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -83,6 +85,7 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_SLIDER2;
         static const long ID_CHECKBOX4;
         static const long ID_SLIDER3;
+        static const long ID_CHOICE1;
         static const long ID_STATICTEXT1;
         static const long ID_TEXTCTRL1;
         static const long ID_STATICTEXT2;
@@ -121,6 +124,7 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText9;
         wxTextCtrl* FilterRadius;
         wxCheckBox* ShowMetric;
+        wxChoice* SmoothingChoice;
         wxCheckBox* ShowHessian;
         wxCheckBox* HidePointCloud;
         wxSlider* MetricLength;

@@ -71,6 +71,7 @@ const long PointContourGUIFrame::ID_CHECKBOX3 = wxNewId();
 const long PointContourGUIFrame::ID_SLIDER2 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX4 = wxNewId();
 const long PointContourGUIFrame::ID_SLIDER3 = wxNewId();
+const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT1 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL1 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT2 = wxNewId();
@@ -171,6 +172,11 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer2->Add(ShowMetric, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     MetricLength = new wxSlider(ScrolledWindow1, ID_SLIDER3, 50, 0, 100, wxDefaultPosition, wxSize(150,20), 0, wxDefaultValidator, _T("ID_SLIDER3"));
     FlexGridSizer2->Add(MetricLength, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    SmoothingChoice = new wxChoice(ScrolledWindow1, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
+    SmoothingChoice->Append(_("None"));
+    SmoothingChoice->Append(_("Laplacian"));
+    SmoothingChoice->SetSelection( SmoothingChoice->Append(_("Gradient descent")) );
+    FlexGridSizer2->Add(SmoothingChoice, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer2 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow1, _("Parameters"));
@@ -275,6 +281,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_SLIDER2,wxEVT_SCROLL_THUMBTRACK,(wxObjectEventFunction)&PointContourGUIFrame::OnHessianLengthCmdScrollThumbTrack);
     Connect(ID_CHECKBOX4,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowMetricClick);
     Connect(ID_SLIDER3,wxEVT_SCROLL_THUMBTRACK,(wxObjectEventFunction)&PointContourGUIFrame::OnMetricLengthCmdScrollThumbTrack);
+    Connect(ID_CHOICE1,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothingChoiceSelect);
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnGridResXText);
     Connect(ID_TEXTCTRL2,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnGridResYText);
     Connect(ID_TEXTCTRL3,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnGridResZText);
@@ -672,3 +679,13 @@ void PointContourGUIFrame::OnPosZText(wxCommandEvent& event)
     debugPosChanged = true;
 }
 
+
+void PointContourGUIFrame::OnSmoothingChoiceSelect(wxCommandEvent& event)
+{
+    if (m_pcUtils->pcRenderer->pathForComp.size() == 0)
+        return;
+    m_pcUtils->pcRenderer->pathChoice = event.GetSelection();
+    int choice = event.GetSelection();
+    m_pcUtils->pcRenderer->pathVertex = m_pcUtils->pcRenderer->pathForComp[choice];
+    m_openGLView->Render();
+}

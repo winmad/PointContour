@@ -1414,14 +1414,16 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
         
         p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
         mid = p - oldPath[i];
-        float len = mid.length() * 0.3f;
+        float len = mid.length() * 0.02f;
         path[i] = oldPath[i] - grad / grad.length() * len;
+        //printf("%.6f\n" , len);
     }
     path[0] = oldPath[0];
     path[path.size() - 1] = oldPath[path.size() - 1];
     
     //for (int i = 0; i < path.size(); i++)
     //    ts[i] = lerpTensor(path[i]);
+    
     printf("========================\n");
     for (int i = 1; i < path.size() - 1; i++)
     {
@@ -1442,6 +1444,7 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
                                 ts[i] , oldPath[i + 1] , ts[i + 1]);
         printf("prev f = %.8f , now f = %.8f\n" , f0 , f1);
     }
+    
 }
 
 void PointCloudUtils::calcFirstOrderDerivative(double*** &f , const int& dir , double*** &df)

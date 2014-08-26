@@ -95,6 +95,8 @@ public:
 	std::vector<vec3f> selectedPoints;
 	Path pathVertex;
     std::vector<Path> pathForComp;
+    int pathChoice;
+    
 	std::vector<Path> storedPaths;
 	vec3f *pickedPoint;
 	vec3f *lastPoint;

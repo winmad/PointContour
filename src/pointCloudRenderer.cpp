@@ -69,9 +69,10 @@ void PointCloudRenderer::init()
 	callListPoints();
 	callListSurfelDisc();
     
-    pathForComp.resize(2);
-    pathForComp[0].clear();
-    pathForComp[1].clear();
+    pathForComp.resize(3);
+    for (int i = 0; i < 3; i++)
+        pathForComp[i].clear();
+    pathChoice = 2;
 }
 
 void PointCloudRenderer::drawPoint(const vec3f& pos)
@@ -463,7 +464,7 @@ void PointCloudRenderer::render()
 	renderSelectedPoints();
 	renderCurrentPath();
 	renderStoredPaths();
-    renderPathForComp();
+    //renderPathForComp();
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -623,11 +624,14 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             pathForComp[1] = pathVertex;
             for (int i = 0; i < 2; i++)
                 pcUtils->laplacianSmooth(pathForComp[1]);
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 25; i++)
             {
                 //pcUtils->laplacianSmooth(pathVertex);
                 pcUtils->gradientDescentSmooth(pathVertex);
             }
+            pathForComp[2] = pathVertex;
+            if (pathChoice < 2)
+                pathVertex = pathForComp[pathChoice];
             /*
             writeLog("---------after smoothing-------------\n");
             for (int i = 0; i < pathVertex.size(); i++)
@@ -675,9 +679,8 @@ void PointCloudRenderer::clearPaths()
 	selectedPoints.clear();
 	storedPaths.clear();
 	pathVertex.clear();
-    pathForComp[0].clear();
-    pathForComp[1].clear();
-
+    for (int i = 0; i < 3; i++)
+        pathForComp[i].clear();
 	pickedPoint = NULL;
 	lastPoint = NULL;
 }
