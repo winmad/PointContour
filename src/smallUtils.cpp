@@ -39,6 +39,16 @@ double point2double(const vec3f& p)
 	return res;
 }
 
+bool isEqual(const vec3f& lhs , const vec3f& rhs)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if (std::abs(lhs[i] - rhs[i]) > EPS)
+            return false;
+    }
+    return true;
+}
+
 void writeBMP(const char* filename , int w , int h ,
               unsigned char* rgb)
 {

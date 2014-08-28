@@ -334,8 +334,9 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
 	SetFocus();
 	//for curve network;
-	if ( (event.Dragging()||event.GetWheelRotation()!=0) && !event.ControlDown() && !event.ShiftDown()&& !event.AltDown()) {
-		if (event.LeftIsDown() )
+	if ((event.Dragging()||event.GetWheelRotation()!=0) && !event.ControlDown() && !event.ShiftDown()&& !event.AltDown())
+    {
+		if (event.LeftIsDown())
 		{
 			//convert the mouse clicked locations to lie between [-1,1] for both X and Y
 			double halfWidth = m_width/2.0;
@@ -389,7 +390,8 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		isChangeView=true;
 	}
 	
-	if (event.ControlDown()) {
+    if (event.ControlDown())
+    {
         lastKeyBoard=1;
 		m_pcUtils->pcRenderer->isCtrlPress = true;
         
@@ -413,6 +415,11 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		Render();
 
 	}
+    else if (event.AltDown())
+    {
+        lastKeyBoard = 2;
+        m_pcUtils->pcRenderer->isAltPress = true;
+    }
 
 	if (!event.ControlDown())
 	{ 

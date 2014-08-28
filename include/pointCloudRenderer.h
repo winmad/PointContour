@@ -33,6 +33,7 @@ public:
 	bool isShowPath;
 
 	bool isCtrlPress;
+    bool isAltPress;
 
 	float discRenderBaseRadius , discRenderRadiusScale;
 	float hessianRenderBaseLength , hessianRenderLengthScale;

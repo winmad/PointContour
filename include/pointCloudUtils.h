@@ -8,6 +8,7 @@
 #include "PointKDTree.h"
 #include "Heap.h"
 #include "TimeManager.h"
+#include "curveNet.h"
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -209,6 +210,10 @@ public:
 	DijkstraInfo uniGraphInfo;
 	DijkstraInfo adapGraphInfo;
 	DijkstraInfo pointGraphInfo;
+    
+    int smoothIter;
+    float smoothScale;
+    CurveNet curveNet;
 	
 	TimeManager timer;
 
@@ -272,7 +277,6 @@ public:
 	vec3i nearestGridPoint(const vec3f& pos);
 
     void laplacianSmooth(Path& path);
-    vec3f calcGradient(const vec3f& v , const Matrix3d& ts);
     void gradientDescentSmooth(Path& path);
     
 	// visualization

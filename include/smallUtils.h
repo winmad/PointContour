@@ -6,8 +6,10 @@
 #include <vector>
 #include <string>
 #include <cstdarg>
+#include <algorithm>
 
 #define PI 3.14159265358979
+#define EPS 1e-6f
 #define SQR(x) ((x) * (x))
 
 struct Edge;
@@ -22,6 +24,8 @@ bool restartLog(std::string fileName);
 bool writeLog(const char* msg , ...);
 
 double point2double(const vec3f& p);
+
+bool isEqual(const vec3f& lhs , const vec3f& rhs);
 
 template<typename T>
 bool allocate3(T*** &d , const vec3i& size)

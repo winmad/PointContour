@@ -423,7 +423,7 @@ void PointCloudRenderer::renderCurrentPath()
 void PointCloudRenderer::renderStoredPaths()
 {
 	glColor3f(0.f , 0.f , 1.f);
-	glLineWidth(2.f);
+	glLineWidth(3.f);
 	glEnable(GL_LINE_STIPPLE);
 	glLineStipple(2, 0xffff);
     
@@ -590,17 +590,54 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 		vec3i gridPos;
 		vec3f pos;
 		int edi;
-
-		if (pcUtils->graphType != PointCloudUtils::POINT_GRAPH)
+        
+        if (pcUtils->graphType != PointCloudUtils::POINT_GRAPH)
 		{
 			gridPos = pcUtils->nearestGridPoint(*pickedPoint);
 			pos = vec3f(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
+		}
+		else
+		{
+			pos = *pickedPoint;
+		}
+
+        // snapping when it is near curve
+        bool isSnap = false;
+        int breakLine , breakPoint;
+        float min_dist = 1e20f;
+        CurveNet& curveNet = pcUtils->curveNet;
+        
+        for (int i = 0; i < curveNet.numPolyLines; i++)
+        {
+            for (int j = 0; j < curveNet.polyLines[i].size(); j++)
+            {
+                float tmp = (pos - curveNet.polyLines[i][j]).length();
+                if (tmp < min_dist)
+                {
+                    min_dist = tmp;
+                    breakLine = i;
+                    breakPoint = j;
+                }
+            }
+        }
+        
+        if (min_dist < selectionOffset)
+        {
+            pos = curveNet.polyLines[breakLine][breakPoint];
+            *pickedPoint = pos;
+            isSnap = true;
+            //printf("snap!\n");
+        }
+        
+		if (pcUtils->graphType != PointCloudUtils::POINT_GRAPH)
+		{
+			//gridPos = pcUtils->nearestGridPoint(*pickedPoint);
+			//pos = vec3f(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
 			edi = pcUtils->grid2Index(gridPos);
             *pickedPoint = pos;
 		}
 		else
 		{
-			pos = *pickedPoint;
 			edi = pcUtils->point2Index[point2double(pos)];
 		}
         
@@ -620,18 +657,22 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                     pathVertex[i].y , pathVertex[i].z);
             }
             */
+            pcUtils->smoothIter = 50;
+            pcUtils->smoothScale = 0.03f;
+            int smoothIter = pcUtils->smoothIter;
             pathForComp[0] = pathVertex;
             pathForComp[1] = pathVertex;
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < smoothIter; i++)
                 pcUtils->laplacianSmooth(pathForComp[1]);
-            for (int i = 0; i < 25; i++)
+            for (int i = 0; i < smoothIter; i++)
             {
-                //pcUtils->laplacianSmooth(pathVertex);
                 pcUtils->gradientDescentSmooth(pathVertex);
             }
             pathForComp[2] = pathVertex;
+            
             if (pathChoice < 2)
                 pathVertex = pathForComp[pathChoice];
+            
             /*
             writeLog("---------after smoothing-------------\n");
             for (int i = 0; i < pathVertex.size(); i++)
@@ -646,11 +687,28 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 		//	edi , pcUtils->point2Index[pos]);
 
 		//fprintf(fr , "selected = (%.6f,%.6f,%.6f)" , pickedPoint->x , pickedPoint->y , pickedPoint->z);
+        
 		if (isStore)
 		{
 			int sti;
 			selectedPoints.push_back(pos);
-
+            
+            if (lastPoint == NULL)
+            {
+                curveNet.startPath(pos);
+            }
+            else
+            {
+                curveNet.extendPath(*lastPoint , pos , pathForComp[0]);
+                if (isSnap)
+                {
+                    curveNet.breakPath(breakLine , breakPoint);
+                    //printf("snap!\n");
+                }
+            }
+            
+            curveNet.debugLog();
+            
 			sti = edi;
 
 			if (lastPoint != NULL)
