@@ -72,7 +72,6 @@ void PointCloudRenderer::init()
     pathForComp.resize(3);
     for (int i = 0; i < 3; i++)
         pathForComp[i].clear();
-    pathChoice = 2;
 }
 
 void PointCloudRenderer::drawPoint(const vec3f& pos)
@@ -657,15 +656,13 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                     pathVertex[i].y , pathVertex[i].z);
             }
             */
-            pcUtils->smoothIter = 50;
-            pcUtils->smoothScale = 0.03f;
-            int smoothIter = pcUtils->smoothIter;
+            
             pathForComp[0] = pathVertex;
             pathForComp[1] = pathVertex;
-            for (int i = 0; i < smoothIter; i++)
-                pcUtils->laplacianSmooth(pathForComp[1]);
+
             for (int i = 0; i < smoothIter; i++)
             {
+                pcUtils->laplacianSmooth(pathForComp[1]);
                 pcUtils->gradientDescentSmooth(pathVertex);
             }
             pathForComp[2] = pathVertex;

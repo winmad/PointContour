@@ -12,6 +12,7 @@
 
 //(*Headers(PointContourGUIFrame)
 #include <wx/scrolwin.h>
+#include <wx/notebook.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/menu.h>
@@ -70,6 +71,8 @@ class PointContourGUIFrame: public wxFrame
         void OnPosZText(wxCommandEvent& event);
         void OnAlphaNText(wxCommandEvent& event);
         void OnSmoothingChoiceSelect(wxCommandEvent& event);
+        void OnSmoothScaleTextEnter(wxCommandEvent& event);
+        void OnSmoothIterTextEnter(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -85,7 +88,19 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_SLIDER2;
         static const long ID_CHECKBOX4;
         static const long ID_SLIDER3;
+        static const long ID_STATICTEXT12;
+        static const long ID_TEXTCTRL12;
+        static const long ID_STATICTEXT13;
+        static const long ID_TEXTCTRL13;
         static const long ID_CHOICE1;
+        static const long ID_STATICTEXT7;
+        static const long ID_TEXTCTRL7;
+        static const long ID_STATICTEXT8;
+        static const long ID_TEXTCTRL8;
+        static const long ID_STATICTEXT9;
+        static const long ID_TEXTCTRL9;
+        static const long ID_BUTTON2;
+        static const long ID_SCROLLEDWINDOW2;
         static const long ID_STATICTEXT1;
         static const long ID_TEXTCTRL1;
         static const long ID_STATICTEXT2;
@@ -103,13 +118,8 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_STATICTEXT10;
         static const long ID_TEXTCTRL10;
         static const long ID_BUTTON1;
-        static const long ID_STATICTEXT7;
-        static const long ID_TEXTCTRL7;
-        static const long ID_STATICTEXT8;
-        static const long ID_TEXTCTRL8;
-        static const long ID_STATICTEXT9;
-        static const long ID_TEXTCTRL9;
-        static const long ID_BUTTON2;
+        static const long ID_SCROLLEDWINDOW3;
+        static const long ID_NOTEBOOK1;
         static const long ID_SCROLLEDWINDOW1;
         static const long ID_SPLITTERWINDOW1;
         static const long ID_MENUITEM2;
@@ -121,6 +131,7 @@ class PointContourGUIFrame: public wxFrame
 
         //(*Declarations(PointContourGUIFrame)
         wxStaticText* StaticText10;
+        wxTextCtrl* SmoothScale;
         wxStaticText* StaticText9;
         wxTextCtrl* FilterRadius;
         wxCheckBox* ShowMetric;
@@ -128,7 +139,10 @@ class PointContourGUIFrame: public wxFrame
         wxCheckBox* ShowHessian;
         wxCheckBox* HidePointCloud;
         wxSlider* MetricLength;
+        wxNotebook* Notebook1;
+        wxStaticText* StaticText13;
         wxStaticText* StaticText2;
+        wxScrolledWindow* ScrolledWindow3;
         wxScrolledWindow* ScrolledWindow1;
         wxTextCtrl* Alpha2;
         wxStaticText* StaticText6;
@@ -137,6 +151,7 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText8;
         wxStaticText* StaticText11;
         wxTextCtrl* ExtNum;
+        wxTextCtrl* SmoothIter;
         wxButton* PrintInfoButton;
         wxStaticText* StaticText1;
         wxSlider* HessianLength;
@@ -150,6 +165,8 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText7;
         wxButton* UpdateParametersButton;
         wxStatusBar* StatusBar1;
+        wxScrolledWindow* ScrolledWindow2;
+        wxStaticText* StaticText12;
         wxTextCtrl* GridResY;
         wxTextCtrl* GridResX;
         wxSplitterWindow* SplitterWindow1;

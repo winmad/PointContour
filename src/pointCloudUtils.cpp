@@ -43,7 +43,7 @@ void PointCloudUtils::allocateMemory(vec3i resol , int extra)
 		for (int j = i; j < 3; j++)
 			allocate3(ddf[i][j] , resolExt);
 
-	allocate3(tensor , resolX);
+	allocate3(tensor , resolExt);
 
 	timer.PopAndDisplayTime("\nAllocate memory: %.6f\n");
 }
@@ -64,7 +64,7 @@ void PointCloudUtils::deallocateMemory(vec3i resol , int extra)
 		for (int j = i; j < 3; j++)
 			deallocate3(ddf[i][j] , resolExt);
 
-	deallocate3(tensor , resolX);
+	deallocate3(tensor , resolExt);
 
 	timer.PopAndDisplayTime("\nDeallocate memory: %.6f\n");
 }
@@ -102,7 +102,8 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 
     allocateMemory(gridRes , extNum);
 
-	buildAdaptiveGrid();
+    if (graphType != POINT_GRAPH)
+        buildAdaptiveGrid();
 
 	// phase 1
 	calcDistField();
@@ -644,6 +645,19 @@ void PointCloudUtils::calcTensorMetric(Tensor& ts)
         d(i , i) = ts.axisLen[i];
     }
     ts.tensor = vec * d * vec.inverse();
+    
+    /*
+    SelfAdjointEigenSolver<Matrix3d> vd(ts.tensor);
+	Vector3d egval = vd.eigenvalues();
+	Matrix3d egvec = vd.eigenvectors();
+    for (int i = 0; i < 3; i++)
+    {
+        if (egval(i) < -EPS)
+        {
+            printf("error: %.8f\n" , egval(i));
+        }
+    }
+    */
     /*
     Matrix3d mat = vec * d * vec.inverse();
     for (int i = 0; i < 3; i++)
@@ -671,7 +685,7 @@ void PointCloudUtils::calcHessian(double*** &f)
 		for (int j = i; j < 3; j++)
 			calcSecondOrderDerivative(f , i , j , ddf[i][j]);
 	}
-
+/*
 #pragma omp parallel for
 	for (int i = 0; i <= gridRes.x; i++)
 	{
@@ -687,14 +701,29 @@ void PointCloudUtils::calcHessian(double*** &f)
 			}
 		}
 	}
-
+*/
+#pragma omp parallel for
+    for (int i = 1; i < sizeOriginF.x - 1; i++)
+    {
+        for (int j = 1; j < sizeOriginF.y - 1; j++)
+        {
+            for (int k = 1; k < sizeOriginF.z - 1; k++)
+            {
+                for (int r = 0; r < 3; r++)
+                    for (int c = 0; c < 3; c++)
+                        tensor[i][j][k].hessian(r , c) = ddf[std::min(r , c)][std::max(r , c)][i][j][k];
+                
+                calcTensorDecomposition(tensor[i][j][k]);
+            }
+        }
+    }
 	timer.PopAndDisplayTime("\nCalculate hessian: %.6f\n");
 }
 
 void PointCloudUtils::calcMetric(double*** &f)
 {
 	timer.PushCurrentTime();
-
+/*
 #pragma omp parallel for
 	for (int i = 0; i <= gridRes.x; i++)
 	{
@@ -706,9 +735,23 @@ void PointCloudUtils::calcMetric(double*** &f)
 			}
 		}
 	}
+*/
+    
+#pragma omp parallel for
+	for (int i = 1; i < sizeOriginF.x - 1; i++)
+	{
+		for (int j = 1; j < sizeOriginF.y; j++)
+		{
+			for (int k = 1; k < sizeOriginF.z - 1; k++)
+			{
+				calcTensorMetric(tensor[i][j][k]);
+			}
+		}
+	}
 
 	timer.PopAndDisplayTime("\nCalculate metric: %.6f\n");
 
+    /*
 	int step = 1;
     int x = 4;//gridRes.x;
     int y = 4;//gridRes.y;
@@ -727,7 +770,7 @@ void PointCloudUtils::calcMetric(double*** &f)
 						//tensor[i][j][k].eigenVal[a] , tensor[i][j][k].axisLen[a]);
 				}
 			}
-
+     */
 }
 
 int PointCloudUtils::grid2Index(const vec3i& gridPos)
@@ -1097,15 +1140,22 @@ void PointCloudUtils::addSubdivisionEdges(Graph& g)
 
 Matrix3d PointCloudUtils::lerpHessian(const vec3f& pos)
 {
-    int xi = clampx((int)((pos.x - box.lb.x) / gridSize.x) , 0 , gridRes.x - 1);
-    int yi = clampx((int)((pos.y - box.lb.y) / gridSize.y) , 0 , gridRes.y - 1);
-    int zi = clampx((int)((pos.z - box.lb.z) / gridSize.z) , 0 , gridRes.z - 1);
+    vec3f leftBottom(extXval[0] , extYval[0] , extZval[0]);
+    vec3i maxSize(sizeOriginF);
+    int xi = clampx((int)((pos.x - leftBottom.x) / gridSize.x) , 1 , maxSize.x - 2);
+    int yi = clampx((int)((pos.y - leftBottom.y) / gridSize.y) , 1 , maxSize.y - 2);
+    int zi = clampx((int)((pos.z - leftBottom.z) / gridSize.z) , 1 , maxSize.z - 2);
     
-    vec3f v;
-    v.x = (pos.x - xval[xi]) / (xval[xi + 1] - xval[xi]);
-    v.y = (pos.y - yval[yi]) / (yval[yi + 1] - yval[yi]);
-    v.z = (pos.z - zval[zi]) / (zval[zi + 1] - zval[zi]);
-    
+    vec3d v;
+    /*
+    v.x = ((double)pos.x - xval[xi]) / (xval[xi + 1] - xval[xi]);
+    v.y = ((double)pos.y - yval[yi]) / (yval[yi + 1] - yval[yi]);
+    v.z = ((double)pos.z - zval[zi]) / (zval[zi + 1] - zval[zi]);
+    */
+    v.x = clampx(((double)pos.x - extXval[xi]) / (extXval[xi + 1] - extXval[xi]) , 0.0 , 1.0);
+    v.y = clampx(((double)pos.y - extYval[yi]) / (extYval[yi + 1] - extYval[yi]) , 0.0 , 1.0);
+    v.z = clampx(((double)pos.z - extZval[zi]) / (extZval[zi + 1] - extZval[zi]) , 0.0 , 1.0);
+
     Matrix3d hesMat;
     hesMat = (1 - v.x) * (1 - v.y) * (1 - v.z) * tensor[xi][yi][zi].hessian +
         (1 - v.x) * (1 - v.y) * v.z * tensor[xi][yi][zi + 1].hessian +
@@ -1121,14 +1171,21 @@ Matrix3d PointCloudUtils::lerpHessian(const vec3f& pos)
 
 Matrix3d PointCloudUtils::lerpTensor(const vec3f &pos)
 {
-    int xi = clampx((int)((pos.x - box.lb.x) / gridSize.x) , 0 , gridRes.x - 1);
-    int yi = clampx((int)((pos.y - box.lb.y) / gridSize.y) , 0 , gridRes.y - 1);
-    int zi = clampx((int)((pos.z - box.lb.z) / gridSize.z) , 0 , gridRes.z - 1);
+    vec3f leftBottom(extXval[0] , extYval[0] , extZval[0]);
+    vec3i maxSize(sizeOriginF);
+    int xi = clampx((int)((pos.x - leftBottom.x) / gridSize.x) , 0 , maxSize.x - 1);
+    int yi = clampx((int)((pos.y - leftBottom.y) / gridSize.y) , 0 , maxSize.y - 1);
+    int zi = clampx((int)((pos.z - leftBottom.z) / gridSize.z) , 0 , maxSize.z - 1);
     
-    vec3f v;
-    v.x = (pos.x - xval[xi]) / (xval[xi + 1] - xval[xi]);
-    v.y = (pos.y - yval[yi]) / (yval[yi + 1] - yval[yi]);
-    v.z = (pos.z - zval[zi]) / (zval[zi + 1] - zval[zi]);
+    vec3d v;
+    /*
+    v.x = ((double)pos.x - xval[xi]) / (xval[xi + 1] - xval[xi]);
+    v.y = ((double)pos.y - yval[yi]) / (yval[yi + 1] - yval[yi]);
+    v.z = ((double)pos.z - zval[zi]) / (zval[zi + 1] - zval[zi]);
+    */
+    v.x = clampx(((double)pos.x - extXval[xi]) / (extXval[xi + 1] - extXval[xi]) , 0.0 , 1.0);
+    v.y = clampx(((double)pos.y - extYval[yi]) / (extYval[yi + 1] - extYval[yi]) , 0.0 , 1.0);
+    v.z = clampx(((double)pos.z - extZval[zi]) / (extZval[zi + 1] - extZval[zi]) , 0.0 , 1.0);
     
     Matrix3d tensorMat;
     tensorMat = (1 - v.x) * (1 - v.y) * (1 - v.z) * tensor[xi][yi][zi].tensor +
@@ -1140,6 +1197,20 @@ Matrix3d PointCloudUtils::lerpTensor(const vec3f &pos)
         v.x * v.y * (1 - v.z) * tensor[xi + 1][yi + 1][zi].tensor +
         v.x * v.y * v.z * tensor[xi + 1][yi + 1][zi + 1].tensor;
     
+    /*
+    SelfAdjointEigenSolver<Matrix3d> vd(tensorMat);
+    Vector3d egval = vd.eigenvalues();
+    Matrix3d egvec = vd.eigenvectors();
+    for (int i = 0; i < 3; i++)
+    {
+        if (egval(i) < -EPS)
+        {
+            printf("error: %.8f\n" , egval(i));
+            printf("(%d,%d,%d)\n" , xi , yi , zi);
+            printf("(%.6f,%.6f,%.6f)\n" , v.x , v.y , v.z);
+        }
+    }
+    */
     return tensorMat;
 }
 
@@ -1357,21 +1428,30 @@ void PointCloudUtils::laplacianSmooth(Path &path)
     for (int i = 1; i < path.size() - 1; i++)
     {
         vec3f p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
-        vec3f v = (p - oldPath[i]) * smoothScale;
+        vec3f v = (p - oldPath[i]) * pcRenderer->smoothScale;
         path[i] = oldPath[i] + v;
     }
     path[0] = oldPath[0];
     path[path.size() - 1] = oldPath[path.size() - 1];
 }
 
-vec3f calcGradient(const vec3f& v , const Matrix3d& tensor)
+vec3d calcGradient(const vec3f& v , const Matrix3d& tensor)
 {
     Vector3d dv(v.x , v.y , v.z);
     Vector3d grad = tensor * dv;
-    vec3f res(grad(0) , grad(1) , grad(2));
-    res *= 0.5f / sqrt(dv.transpose() * tensor * dv);
+    vec3d res(grad(0) , grad(1) , grad(2));
+    res *= 0.5;
+    res /= sqrt(dv.transpose() * tensor * dv);
+    
     /*
-    float tp = (dv.transpose() * tensor * dv);
+    double tp = (dv.transpose() * tensor * dv);
+    Matrix<double , 1 , 1> tmp = dv.transpose() * tensor * dv;
+    
+    if (sqrt(tp) < EPS)
+    {
+        printf("calc gradient: %.8f, (%.8f,%.8f,%.8f)\n" , sqrt(tp) , res.x , res.y , res.z);
+    }
+    
     printf("(%.6f,%.6f,%.6f) , %.8f\n" , v.x , v.y , v.z , tp);
     for (int i = 0; i < 3; i++)
     {
@@ -1385,13 +1465,13 @@ vec3f calcGradient(const vec3f& v , const Matrix3d& tensor)
     return res;
 }
 
-float calcAnisDist(const vec3f& pos1 , const Matrix3d& t1 , const vec3f& pos2 ,
+double calcAnisDist(const vec3f& pos1 , const Matrix3d& t1 , const vec3f& pos2 ,
                    const Matrix3d& t2 , const vec3f& pos3 , const Matrix3d& t3)
 {
-    float res = 0.f;
+    double res = 0.0;
     vec3f v = pos2 - pos1;
     Vector3d dv(v.x , v.y , v.z);
-    float tp = dv.transpose() * t1 * dv;
+    double tp = dv.transpose() * t1 * dv;
     res += sqrt(tp);
     tp = dv.transpose() * t2 * dv;
     res += sqrt(tp);
@@ -1402,36 +1482,46 @@ float calcAnisDist(const vec3f& pos1 , const Matrix3d& t1 , const vec3f& pos2 ,
     res += sqrt(tp);
     tp = dv.transpose() * t3 * dv;
     res += sqrt(tp);
-    return res * 0.5f;
+    return res * 0.5;
 }
 
 Matrix3d lineSearchHessian(const vec3f& v , const Matrix3d& tensor)
 {
     Matrix3d res;
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            res(i , j) = 0.0;
     Vector3d dv(v.x , v.y , v.z);
-    float denom = dv.transpose() * tensor * dv;
+    double denom = dv.transpose() * tensor * dv;
+    /*
+    if (std::abs(denom) < EPS)
+    {
+        printf("line search hessian: %.8lf\n" , denom);
+        return res;
+    }
+    */
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
         {
-            float t1 = 0.f , t2 = 0.f;
+            double t1 = 0.0 , t2 = 0.0;
             for (int k = 0; k < 3; k++)
             {
                 t1 += tensor(i , k) * dv(k);
                 t2 += tensor(j , k) * dv(k);
             }
-            res(i , j) = 0.5f * (tensor(i , j) * sqrt(denom) -
-                                 t1 * t2 / sqrt(denom)) / denom;
+            res(i , j) = 0.5 * tensor(i , j) / sqrt(denom) -
+                         0.5 * t1 * t2 / pow(denom , 1.5);
         }
     }
     return res;
 }
 
-float lineSearch(const vec3f& d , const vec3f& pos1 , const Matrix3d& t1 ,
+double lineSearch(const vec3d& d , const vec3f& pos1 , const Matrix3d& t1 ,
                  const vec3f& pos2 , const Matrix3d& t2 ,
                  const vec3f& pos3 , const Matrix3d& t3)
 {
-    vec3f grad = calcGradient(pos2 - pos1 , t1) +
+    vec3d grad = calcGradient(pos2 - pos1 , t1) +
         calcGradient(pos2 - pos1 , t2) + calcGradient(pos2 - pos3 , t2) +
         calcGradient(pos2 - pos3 , t3);
     Vector3d f1(grad.x , grad.y , grad.z);
@@ -1440,9 +1530,15 @@ float lineSearch(const vec3f& d , const vec3f& pos1 , const Matrix3d& t1 ,
         lineSearchHessian(pos2 - pos3 , t2) +
         lineSearchHessian(pos2 - pos3 , t3);
     Vector3d vd(d.x , d.y , d.z);
-    float res = -f1.dot(vd) / (vd.transpose() * f2 * vd);
-    //float tmp = vd.transpose() * f2 * vd;
-    //printf("%.8f / %.8f = %.8f\n" , -f1.dot(vd) , tmp , res);
+    double res = -f1.dot(vd) / (vd.transpose() * f2 * vd);
+    /*
+    double tmp = vd.transpose() * f2 * vd;
+    if (abs(tmp) < EPS)
+    {
+        printf("line search: %.8lf, %.8lf\n" , res , tmp);
+        return 0.f;
+    }
+    */
     return res;
 }
 
@@ -1455,40 +1551,89 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
     ts.resize(path.size());
 #pragma omp parallel for
     for (int i = 0; i < path.size(); i++)
+    {
         ts[i] = lerpTensor(path[i]);
+    }
     
 //#pragma omp parallel for
     for (int i = 1; i < path.size() - 1; i++)
     {
-        vec3f grad(0.f) , v , p , mid;
+        vec3d grad_double(0.0);
+        vec3f v , p , mid;
         v = oldPath[i] - oldPath[i - 1];
-        grad += calcGradient(v , ts[i - 1]) +
+        grad_double += calcGradient(v , ts[i - 1]) +
             calcGradient(v , ts[i]);
+
         v = oldPath[i] - oldPath[i + 1];
-        grad += calcGradient(v , ts[i]) +
+        grad_double += calcGradient(v , ts[i]) +
             calcGradient(v , ts[i + 1]);
         
         p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
-        mid = p - oldPath[i];
-        //float len = mid.length() * 0.05f;
-        grad /= grad.length();
-        vec3f d = -grad;
-        float alpha = lineSearch(d , oldPath[i - 1] , ts[i - 1] , oldPath[i] ,
-                                 ts[i] , oldPath[i + 1] , ts[i + 1]);
+        vec3f grad(grad_double.x , grad_double.y , grad_double.z);
         
-        path[i] = oldPath[i] - grad * alpha * smoothScale;
+        vec3f _p0 = oldPath[i] - grad / grad.length() * 0.0001f;
+        double _f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
+                                _p0 , ts[i] , oldPath[i + 1] , ts[i + 1]);
+        vec3f _p1 = oldPath[i];
+        double _f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
+                                _p1 , ts[i] , oldPath[i + 1] , ts[i + 1]);
+        vec3f _p2 = oldPath[i] + grad / grad.length() * 0.0001f;
+        double _f2 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
+                                _p2 , ts[i] , oldPath[i + 1] , ts[i + 1]);
         /*
-        vec3f p0 = oldPath[i] - grad * alpha * 0.95f;
-        float f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
+        double delta = 1e-4;
+        _p0 = oldPath[i] - vec3f(0 , 0 , delta);
+        _f0 = calcAnisDist(oldPath[i - 1], ts[i - 1], _p0, ts[i], oldPath[i + 1], ts[i + 1]);
+        _p1 = oldPath[i] + vec3f(0 , 0 , delta);
+        _f1 = calcAnisDist(oldPath[i - 1], ts[i - 1], _p1, ts[i], oldPath[i + 1], ts[i + 1]);
+        double diff = (_f1 - _f0) / delta * 0.5;
+        printf("%.8lf , %.8lf\n" , grad.z , diff);
+        */
+        /*
+        if (_f0 < _f1 && _f1 < _f2)
+        {
+            printf("=================\nyes ");
+            printf("f(-1)=%.8f, f(0)=%.8f, f(1)=%.8f\n" ,
+                   _f0 , _f1 , _f2);
+            printf("grad = (%.8f,%.8f,%.8f), %.8f\n" , grad.x , grad.y , grad.z , grad.length());
+        }
+        else
+        {
+            printf("=================\nno ");
+            printf("f(-1)=%.8lf, f(0)=%.8lf, f(1)=%.8lf\n" ,
+                   _f0 , _f1 , _f2);
+            printf("grad = (%.8lf,%.8lf,%.8lf), %.8lf\n" , grad.x , grad.y , grad.z , grad.length());
+        }
+        */
+        mid = p - oldPath[i];
+        double len = mid.length();
+        grad /= grad_double.length();
+        vec3d d = -grad_double / grad_double.length();
+        double alpha = lineSearch(d , oldPath[i - 1] , ts[i - 1] , oldPath[i] ,
+                                 ts[i] , oldPath[i + 1] , ts[i + 1]);
+        /*
+        if (!((_f0 < _f1) && (_f1 < _f2)))
+            alpha = 0.0;
+        
+        vec3f p0 = oldPath[i] - grad * alpha * 0.97f;
+        double f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 p0 , ts[i] , oldPath[i + 1] , ts[i + 1]);
-        float f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
-                                path[i] , ts[i] , oldPath[i + 1] , ts[i + 1]);
-        vec3f p2 = oldPath[i] - grad * alpha * 1.05f;
-        float f2 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
+        vec3f p1 = oldPath[i] - grad * alpha;
+        double f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
+                                p1 , ts[i] , oldPath[i + 1] , ts[i + 1]);
+        vec3f p2 = oldPath[i] - grad * alpha * 1.03f;
+        double f2 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 p2 , ts[i] , oldPath[i + 1] , ts[i + 1]);
-        printf("alpha = %.6f, f(-1)=%.8f, f(0)=%.8f, f(1)=%.8f\n" , alpha ,
+        if (f0 > f1 && f1 < f2)
+            printf("yes ");
+        else
+            printf("no ");
+        printf("alpha = %.8lf, f(-1)=%.8lf, f(0)=%.8lf, f(1)=%.8lf\n" , alpha ,
                f0 , f1 , f2);
         */
+        alpha = std::min(alpha , len);
+        
+        path[i] = oldPath[i] - grad * alpha * pcRenderer->smoothScale;
     }
     path[0] = oldPath[0];
     path[path.size() - 1] = oldPath[path.size() - 1];

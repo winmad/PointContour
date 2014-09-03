@@ -179,12 +179,12 @@ public:
 
 	int*** isPointInside;
 
-	std::vector<float> xval , yval , zval;
+	std::vector<double> xval , yval , zval;
 
 	int extNum;
 	vec3i sizeOriginF;
 	double*** originF;
-	std::vector<float> extXval , extYval , extZval;
+	std::vector<double> extXval , extYval , extZval;
 
 	double*** f;
 	//double*** df[3];
@@ -211,8 +211,6 @@ public:
 	DijkstraInfo adapGraphInfo;
 	DijkstraInfo pointGraphInfo;
     
-    int smoothIter;
-    float smoothScale;
     CurveNet curveNet;
 	
 	TimeManager timer;

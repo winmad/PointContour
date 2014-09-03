@@ -829,7 +829,7 @@ typedef vec4<float> vec4f;
 typedef nv::vec2f vec2f;
 typedef nv::vec2i vec2i;
 typedef nv::vec3f vec3f;
-typedef nv::vec3f vec3d;
+typedef nv::vec3d vec3d;
 typedef nv::vec3i vec3i;
 typedef nv::vec3ui vec3ui;
 typedef nv::vec3uc vec3uc;

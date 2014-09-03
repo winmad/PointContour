@@ -97,6 +97,8 @@ public:
 	Path pathVertex;
     std::vector<Path> pathForComp;
     int pathChoice;
+    int smoothIter;
+    float smoothScale;
     
 	std::vector<Path> storedPaths;
 	vec3f *pickedPoint;
