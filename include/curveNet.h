@@ -43,18 +43,18 @@ public:
     CurveNet() { clear(); }
     
     void clear();
-    void startPath(const vec3f& st);
-    void extendPath(const vec3f& st , const vec3f& ed , const Path& path);
+    void startPath(const vec3d& st);
+    void extendPath(const vec3d& st , const vec3d& ed , const Path& path);
     void breakPath(const int& breakLine , const int& breakPoint);
     
-    int getNodeIndex(const vec3f& pos);
+    int getNodeIndex(const vec3d& pos);
     
     void test();
     void debugPrint();
     void debugLog();
     
     int numNodes , numPolyLines;
-    std::vector<vec3f> nodes;
+    std::vector<vec3d> nodes;
     std::vector<std::vector<CurveEdge> > edges;
     std::vector<Path> polyLines;
     std::vector<PolyLineIndex> polyLinesIndex;

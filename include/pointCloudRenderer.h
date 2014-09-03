@@ -35,29 +35,29 @@ public:
 	bool isCtrlPress;
     bool isAltPress;
 
-	float discRenderBaseRadius , discRenderRadiusScale;
-	float hessianRenderBaseLength , hessianRenderLengthScale;
-	float metricRenderBaseLength , metricRenderLengthScale;
+	double discRenderBaseRadius , discRenderRadiusScale;
+	double hessianRenderBaseLength , hessianRenderLengthScale;
+	double metricRenderBaseLength , metricRenderLengthScale;
 
-	float selectionOffset;
+	double selectionOffset;
 
 	void init();
 
-	void drawPoint(const vec3f& pos);
+	void drawPoint(const vec3d& pos);
 	void drawPoints();
-	void drawCircle(const vec3f& origin , const vec3f& a , const vec3f& b , 
-					const float& r);
-	void drawCircle(const vec3f& origin , const vec3f& a , const vec3f& b , const float& r , 
-					const vec3f& n);
-	void drawQuad(const vec3f& origin , const vec3f& a , const vec3f& b , const float& r ,
-				  const vec3f& n);
+	void drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , 
+					const double& r);
+	void drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , const double& r , 
+					const vec3d& n);
+	void drawQuad(const vec3d& origin , const vec3d& a , const vec3d& b , const double& r ,
+				  const vec3d& n);
 	void drawLines(const Path& v);
-	void drawCube(const vec3f& lb , const vec3f& rt);
-	void drawEllipse(const vec3f& origin , const vec3f& majorAxis , const float& majorLen ,
-					 const vec3f& minorAxis , const float& minorLen);
-	void drawEllipsoid(const vec3f& origin , const vec3f& a , const float& la ,
-					   const vec3f& b , const float& lb ,
-					   const vec3f& c , const float& lc);
+	void drawCube(const vec3d& lb , const vec3d& rt);
+	void drawEllipse(const vec3d& origin , const vec3d& majorAxis , const double& majorLen ,
+					 const vec3d& minorAxis , const double& minorLen);
+	void drawEllipsoid(const vec3d& origin , const vec3d& a , const double& la ,
+					   const vec3d& b , const double& lb ,
+					   const vec3d& c , const double& lc);
 
 	void callListPoints();
 	void callListSurfelDisc();
@@ -91,18 +91,18 @@ public:
 
 	bool isNormalInfo;
 	PointCloudUtils *pcUtils;
-	std::vector<vec3f> axisU , axisV;
+	std::vector<vec3d> axisU , axisV;
 
-	std::vector<vec3f> selectedPoints;
+	std::vector<vec3d> selectedPoints;
 	Path pathVertex;
     std::vector<Path> pathForComp;
     int pathChoice;
     int smoothIter;
-    float smoothScale;
+    double smoothScale;
     
 	std::vector<Path> storedPaths;
-	vec3f *pickedPoint;
-	vec3f *lastPoint;
+	vec3d *pickedPoint;
+	vec3d *lastPoint;
 
 	std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;
@@ -111,12 +111,12 @@ public:
 
 	std::vector<double> sin36 , cos36;
 
-	float calcHessianRenderLength(const float& l)
+	double calcHessianRenderLength(const double& l)
 	{
 		return powf(std::abs(l) , 0.5) * hessianRenderLengthScale;
 	}
 
-	float calcMetricRenderLength(const float& l)
+	double calcMetricRenderLength(const double& l)
 	{
 		return powf(std::abs(l) , 0.25) * metricRenderLengthScale;
 	}

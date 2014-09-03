@@ -29,7 +29,7 @@ bool writeLog(const char* msg , ...)
     return true;
 }
 
-double point2double(const vec3f& p)
+double point2double(const vec3d& p)
 {
 	double res = 0;
 	for (int i = 0; i < 3; i++) 
@@ -39,7 +39,7 @@ double point2double(const vec3f& p)
 	return res;
 }
 
-bool isEqual(const vec3f& lhs , const vec3f& rhs)
+bool isEqual(const vec3d& lhs , const vec3d& rhs)
 {
     for (int i = 0; i < 3; i++)
     {

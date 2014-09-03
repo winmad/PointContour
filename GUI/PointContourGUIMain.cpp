@@ -391,8 +391,8 @@ void PointContourGUIFrame::constructPointCloud(const char* fileName , const char
 
 	if (strcmp(fileType , "npts") == 0)
 	{
-		std::vector<vec3f> points;
-		std::vector<vec3f> normals;
+		std::vector<vec3d> points;
+		std::vector<vec3d> normals;
 		fileIOHelper->readPointCloudDataNpts(fileName,
 			points,
 			normals);
@@ -407,7 +407,7 @@ void PointContourGUIFrame::constructPointCloud(const char* fileName , const char
 	}
 	else if (strcmp(fileType , "ply") == 0)
 	{
-		std::vector<vec3f> points;
+		std::vector<vec3d> points;
 		fileIOHelper->readPointCloudDataPly(fileName,
 			points);
 
@@ -415,7 +415,7 @@ void PointContourGUIFrame::constructPointCloud(const char* fileName , const char
 		for (int i = 0; i < points.size(); i++)
 		{
 			m_pcUtils->pcData[i].pos = points[i];
-			m_pcUtils->pcData[i].n = vec3f(0 , 0 , 0);
+			m_pcUtils->pcData[i].n = vec3d(0 , 0 , 0);
 		}
 	}
 	else
@@ -489,8 +489,8 @@ void PointContourGUIFrame::OnHidePointCloudClick(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnDiscRadiusCmdScrollThumbTrack(wxScrollEvent& event)
 {
-    float scale;
-	scale = powf(1.1f , DiscRadius->GetValue() - 50.f);
+    double scale;
+	scale = pow(1.1 , DiscRadius->GetValue() - 50.0);
 	m_pcUtils->pcRenderer->discRenderRadiusScale = m_pcUtils->pcRenderer->discRenderBaseRadius * scale;
 	m_pcUtils->pcRenderer->callListSurfelDisc();
 	m_openGLView->Render();
@@ -504,8 +504,8 @@ void PointContourGUIFrame::OnShowHessianClick(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnHessianLengthCmdScrollThumbTrack(wxScrollEvent& event)
 {
-    float scale;
-	scale = powf(1.1f , HessianLength->GetValue() - 50.f);
+    double scale;
+	scale = pow(1.1 , HessianLength->GetValue() - 50.0);
 	m_pcUtils->pcRenderer->hessianRenderLengthScale = m_pcUtils->pcRenderer->hessianRenderBaseLength * scale;
 	m_openGLView->Render();
 }
@@ -518,8 +518,8 @@ void PointContourGUIFrame::OnShowMetricClick(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnMetricLengthCmdScrollThumbTrack(wxScrollEvent& event)
 {
-    float scale;
-	scale = powf(1.1f , MetricLength->GetValue() - 50.f);
+    double scale;
+	scale = pow(1.1 , MetricLength->GetValue() - 50.0);
 	m_pcUtils->pcRenderer->metricRenderLengthScale = m_pcUtils->pcRenderer->metricRenderBaseLength * scale;
 	m_openGLView->Render();
 }
@@ -634,7 +634,7 @@ void PointContourGUIFrame::OnUpdateParametersButtonClick(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnPrintInfoButtonClick(wxCommandEvent& event)
 {
-    vec3f pos;
+    vec3d pos;
     if (debugPosChanged)
     {
         pos.x = getDouble(PosX->GetValue());

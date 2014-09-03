@@ -13,8 +13,8 @@ FileIOHelper::~FileIOHelper()
 }
 
 bool FileIOHelper::readPointCloudDataNpts(const char* fileName, 
-									  std::vector<vec3f>& points,
-									  std::vector<vec3f>& normals)
+									  std::vector<vec3d>& points,
+									  std::vector<vec3d>& normals)
 {
 	if (!fileName)
 		return false;
@@ -27,7 +27,7 @@ bool FileIOHelper::readPointCloudDataNpts(const char* fileName,
 	points.clear();
 	normals.clear();
 
-	vec3f p , n;
+	vec3d p , n;
 
 	while (reader >> p.x >> p.y >> p.z >> n.x >> n.y >> n.z)
 	{
@@ -40,7 +40,7 @@ bool FileIOHelper::readPointCloudDataNpts(const char* fileName,
 }
 
 bool FileIOHelper::readPointCloudDataPly(const char* fileName, 
-										std::vector<vec3f>& points)
+										std::vector<vec3d>& points)
 {
 	if (!fileName)
 		return false;
@@ -52,7 +52,7 @@ bool FileIOHelper::readPointCloudDataPly(const char* fileName,
 
 	points.clear();
 
-	vec3f p;
+	vec3d p;
 
 	std::string str;
 	while (str != "end_header")

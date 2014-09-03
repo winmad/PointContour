@@ -9,11 +9,11 @@
 #include <algorithm>
 
 #define PI 3.14159265358979
-#define EPS 1e-6f
+#define EPS 1e-8
 #define SQR(x) ((x) * (x))
 
 struct Edge;
-typedef std::vector<vec3f> Path;
+typedef std::vector<vec3d> Path;
 typedef std::vector<std::vector<Edge> > Graph;
 
 const double pow2[3] = {1.0 , 1024.0 , 1024.0 * 1024.0};
@@ -23,9 +23,9 @@ static char logFileName[128];
 bool restartLog(std::string fileName);
 bool writeLog(const char* msg , ...);
 
-double point2double(const vec3f& p);
+double point2double(const vec3d& p);
 
-bool isEqual(const vec3f& lhs , const vec3f& rhs);
+bool isEqual(const vec3d& lhs , const vec3d& rhs);
 
 template<typename T>
 bool allocate3(T*** &d , const vec3i& size)

@@ -45,7 +45,7 @@ void PointCloudUtils::allocateMemory(vec3i resol , int extra)
 
 	allocate3(tensor , resolExt);
 
-	timer.PopAndDisplayTime("\nAllocate memory: %.6f\n");
+	timer.PopAndDisplayTime("\nAllocate memory: %.6lf\n");
 }
 
 void PointCloudUtils::deallocateMemory(vec3i resol , int extra)
@@ -66,7 +66,7 @@ void PointCloudUtils::deallocateMemory(vec3i resol , int extra)
 
 	deallocate3(tensor , resolExt);
 
-	timer.PopAndDisplayTime("\nDeallocate memory: %.6f\n");
+	timer.PopAndDisplayTime("\nDeallocate memory: %.6lf\n");
 }
 
 void PointCloudUtils::init()
@@ -84,7 +84,7 @@ void PointCloudUtils::init()
 
 	nodes = edges = subdivNodes = 0;
 
-	timer.PopAndDisplayTime("\nBuild kdtree: %.6f\n");
+	timer.PopAndDisplayTime("\nBuild kdtree: %.6lf\n");
     
     curveNet.clear();
 }
@@ -137,7 +137,7 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 
 void PointCloudUtils::getBBox()
 {
-	box.lb = vec3f(1e20f , 1e20f , 1e20f);
+	box.lb = vec3d(1e20 , 1e20 , 1e20);
 	box.rt = -box.lb;
 	for (int i = 0; i < pcData.size(); i++)
 	{
@@ -155,7 +155,7 @@ void PointCloudUtils::buildUniformGrid(vec3i size)
 {
 	gridRes = size;
 	gridResx = gridRes + vec3i(1 , 1 , 1);
-	vec3f diag = box.rt - box.lb;
+	vec3d diag = box.rt - box.lb;
 
 	gridSize.x = diag.x / size.x;
 	gridSize.y = diag.y / size.y;
@@ -189,7 +189,7 @@ void PointCloudUtils::buildAdaptiveGrid()
 	
 	for (int i = 0; i < pcData.size(); i++)
 	{
-		vec3f& pos = pcData[i].pos;
+		vec3d& pos = pcData[i].pos;
 		int xi = std::min((int)((pos.x - box.lb.x) / gridSize.x) , gridRes.x - 1);
 		int yi = std::min((int)((pos.y - box.lb.y) / gridSize.y) , gridRes.y - 1);
 		int zi = std::min((int)((pos.z - box.lb.z) / gridSize.z) , gridRes.z - 1);
@@ -208,7 +208,7 @@ void PointCloudUtils::buildAdaptiveGrid()
 			{
 				if (isPointInside[i][j][k] > 0)
 				{
-					fprintf(fp , "(%.6f,%.6f,%.6f), dist = %d\n" , 
+					fprintf(fp , "(%.6lf,%.6lf,%.6lf), dist = %d\n" , 
 						xval[i] , yval[j] , zval[k] , isPointInside[i][j][k]);
 				}
 			}
@@ -266,7 +266,7 @@ void PointCloudUtils::buildAdaptiveGrid()
 									continue;
 								if (ii == i && jj == j && kk == k)
 									continue;
-								vec3f pos = vec3f(xval[ii] , yval[jj] , zval[kk]);
+								vec3d pos = vec3d(xval[ii] , yval[jj] , zval[kk]);
 								double hashVal = point2double(pos);
 								if (point2Index.find(hashVal) == point2Index.end())
 								{
@@ -281,7 +281,7 @@ void PointCloudUtils::buildAdaptiveGrid()
 				}
 				else if (graphType == UNIFORM_GRAPH)
 				{
-					vec3f pos = vec3f(xval[i] , yval[j] , zval[k]);
+					vec3d pos = vec3d(xval[i] , yval[j] , zval[k]);
 					double hashVal = point2double(pos);
 
 					index2Point.push_back(pos);
@@ -300,7 +300,7 @@ void PointCloudUtils::buildAdaptiveGrid()
 	/*
 	for (int i = 0; i < gridNodes; i++)
 	{
-		fprintf(fp , "#%d: (%.6f,%.6f,%.6f)\n" , i , index2Point[i].x , 
+		fprintf(fp , "#%d: (%.6lf,%.6lf,%.6lf)\n" , i , index2Point[i].x , 
 			index2Point[i].y , index2Point[i].z);
 	}
 	*/
@@ -402,20 +402,20 @@ void PointCloudUtils::calcDistField()
 			for (int k = 0; k < sizeOriginF.z; k++)
 			{
 				DistQuery q;
-				q.maxSqrDis = 1e30f;
-				vec3f pos(extXval[i] , extYval[j] , extZval[k]);
+				q.maxSqrDis = 1e30;
+				vec3d pos(extXval[i] , extYval[j] , extZval[k]);
 				tree->searchKnn(0 , pos , q);
 				originF[i][j][k] = sqrt(q.maxSqrDis);
 			}
 		}
 	}
 
-	timer.PopAndDisplayTime("\nCalculate distance field: %.6f\n");
+	timer.PopAndDisplayTime("\nCalculate distance field: %.6lf\n");
 	/*
 	for (int i = 0; i < sizeOriginF.x; i++)
 		for (int j = 0; j < sizeOriginF.y; j++)
 			for (int k = 0; k < sizeOriginF.z; k++)
-				fprintf(fp , "(%.6f,%.6f,%.6f) , f = %.6f\n" , extXval[i] , extYval[j] , extZval[k] , originF[i][j][k]);
+				fprintf(fp , "(%.6lf,%.6lf,%.6lf) , f = %.6lf\n" , extXval[i] , extYval[j] , extZval[k] , originF[i][j][k]);
 	*/
 	//extXval.clear(); extYval.clear(); extZval.clear();
 }
@@ -519,12 +519,12 @@ void PointCloudUtils::gaussianSmooth(double*** &origin , double*** &f , double s
 
 	deallocate3(sf[1 - now] , sizeOriginF);
 
-	timer.PopAndDisplayTime("\nGaussian smooth: %.6f\n");
+	timer.PopAndDisplayTime("\nGaussian smooth: %.6lf\n");
 	/*
 	for (int i = 0; i < sizeOriginF.x; i++)
 		for (int j = 0; j < sizeOriginF.y; j++)
 			for (int k = 0; k < sizeOriginF.z; k++)
-				fprintf(fp , "(%.6f,%.6f,%.6f) , f = %.6lf\n" , extXval[i] , extYval[j] , extZval[k] , f[i][j][k]);
+				fprintf(fp , "(%.6lf,%.6lf,%.6lf) , f = %.6lf\n" , extXval[i] , extYval[j] , extZval[k] , f[i][j][k]);
 	*/
 }
 
@@ -604,7 +604,7 @@ void PointCloudUtils::calcTensorDecomposition(Tensor& ts)
 	for (int a = 0; a < 3; a++)
 	{
 		ts.eigenVal[a] = egval(t[a]);
-		ts.axis[a] = vec3f(egvec(0 , t[a]) , egvec(1 , t[a]) , egvec(2 , t[a]));
+		ts.axis[a] = vec3d(egvec(0 , t[a]) , egvec(1 , t[a]) , egvec(2 , t[a]));
 	}
 }
 
@@ -617,9 +617,9 @@ void PointCloudUtils::calcTensorMetric(Tensor& ts)
     
 	double s1 = ev[0] - ev[2];
 	double s2 = ev[1] - ev[2];
-	if (ev[0] < -1e-6f)
+	if (ev[0] < -EPS)
 		s1 = 0.0;
-	if (ev[1] < -1e-6f)
+	if (ev[1] < -EPS)
 		s2 = 0.0;
 
     double scale = 1.0 / (1.0 + alphaN * ev[0] * ev[1] * ev[2]);
@@ -669,7 +669,7 @@ void PointCloudUtils::calcTensorMetric(Tensor& ts)
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
-            writeLog("%.6f " , ts.tensor(i , j));
+            writeLog("%.6lf " , ts.tensor(i , j));
         writeLog("\n");
     }
     */
@@ -717,7 +717,7 @@ void PointCloudUtils::calcHessian(double*** &f)
             }
         }
     }
-	timer.PopAndDisplayTime("\nCalculate hessian: %.6f\n");
+	timer.PopAndDisplayTime("\nCalculate hessian: %.6lf\n");
 }
 
 void PointCloudUtils::calcMetric(double*** &f)
@@ -749,7 +749,7 @@ void PointCloudUtils::calcMetric(double*** &f)
 		}
 	}
 
-	timer.PopAndDisplayTime("\nCalculate metric: %.6f\n");
+	timer.PopAndDisplayTime("\nCalculate metric: %.6lf\n");
 
     /*
 	int step = 1;
@@ -777,7 +777,7 @@ int PointCloudUtils::grid2Index(const vec3i& gridPos)
 {
 	if (graphType != UNIFORM_GRAPH)
 	{
-		vec3f pos(xval[gridPos.x] , yval[gridPos.y] , zval[gridPos.z]);
+		vec3d pos(xval[gridPos.x] , yval[gridPos.y] , zval[gridPos.z]);
 		return point2Index[point2double(pos)];
 	}
 	else
@@ -796,7 +796,7 @@ vec3i PointCloudUtils::index2Grid(const int& index)
 	return res;
 }
 
-vec3i PointCloudUtils::nearestGridPoint(const vec3f& pos)
+vec3i PointCloudUtils::nearestGridPoint(const vec3d& pos)
 {
 	int xi = clampx((int)((pos.x - box.lb.x) / gridSize.x) , 0 , gridRes.x);
 	int yi = clampx((int)((pos.y - box.lb.y) / gridSize.y) , 0 , gridRes.y);
@@ -813,7 +813,7 @@ vec3i PointCloudUtils::nearestGridPoint(const vec3f& pos)
 				if (xi + i > gridRes.x || yi + j > gridRes.y || zi + k > gridRes.z)
 					continue;
 
-				double d = (vec3f(xval[xi + i] , yval[yi + j] , zval[zi + k]) - pos).length();
+				double d = (vec3d(xval[xi + i] , yval[yi + j] , zval[zi + k]) - pos).length();
 				if (d < min_d)
 				{
 					min_d = d;
@@ -829,25 +829,25 @@ vec3i PointCloudUtils::nearestGridPoint(const vec3f& pos)
 	return res;
 }
 
-float PointCloudUtils::calcEdgeWeight(const vec3f& _v , 
+double PointCloudUtils::calcEdgeWeight(const vec3d& _v , 
 	const Tensor& st , const Tensor& ed)
 {
-	//float len_v = _v.length();
-	//vec3f v = _v / len_v;
+	//double len_v = _v.length();
+	//vec3d v = _v / len_v;
 
     Vector3d dv(_v.x , _v.y , _v.z);
     
-    float w = 0.5f * (sqrt(dv.transpose() * st.tensor * dv) +
+    double w = 0.5 * (sqrt(dv.transpose() * st.tensor * dv) +
                       sqrt(dv.transpose() * ed.tensor * dv));
     /*
-	float cos_theta = std::min(1.f , std::abs(v.dot(st.axis[0])));
-	float sin_theta = sqrt(1.f - cos_theta * cos_theta);
-	vec3f v_proj = v - st.axis[0] * cos_theta;
+	double cos_theta = std::min(1.f , std::abs(v.dot(st.axis[0])));
+	double sin_theta = sqrt(1.f - cos_theta * cos_theta);
+	vec3d v_proj = v - st.axis[0] * cos_theta;
 	v_proj.normalize();
 
-	float cos_phi = std::min(1.f , std::abs(v_proj.dot(st.axis[1])));
-	float sin_phi = sqrt(1.f - cos_phi * cos_phi);
-	float w = sqrt(st.axisLen[0] * SQR(cos_theta) + 
+	double cos_phi = std::min(1.f , std::abs(v_proj.dot(st.axis[1])));
+	double sin_phi = sqrt(1.f - cos_phi * cos_phi);
+	double w = sqrt(st.axisLen[0] * SQR(cos_theta) + 
 		st.axisLen[1] * SQR(sin_theta * cos_phi) + 
 		st.axisLen[2] * SQR(sin_theta * sin_phi));
     
@@ -865,7 +865,7 @@ float PointCloudUtils::calcEdgeWeight(const vec3f& _v ,
 
 	w *= len_v * 0.5f;
     
-    writeLog("%.6f %.6f\n" , w , ww);
+    writeLog("%.6lf %.6lf\n" , w , ww);
     */
 	return w;
 }
@@ -899,9 +899,9 @@ void PointCloudUtils::buildGraphFromUniformGrid()
 							if (grid2Index(vec3i(i , j , k)) >= grid2Index(vec3i(ii , jj , kk)))
 								continue;
 
-							vec3f v = vec3f(xval[ii] , yval[jj] , zval[kk]) - 
-									  vec3f(xval[i] , yval[j] , zval[k]);
-							float w = calcEdgeWeight(v , tensor[i][j][k] , tensor[ii][jj][kk]);
+							vec3d v = vec3d(xval[ii] , yval[jj] , zval[kk]) - 
+									  vec3d(xval[i] , yval[j] , zval[k]);
+							double w = calcEdgeWeight(v , tensor[i][j][k] , tensor[ii][jj][kk]);
 
 							uniGraph[grid2Index(vec3i(i , j , k))].push_back(
 								Edge(grid2Index(vec3i(ii , jj , kk)) , w));
@@ -926,12 +926,12 @@ void PointCloudUtils::buildGraphFromUniformGrid()
 	{
 		fprintf(fp , "======== node #%d ========\n" , i);
 		vec3i grid = index2Grid(i);
-		vec3f st(xval[grid.x] , yval[grid.y] , zval[grid.z]);
+		vec3d st(xval[grid.x] , yval[grid.y] , zval[grid.z]);
 		for (int j = 0; j < uniGraph[i].size(); j++)
 		{
 			grid = index2Grid(uniGraph[i][j].y);
-			vec3f ed(xval[grid.x] , yval[grid.y] , zval[grid.z]);
-			fprintf(fp , "(%d->%d), (%.6f,%.6f,%.6f)->(%.6f,%.6f,%.6f) %.6f\n" , 
+			vec3d ed(xval[grid.x] , yval[grid.y] , zval[grid.z]);
+			fprintf(fp , "(%d->%d), (%.6lf,%.6lf,%.6lf)->(%.6lf,%.6lf,%.6lf) %.6lf\n" , 
 				i , uniGraph[i][j].y ,
 				st.x , st.y , st.z , ed.x , ed.y , ed.z , 
 				uniGraph[i][j].w);
@@ -960,14 +960,14 @@ void PointCloudUtils::buildGraphFromAdaptiveGrid()
 				{
 					if (di == 0 && dj == 0 && dk == 0)
 						continue;
-					vec3f pos = index2Point[i] + gridSize * vec3f(di , dj , dk);
+					vec3d pos = index2Point[i] + gridSize * vec3d(di , dj , dk);
 					double hashVal = point2double(pos);
 					if (point2Index.find(hashVal) == point2Index.end())
 						continue;
 					int j = point2Index[hashVal];
 					const Tensor* ed = index2Tensor[j];
-					vec3f v = pos - index2Point[i];
-					float w = calcEdgeWeight(v , *st , *ed);
+					vec3d v = pos - index2Point[i];
+					double w = calcEdgeWeight(v , *st , *ed);
 
 					adapGraph[i].push_back(Edge(j , w));
 					edges++;
@@ -985,7 +985,7 @@ void PointCloudUtils::buildGraphFromAdaptiveGrid()
 		for (int j = 0; j < adapGraph[i].size(); j++)
 		{
 			int y = adapGraph[i][j].y;
-			fprintf(fp , "(%d->%d): (%.6f,%.6f,%.6f)->(%.6f,%.6f,%.6f) %.6f\n" , i , adapGraph[i][j].y , 
+			fprintf(fp , "(%d->%d): (%.6lf,%.6lf,%.6lf)->(%.6lf,%.6lf,%.6lf) %.6lf\n" , i , adapGraph[i][j].y , 
 				index2Point[i].x , index2Point[i].y , index2Point[i].z ,
 				index2Point[y].x , index2Point[y].y , index2Point[y].z ,
 				adapGraph[i][j].w);
@@ -998,11 +998,11 @@ void PointCloudUtils::subdivision()
 {
 	timer.PushCurrentTime();
 
-	const vec3f dir[] = {vec3f(0,0,0.5), vec3f(0,0.5,0), vec3f(0,0.5,0.5),
-		vec3f(0,0.5,1), vec3f(0,1,0.5), vec3f(0.5,0,0), vec3f(0.5,0,0.5),
-		vec3f(0.5,0,1), vec3f(0.5,0.5,0), vec3f(0.5,0.5,0.5), vec3f(0.5,0.5,1),
-		vec3f(0.5,1,0), vec3f(0.5,1,0.5), vec3f(0.5,1,1), vec3f(1,0,0.5),
-		vec3f(1,0.5,0), vec3f(1,0.5,0.5), vec3f(1,0.5,1), vec3f(1,1,0.5)};
+	const vec3d dir[] = {vec3d(0,0,0.5), vec3d(0,0.5,0), vec3d(0,0.5,0.5),
+		vec3d(0,0.5,1), vec3d(0,1,0.5), vec3d(0.5,0,0), vec3d(0.5,0,0.5),
+		vec3d(0.5,0,1), vec3d(0.5,0.5,0), vec3d(0.5,0.5,0.5), vec3d(0.5,0.5,1),
+		vec3d(0.5,1,0), vec3d(0.5,1,0.5), vec3d(0.5,1,1), vec3d(1,0,0.5),
+		vec3d(1,0.5,0), vec3d(1,0.5,0.5), vec3d(1,0.5,1), vec3d(1,1,0.5)};
 
 	subdivNodes = 0;
 	subdivTensor.clear();
@@ -1017,10 +1017,10 @@ void PointCloudUtils::subdivision()
 				{
 					for (int p = 0; p < 19; p++)
 					{
-						const vec3f& v = dir[p];
+						const vec3d& v = dir[p];
 
 						// store point
-						vec3f pos = vec3f(xval[i] , yval[j] , zval[k]) + v * gridSize;
+						vec3d pos = vec3d(xval[i] , yval[j] , zval[k]) + v * gridSize;
 						double hashVal = point2double(pos);
 						if (point2Index.find(hashVal) != point2Index.end())
 							continue;
@@ -1055,12 +1055,12 @@ void PointCloudUtils::subdivision()
 	
 	printf("Subdivision nodes: %d\n" , subdivNodes);
 
-	timer.PopAndDisplayTime("\nSubdivision nodes and tensor: %.6f\n");
+	timer.PopAndDisplayTime("\nSubdivision nodes and tensor: %.6lf\n");
 	/*
 	for (int i = gridNodes; i < gridNodes + subdivNodes; i++)
 	{
 		fprintf(fp , "========%d=========\n" , i);
-		const vec3f& pos = index2Point[i];
+		const vec3d& pos = index2Point[i];
 		fprintf(fp , "------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
 
 		Tensor& ts = subdivTensor[i - gridNodes];
@@ -1101,7 +1101,7 @@ void PointCloudUtils::addSubdivisionEdges(Graph& g)
 				{
 					if (di == 0 && dj == 0 && dk == 0)
 						continue;
-					vec3f pos = index2Point[i] + gridSize * vec3f(di , dj , dk) * 0.5f;
+					vec3d pos = index2Point[i] + gridSize * vec3d(di , dj , dk) * 0.5;
 					double hashVal = point2double(pos);
 					if (point2Index.find(hashVal) == point2Index.end())
 						continue;
@@ -1109,8 +1109,8 @@ void PointCloudUtils::addSubdivisionEdges(Graph& g)
 					if (j >= i)
 						continue;
 					const Tensor* ed = index2Tensor[j];
-					vec3f v = pos - index2Point[i];
-					float w = calcEdgeWeight(v , *st , *ed);
+					vec3d v = pos - index2Point[i];
+					double w = calcEdgeWeight(v , *st , *ed);
 
 					g[i].push_back(Edge(j , w));
 					g[j].push_back(Edge(i , w));
@@ -1122,14 +1122,14 @@ void PointCloudUtils::addSubdivisionEdges(Graph& g)
 	}
 	printf("After subdivision, edges = %d\n" , edges);
 
-	timer.PopAndDisplayTime("\nAdd subdivision edges: %.6f\n");
+	timer.PopAndDisplayTime("\nAdd subdivision edges: %.6lf\n");
 	/*
 	for (int i = gridNodes; i < gridNodes + 10; i++)
 	{
 		fprintf(fp , "=====================\n");
 		for (int j = 0; j < g[i].size(); j++)
 		{
-			fprintf(fp , "(%d <-> %d), (%.6f,%.6f,%.6f) <-> (%.6f,%.6f,%.6f) : %.6f\n" , i , g[i][j].y , 
+			fprintf(fp , "(%d <-> %d), (%.6lf,%.6lf,%.6lf) <-> (%.6lf,%.6lf,%.6lf) : %.6lf\n" , i , g[i][j].y , 
 				index2Point[i].x , index2Point[i].y , index2Point[i].z ,
 				index2Point[g[i][j].y].x , index2Point[g[i][j].y].y , index2Point[g[i][j].y].z ,
 				g[i][j].w);
@@ -1138,9 +1138,9 @@ void PointCloudUtils::addSubdivisionEdges(Graph& g)
 	*/
 }
 
-Matrix3d PointCloudUtils::lerpHessian(const vec3f& pos)
+Matrix3d PointCloudUtils::lerpHessian(const vec3d& pos)
 {
-    vec3f leftBottom(extXval[0] , extYval[0] , extZval[0]);
+    vec3d leftBottom(extXval[0] , extYval[0] , extZval[0]);
     vec3i maxSize(sizeOriginF);
     int xi = clampx((int)((pos.x - leftBottom.x) / gridSize.x) , 1 , maxSize.x - 2);
     int yi = clampx((int)((pos.y - leftBottom.y) / gridSize.y) , 1 , maxSize.y - 2);
@@ -1169,9 +1169,9 @@ Matrix3d PointCloudUtils::lerpHessian(const vec3f& pos)
     return hesMat;
 }
 
-Matrix3d PointCloudUtils::lerpTensor(const vec3f &pos)
+Matrix3d PointCloudUtils::lerpTensor(const vec3d &pos)
 {
-    vec3f leftBottom(extXval[0] , extYval[0] , extZval[0]);
+    vec3d leftBottom(extXval[0] , extYval[0] , extZval[0]);
     vec3i maxSize(sizeOriginF);
     int xi = clampx((int)((pos.x - leftBottom.x) / gridSize.x) , 0 , maxSize.x - 1);
     int yi = clampx((int)((pos.y - leftBottom.y) / gridSize.y) , 0 , maxSize.y - 1);
@@ -1207,7 +1207,7 @@ Matrix3d PointCloudUtils::lerpTensor(const vec3f &pos)
         {
             printf("error: %.8f\n" , egval(i));
             printf("(%d,%d,%d)\n" , xi , yi , zi);
-            printf("(%.6f,%.6f,%.6f)\n" , v.x , v.y , v.z);
+            printf("(%.6lf,%.6lf,%.6lf)\n" , v.x , v.y , v.z);
         }
     }
     */
@@ -1222,9 +1222,10 @@ void PointCloudUtils::calcPointTensor()
     index2Point.clear();
     point2Index.clear();
     pointTensor.clear();
+    index2Tensor.clear();
 	for (int i = 0; i < pcData.size(); i++)
 	{
-		vec3f pos = pcData[i].pos;
+		vec3d pos = pcData[i].pos;
 
 		double hashVal = point2double(pos);
 		if (point2Index.find(hashVal) != point2Index.end())
@@ -1253,7 +1254,7 @@ void PointCloudUtils::calcPointTensor()
         {
             for (int j = 0; j < 3; j++)
             {
-                writeLog("%.6f " , ts.tensor(i , j));
+                writeLog("%.6lf " , ts.tensor(i , j));
             }
             writeLog("\n");
         }
@@ -1262,7 +1263,7 @@ void PointCloudUtils::calcPointTensor()
         {
             for (int j = 0; j < 3; j++)
             {
-                writeLog("%.6f " , tsx.tensor(i , j));
+                writeLog("%.6lf " , tsx.tensor(i , j));
             }
             writeLog("\n");
         }
@@ -1277,13 +1278,13 @@ void PointCloudUtils::calcPointTensor()
     {
         index2Tensor.push_back(&pointTensor[i]);
     }
-	timer.PopAndDisplayTime("\nInterpolate point tensors: %.6f\n");
+	timer.PopAndDisplayTime("\nInterpolate point tensors: %.6lf\n");
 	
     /*
 	for (int i = 0; i < nodes; i++)
 	{
 		writeLog("========%d=========\n" , i);
-		vec3f pos = index2Point[i];
+		vec3d pos = index2Point[i];
 		writeLog("------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
 
 		Tensor ts = pointTensor[i];
@@ -1299,7 +1300,7 @@ void PointCloudUtils::calcPointTensor()
         {
             for (int j = 0; j < 3; j++)
             {
-                writeLog("%.6f " , ts.tensor(i , j));
+                writeLog("%.6lf " , ts.tensor(i , j));
             }
             writeLog("\n");
         }
@@ -1326,15 +1327,15 @@ void PointCloudUtils::buildGraphFromPoints()
 			if (i == j)
 				continue;
             //Tensor& ed = pointTensor[j];
-			vec3f v = index2Point[j] - index2Point[i];
-			float w;
+			vec3d v = index2Point[j] - index2Point[i];
+			double w;
             w = calcEdgeWeight(v , pointTensor[i] , pointTensor[j]);
             //w = calcEdgeWeight(v , st , ed);
 			pointGraph[i].push_back(Edge(j , w));
 		}
 	}
 
-	timer.PopAndDisplayTime("\nBuild point graph: %.6f\n");
+	timer.PopAndDisplayTime("\nBuild point graph: %.6lf\n");
 
 /*
 	for (int i = 0; i < nodes; i++)
@@ -1343,7 +1344,7 @@ void PointCloudUtils::buildGraphFromPoints()
 		for (int k = 0; k < pointGraph[i].size(); k++)
 		{
 			Edge e = pointGraph[i][k];
-			fprintf(fp , "(%d->%d), (%.6f,%.6f,%.6f)->(%.6f,%.6f,%.6f): %.6f\n" ,
+			fprintf(fp , "(%d->%d), (%.6lf,%.6lf,%.6lf)->(%.6lf,%.6lf,%.6lf): %.6lf\n" ,
 				i , e.y , index2Point[i].x , index2Point[i].y , index2Point[i].z ,
 				index2Point[e.y].x , index2Point[e.y].y , index2Point[e.y].z , e.w);
 		}
@@ -1358,13 +1359,13 @@ bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
 	info.init(maxNodeNum);
 	Heap q(maxNodeNum);
 
-	info.dist[source] = 0.f;
-	q.push(source , 0.f);
+	info.dist[source] = 0.0;
+	q.push(source , 0.0);
 
 	while (!q.empty())
 	{
 		int now = q.top().index;
-		float d = q.top().key;
+		double d = q.top().key;
 
 		q.pop();
 
@@ -1385,7 +1386,7 @@ bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
 		}
 	}
 
-	if (sink != NULL && info.dist[*sink] > 1e20f)
+	if (sink != NULL && info.dist[*sink] > 1e20)
 		return 0;
 
 	return 1;
@@ -1408,11 +1409,11 @@ void PointCloudUtils::traceBack(const DijkstraInfo& info , const int& sink ,
 /*
 	seq.push_back(now);
 	
-	fprintf(fp , "===========%.6f=========\n" , info.dist[sink]);
+	fprintf(fp , "===========%.6lf=========\n" , info.dist[sink]);
 	
 	for (int i = (int)pathVertex.size() - 1; i >= 1; i--)
 	{
-		fprintf(fp , "(%.6f,%.6f,%.6f) -> (%.6f,%.6f,%.6f) , %.6f\n" , pathVertex[i].x , pathVertex[i].y , pathVertex[i].z ,
+		fprintf(fp , "(%.6lf,%.6lf,%.6lf) -> (%.6lf,%.6lf,%.6lf) , %.6lf\n" , pathVertex[i].x , pathVertex[i].y , pathVertex[i].z ,
 			pathVertex[i - 1].x , pathVertex[i - 1].y , pathVertex[i - 1].z , info.dist[seq[i - 1]] - info.dist[seq[i]]);
 	}
 	
@@ -1427,37 +1428,35 @@ void PointCloudUtils::laplacianSmooth(Path &path)
 #pragma omp parallel for
     for (int i = 1; i < path.size() - 1; i++)
     {
-        vec3f p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
-        vec3f v = (p - oldPath[i]) * pcRenderer->smoothScale;
+        vec3d p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5;
+        vec3d v = (p - oldPath[i]) * pcRenderer->smoothScale;
         path[i] = oldPath[i] + v;
     }
     path[0] = oldPath[0];
     path[path.size() - 1] = oldPath[path.size() - 1];
 }
 
-vec3d calcGradient(const vec3f& v , const Matrix3d& tensor)
+vec3d calcGradient(const vec3d& v , const Matrix3d& tensor)
 {
     Vector3d dv(v.x , v.y , v.z);
     Vector3d grad = tensor * dv;
     vec3d res(grad(0) , grad(1) , grad(2));
     res *= 0.5;
-    res /= sqrt(dv.transpose() * tensor * dv);
-    
+    double denom = sqrt(dv.transpose() * tensor * dv);
+    res /= denom;
     /*
-    double tp = (dv.transpose() * tensor * dv);
-    Matrix<double , 1 , 1> tmp = dv.transpose() * tensor * dv;
-    
-    if (sqrt(tp) < EPS)
+    if (denom < EPS)
     {
-        printf("calc gradient: %.8f, (%.8f,%.8f,%.8f)\n" , sqrt(tp) , res.x , res.y , res.z);
+        return vec3d(0.0);
+        printf("calc gradient: denom = %.8f, (%.8f,%.8f,%.8f)\n" , denom , res.x , res.y , res.z);
     }
     
-    printf("(%.6f,%.6f,%.6f) , %.8f\n" , v.x , v.y , v.z , tp);
+    printf("(%.6lf,%.6lf,%.6lf) , %.8f\n" , v.x , v.y , v.z , tp);
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
         {
-            printf("%.6f " , tensor(i , j));
+            printf("%.6lf " , tensor(i , j));
         }
         printf("\n");
     }
@@ -1465,11 +1464,17 @@ vec3d calcGradient(const vec3f& v , const Matrix3d& tensor)
     return res;
 }
 
-double calcAnisDist(const vec3f& pos1 , const Matrix3d& t1 , const vec3f& pos2 ,
-                   const Matrix3d& t2 , const vec3f& pos3 , const Matrix3d& t3)
+double calcAnisDist(const vec3d& v , const Matrix3d& ts)
+{
+    Vector3d dv(v.x , v.y , v.z);
+    return dv.transpose() * ts * dv;
+}
+
+double calcAnisDist(const vec3d& pos1 , const Matrix3d& t1 , const vec3d& pos2 ,
+                   const Matrix3d& t2 , const vec3d& pos3 , const Matrix3d& t3)
 {
     double res = 0.0;
-    vec3f v = pos2 - pos1;
+    vec3d v = pos2 - pos1;
     Vector3d dv(v.x , v.y , v.z);
     double tp = dv.transpose() * t1 * dv;
     res += sqrt(tp);
@@ -1485,7 +1490,7 @@ double calcAnisDist(const vec3f& pos1 , const Matrix3d& t1 , const vec3f& pos2 ,
     return res * 0.5;
 }
 
-Matrix3d lineSearchHessian(const vec3f& v , const Matrix3d& tensor)
+Matrix3d lineSearchHessian(const vec3d& v , const Matrix3d& tensor)
 {
     Matrix3d res;
     for (int i = 0; i < 3; i++)
@@ -1496,7 +1501,7 @@ Matrix3d lineSearchHessian(const vec3f& v , const Matrix3d& tensor)
     /*
     if (std::abs(denom) < EPS)
     {
-        printf("line search hessian: %.8lf\n" , denom);
+        //printf("line search hessian: %.8lf\n" , denom);
         return res;
     }
     */
@@ -1514,12 +1519,38 @@ Matrix3d lineSearchHessian(const vec3f& v , const Matrix3d& tensor)
                          0.5 * t1 * t2 / pow(denom , 1.5);
         }
     }
+    /*
+    if (std::abs(denom) < EPS)
+    {
+        printf("======= ill! line search hessian: %.8lf =======\n" , denom);
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                printf("%.8lf " , res(i , j));
+            }
+            printf("\n");
+        }
+    }
+    else
+    {
+        printf("======= normal! line search hessian: %.8lf =======\n" , denom);
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                printf("%.8lf " , res(i , j));
+            }
+            printf("\n");
+        }
+    }
+    */
     return res;
 }
 
-double lineSearch(const vec3d& d , const vec3f& pos1 , const Matrix3d& t1 ,
-                 const vec3f& pos2 , const Matrix3d& t2 ,
-                 const vec3f& pos3 , const Matrix3d& t3)
+double lineSearch(const vec3d& d , const vec3d& pos1 , const Matrix3d& t1 ,
+                 const vec3d& pos2 , const Matrix3d& t2 ,
+                 const vec3d& pos3 , const Matrix3d& t3)
 {
     vec3d grad = calcGradient(pos2 - pos1 , t1) +
         calcGradient(pos2 - pos1 , t2) + calcGradient(pos2 - pos3 , t2) +
@@ -1530,15 +1561,34 @@ double lineSearch(const vec3d& d , const vec3f& pos1 , const Matrix3d& t1 ,
         lineSearchHessian(pos2 - pos3 , t2) +
         lineSearchHessian(pos2 - pos3 , t3);
     Vector3d vd(d.x , d.y , d.z);
-    double res = -f1.dot(vd) / (vd.transpose() * f2 * vd);
+    double denom = vd.transpose() * f2 * vd;
+    double res = -f1.dot(vd) / denom;
     /*
-    double tmp = vd.transpose() * f2 * vd;
-    if (abs(tmp) < EPS)
+    if (abs(denom) < EPS)
     {
-        printf("line search: %.8lf, %.8lf\n" , res , tmp);
-        return 0.f;
+        return 0.0;
+        printf("line search: %.8lf, %.8lf\n" , res , denom);
     }
     */
+    return res;
+}
+
+double lineSearchSecant(const vec3d& d ,
+    const vec3d& pos1 , const Matrix3d& t1 ,
+    const vec3d& pos2 , const Matrix3d& t2 ,
+    const vec3d& pos3 , const Matrix3d& t3)
+{
+    vec3d grad = calcGradient(pos2 - pos1 , t1) +
+        calcGradient(pos2 - pos1 , t2) + calcGradient(pos2 - pos3 , t2) +
+        calcGradient(pos2 - pos3 , t3);
+    double sigma = 1e-4;
+    vec3d pos_prime = pos2 + d * sigma;
+    double res;
+    vec3d grad_prime = calcGradient(pos_prime - pos1 , t1) +
+        calcGradient(pos_prime - pos1 , t2) +
+        calcGradient(pos_prime - pos3 , t2) +
+        calcGradient(pos_prime - pos3 , t3);
+    res = -sigma * grad.dot(d) / (grad_prime.dot(d) - grad.dot(d));
     return res;
 }
 
@@ -1558,33 +1608,32 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
 //#pragma omp parallel for
     for (int i = 1; i < path.size() - 1; i++)
     {
-        vec3d grad_double(0.0);
-        vec3f v , p , mid;
+        vec3d grad(0.0);
+        vec3d v , p , mid;
         v = oldPath[i] - oldPath[i - 1];
-        grad_double += calcGradient(v , ts[i - 1]) +
+        grad += calcGradient(v , ts[i - 1]) +
             calcGradient(v , ts[i]);
 
         v = oldPath[i] - oldPath[i + 1];
-        grad_double += calcGradient(v , ts[i]) +
+        grad += calcGradient(v , ts[i]) +
             calcGradient(v , ts[i + 1]);
         
-        p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5f;
-        vec3f grad(grad_double.x , grad_double.y , grad_double.z);
+        p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5;
         
-        vec3f _p0 = oldPath[i] - grad / grad.length() * 0.0001f;
+        vec3d _p0 = oldPath[i] - grad / grad.length() * 0.0001;
         double _f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 _p0 , ts[i] , oldPath[i + 1] , ts[i + 1]);
-        vec3f _p1 = oldPath[i];
+        vec3d _p1 = oldPath[i];
         double _f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 _p1 , ts[i] , oldPath[i + 1] , ts[i + 1]);
-        vec3f _p2 = oldPath[i] + grad / grad.length() * 0.0001f;
+        vec3d _p2 = oldPath[i] + grad / grad.length() * 0.0001;
         double _f2 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 _p2 , ts[i] , oldPath[i + 1] , ts[i + 1]);
         /*
         double delta = 1e-4;
-        _p0 = oldPath[i] - vec3f(0 , 0 , delta);
+        _p0 = oldPath[i] - vec3d(0 , 0 , delta);
         _f0 = calcAnisDist(oldPath[i - 1], ts[i - 1], _p0, ts[i], oldPath[i + 1], ts[i + 1]);
-        _p1 = oldPath[i] + vec3f(0 , 0 , delta);
+        _p1 = oldPath[i] + vec3d(0 , 0 , delta);
         _f1 = calcAnisDist(oldPath[i - 1], ts[i - 1], _p1, ts[i], oldPath[i + 1], ts[i + 1]);
         double diff = (_f1 - _f0) / delta * 0.5;
         printf("%.8lf , %.8lf\n" , grad.z , diff);
@@ -1607,30 +1656,34 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
         */
         mid = p - oldPath[i];
         double len = mid.length();
-        grad /= grad_double.length();
-        vec3d d = -grad_double / grad_double.length();
-        double alpha = lineSearch(d , oldPath[i - 1] , ts[i - 1] , oldPath[i] ,
-                                 ts[i] , oldPath[i + 1] , ts[i + 1]);
-        /*
+        grad /= grad.length();
+        vec3d d = -grad;
+        double alpha = lineSearch(d , oldPath[i - 1] , ts[i - 1] ,
+            oldPath[i] , ts[i] , oldPath[i + 1] , ts[i + 1]);
+        //double alpha = lineSearchSecant(d , oldPath[i - 1] , ts[i - 1] ,
+        //    oldPath[i] , ts[i] , oldPath[i + 1] , ts[i + 1]);
+        
         if (!((_f0 < _f1) && (_f1 < _f2)))
             alpha = 0.0;
         
-        vec3f p0 = oldPath[i] - grad * alpha * 0.97f;
+        vec3d p0 = oldPath[i] - grad * alpha * 0.95;
         double f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 p0 , ts[i] , oldPath[i + 1] , ts[i + 1]);
-        vec3f p1 = oldPath[i] - grad * alpha;
+        vec3d p1 = oldPath[i] - grad * alpha;
         double f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 p1 , ts[i] , oldPath[i + 1] , ts[i + 1]);
-        vec3f p2 = oldPath[i] - grad * alpha * 1.03f;
+        vec3d p2 = oldPath[i] - grad * alpha * 1.05;
         double f2 = calcAnisDist(oldPath[i - 1] , ts[i - 1] ,
                                 p2 , ts[i] , oldPath[i + 1] , ts[i + 1]);
         if (f0 > f1 && f1 < f2)
-            printf("yes ");
+        {
+            printf("yes, alpha = %.8lf, f(-1)=%.8lf, f(0)=%.8lf, f(1)=%.8lf\n" , alpha , f0 , f1 , f2);
+        }
         else
-            printf("no ");
-        printf("alpha = %.8lf, f(-1)=%.8lf, f(0)=%.8lf, f(1)=%.8lf\n" , alpha ,
-               f0 , f1 , f2);
-        */
+        {
+            printf("no, alpha = %.8lf, f(-1)=%.8lf, f(0)=%.8lf, f(1)=%.8lf\n" , alpha , f0 , f1 , f2);
+        }
+        
         alpha = std::min(alpha , len);
         
         path[i] = oldPath[i] - grad * alpha * pcRenderer->smoothScale;
@@ -1642,20 +1695,20 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
     printf("========================\n");
     for (int i = 1; i < path.size() - 1; i++)
     {
-        vec3f grad(0.f) , v , p , mid;
+        vec3d grad(0.f) , v , p , mid;
         v = path[i] - path[i - 1];
         grad += calcGradient(v , ts[i - 1]) +
             calcGradient(v , ts[i]);
         v = path[i + 1] - path[i];
         grad += calcGradient(v , ts[i]) +
             calcGradient(v , ts[i + 1]);
-        printf("pos = (%.6f,%.6f,%.6f), grad = (%.6f,%.6f,%.6f), norm = %.6f\n" ,
+        printf("pos = (%.6lf,%.6lf,%.6lf), grad = (%.6lf,%.6lf,%.6lf), norm = %.6lf\n" ,
                path[i].x , path[i].y , path[i].z ,
                grad.x , grad.y , grad.z , grad.length());
         
-        float f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] , oldPath[i] ,
+        double f0 = calcAnisDist(oldPath[i - 1] , ts[i - 1] , oldPath[i] ,
                                 ts[i] , oldPath[i + 1] , ts[i + 1]);
-        float f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] , path[i] ,
+        double f1 = calcAnisDist(oldPath[i - 1] , ts[i - 1] , path[i] ,
                                 ts[i] , oldPath[i + 1] , ts[i + 1]);
         printf("prev f = %.8f , now f = %.8f\n" , f0 , f1);
     }

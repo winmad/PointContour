@@ -9,7 +9,7 @@ void CurveNet::clear()
     polyLinesIndex.clear();
 }
 
-void CurveNet::startPath(const vec3f& st)
+void CurveNet::startPath(const vec3d& st)
 {
     nodes.push_back(st);
     numNodes++;
@@ -17,7 +17,7 @@ void CurveNet::startPath(const vec3f& st)
     edges[numNodes - 1].clear();
 }
 
-void CurveNet::extendPath(const vec3f& st , const vec3f& ed ,
+void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
                           const Path& path)
 {
     int st_ni = getNodeIndex(st);
@@ -46,7 +46,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     int st_ni = index.ni[0] , st_ei = index.ei[0];
     int ed_ni = index.ni[1] , ed_ei = index.ei[1];
     
-    vec3f breakPos = polyLines[breakLine][breakPoint];
+    vec3d breakPos = polyLines[breakLine][breakPoint];
     int mid_ni = getNodeIndex(breakPos);
 
     if (!isEqual(nodes[st_ni] , polyLines[breakLine][0]))
@@ -77,7 +77,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     numPolyLines++;
 }
 
-int CurveNet::getNodeIndex(const vec3f& pos)
+int CurveNet::getNodeIndex(const vec3d& pos)
 {
     for (int i = 0; i < numNodes; i++)
         if (isEqual(pos , nodes[i]))
@@ -88,21 +88,21 @@ int CurveNet::getNodeIndex(const vec3f& pos)
 void CurveNet::test()
 {
     clear();
-    startPath(vec3f(0 , 0 , 0));
+    startPath(vec3d(0 , 0 , 0));
     Path path;
     for (int i = 0; i <= 10; i++)
     {
-        path.push_back(vec3f(i , 0 , 0));
+        path.push_back(vec3d(i , 0 , 0));
     }
-    extendPath(vec3f(0 , 0 , 0) , vec3f(10 , 0 , 0) , path);
+    extendPath(vec3d(0 , 0 , 0) , vec3d(10 , 0 , 0) , path);
     
-    startPath(vec3f(5 , 2 , 0));
+    startPath(vec3d(5 , 2 , 0));
     path.clear();
     for (int i = 2; i >= 0; i--)
     {
-        path.push_back(vec3f(5 , i , 0));
+        path.push_back(vec3d(5 , i , 0));
     }
-    extendPath(vec3f(5 , 2 , 0) , vec3f(5 , 0 , 0) , path);
+    extendPath(vec3d(5 , 2 , 0) , vec3d(5 , 0 , 0) , path);
     breakPath(0 , 5);
     
     debugLog();

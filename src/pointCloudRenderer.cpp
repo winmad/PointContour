@@ -19,9 +19,9 @@ void PointCloudRenderer::init()
 	axisU.clear();
 	axisV.clear();
 
-	discRenderBaseRadius = discRenderRadiusScale = 0.005f;
-	hessianRenderBaseLength = hessianRenderLengthScale = 0.001f;
-	metricRenderBaseLength = metricRenderLengthScale = 0.005f;
+	discRenderBaseRadius = discRenderRadiusScale = 0.005;
+	hessianRenderBaseLength = hessianRenderLengthScale = 0.001;
+	metricRenderBaseLength = metricRenderLengthScale = 0.005;
 
 	windowSizeX = windowSizeY = 0;
 	rgbBuffer = NULL;
@@ -36,12 +36,12 @@ void PointCloudRenderer::init()
 	isNormalInfo = true;
 	for (int i = 0; i < pcUtils->pcData.size(); i++)
 	{
-		if (pcUtils->pcData[i].n.length() < 0.5f)
+		if (pcUtils->pcData[i].n.length() < 0.5)
 		{
 			isNormalInfo = false;
 			break;
 		}
-		vec3f a , b;
+		vec3d a , b;
 		if (std::abs(pcUtils->pcData[i].n.x) < 0.999)
 		{
 			a.x = 0;
@@ -61,8 +61,8 @@ void PointCloudRenderer::init()
 		axisV.push_back(b);
 	}
 	
-	vec3f diag = pcUtils->box.rt - pcUtils->box.lb;
-	selectionOffset = std::min(diag.x , std::min(diag.y , diag.z)) / 40.f;
+	vec3d diag = pcUtils->box.rt - pcUtils->box.lb;
+	selectionOffset = std::min(diag.x , std::min(diag.y , diag.z)) / 40.0;
 
 	initSelectionBuffer();
 
@@ -74,7 +74,7 @@ void PointCloudRenderer::init()
         pathForComp[i].clear();
 }
 
-void PointCloudRenderer::drawPoint(const vec3f& pos)
+void PointCloudRenderer::drawPoint(const vec3d& pos)
 {
 	glBegin(GL_POINTS);
 	glVertex3f(pos.x , pos.y , pos.z);
@@ -92,28 +92,28 @@ void PointCloudRenderer::drawPoints()
 	glEnd();
 }
 
-void PointCloudRenderer::drawCircle(const vec3f& origin , const vec3f& a , const vec3f& b , 
-	const float& r)
+void PointCloudRenderer::drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , 
+	const double& r)
 {
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex3f(origin.x , origin.y , origin.z);
 	for (int i = 0; i <= 36; i+=9)
 	{
-		vec3f p = origin + a * r * cos36[i % 36] + b * r * sin36[i % 36];
+		vec3d p = origin + a * r * cos36[i % 36] + b * r * sin36[i % 36];
 		glVertex3f(p.x , p.y , p.z);
 	}
 	glEnd();
 }
 
-void PointCloudRenderer::drawCircle(const vec3f& origin , const vec3f& a , const vec3f& b , 
-	const float& r , const vec3f& n)
+void PointCloudRenderer::drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , 
+	const double& r , const vec3d& n)
 {
 	glBegin(GL_TRIANGLE_FAN);
 	glNormal3f(n.x , n.y , n.z);
 	glVertex3f(origin.x , origin.y , origin.z);
 	for (int i = 0; i <= 36; i+=9)
 	{
-		vec3f p = origin + a * r * cos36[i % 36] + b * r * sin36[i % 36];
+		vec3d p = origin + a * r * cos36[i % 36] + b * r * sin36[i % 36];
 		glNormal3f(n.x , n.y , n.z);
 		glVertex3f(p.x , p.y , p.z);
 	}
@@ -130,7 +130,7 @@ void PointCloudRenderer::drawLines(const Path& v)
 	glEnd();
 }
 
-void PointCloudRenderer::drawCube(const vec3f& lb , const vec3f& rt)
+void PointCloudRenderer::drawCube(const vec3d& lb , const vec3d& rt)
 {
 	glBegin(GL_LINES);
 	glVertex3f(lb.x , lb.y , lb.z);
@@ -167,25 +167,25 @@ void PointCloudRenderer::drawCube(const vec3f& lb , const vec3f& rt)
 	glEnd();
 }
 
-void PointCloudRenderer::drawEllipse(const vec3f& origin , 
-									 const vec3f& majorAxis , const float& majorLen , 
-									 const vec3f& minorAxis , const float& minorLen)
+void PointCloudRenderer::drawEllipse(const vec3d& origin , 
+									 const vec3d& majorAxis , const double& majorLen , 
+									 const vec3d& minorAxis , const double& minorLen)
 {
-	vec3f n = majorAxis.cross(minorAxis);
+	vec3d n = majorAxis.cross(minorAxis);
 	glBegin(GL_POLYGON);
 	for (unsigned i = 0; i < 36; i++) 
 	{
-		vec3f p = origin + cos36[i] * majorAxis * majorLen + sin36[i] * minorAxis * minorLen;
+		vec3d p = origin + cos36[i] * majorAxis * majorLen + sin36[i] * minorAxis * minorLen;
 		glNormal3d(n.x,n.y,n.z);
 		glVertex3d(p.x,p.y,p.z);
 	}
 	glEnd();
 }
 
-void PointCloudRenderer::drawEllipsoid(const vec3f& origin , 
-									   const vec3f& a , const float& la , 
-									   const vec3f& b , const float& lb , 
-									   const vec3f& c , const float& lc)
+void PointCloudRenderer::drawEllipsoid(const vec3d& origin , 
+									   const vec3d& a , const double& la , 
+									   const vec3d& b , const double& lb , 
+									   const vec3d& c , const double& lc)
 {
 	for (int i = 0; i < 18; i+=2)
 	{
@@ -194,9 +194,9 @@ void PointCloudRenderer::drawEllipsoid(const vec3f& origin ,
 		for (int j = 0; j <= 36; j+=2)
 		{
 			int s = j % 36;
-			vec3f p1 = origin + a * la * sin36[t] * cos36[s] + 
+			vec3d p1 = origin + a * la * sin36[t] * cos36[s] + 
 				b * lb * sin36[t] * sin36[s] + c * lc * cos36[t];
-			vec3f p2 = origin + a * la * sin36[(t + 2) % 36] * cos36[s] +
+			vec3d p2 = origin + a * la * sin36[(t + 2) % 36] * cos36[s] +
 				b * lb * sin36[(t + 2) % 36] * sin36[s] + c * lc * cos36[(t + 2) % 36];
 
 			glVertex3f(p1.x , p1.y , p1.z);
@@ -275,8 +275,8 @@ void PointCloudRenderer::renderUniformGrid()
 		{
 			for (int k = 0; k < pcUtils->gridRes.z; k++)
 			{
-				vec3f lb(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
-				vec3f rt = lb + pcUtils->gridSize;
+				vec3d lb(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
+				vec3d rt = lb + pcUtils->gridSize;
 				drawCube(lb , rt);
 			}
 		}
@@ -303,8 +303,8 @@ void PointCloudRenderer::renderAdaptiveGrid()
 			{
 				if (pcUtils->isPointInside[i][j][k] == 0)
 					continue;
-				vec3f lb(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
-				vec3f rt = lb + pcUtils->gridSize;
+				vec3d lb(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
+				vec3d rt = lb + pcUtils->gridSize;
 
 				glColor3f(0.1f , 1.f , 0.1f);
 				drawCube(lb , rt);
@@ -335,9 +335,9 @@ void PointCloudRenderer::renderHessian()
 		{
 			for (int k = st; k <= pcUtils->gridRes.z; k += delta.z)
 			{
-				vec3f origin(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
-				vec3f u , v , w;
-				float lu , lv , lw;
+				vec3d origin(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
+				vec3d u , v , w;
+				double lu , lv , lw;
 				u = pcUtils->tensor[i][j][k].axis[0];
 				v = pcUtils->tensor[i][j][k].axis[1];
 				w = pcUtils->tensor[i][j][k].axis[2];
@@ -371,9 +371,9 @@ void PointCloudRenderer::renderMetric()
 		{
 			for (int k = st; k <= pcUtils->gridRes.z; k += delta.z)
 			{
-				vec3f origin(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
-				vec3f u , v , w;
-				float lu , lv , lw;
+				vec3d origin(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
+				vec3d u , v , w;
+				double lu , lv , lw;
 				u = pcUtils->tensor[i][j][k].axis[0];
 				v = pcUtils->tensor[i][j][k].axis[1];
 				w = pcUtils->tensor[i][j][k].axis[2];
@@ -399,7 +399,7 @@ void PointCloudRenderer::renderSelectedPoints()
 	{
 		glColor3f(0.f , 1.f , 0.f);
 		vec3i gridPos = pcUtils->nearestGridPoint(*pickedPoint);
-		drawPoint(vec3f(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]));
+		drawPoint(vec3d(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]));
 	}
 
 	if (lastPoint != NULL)
@@ -587,13 +587,13 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 	{
 		pickedPoint = &pcUtils->pcData[selectedObj].pos;
 		vec3i gridPos;
-		vec3f pos;
+		vec3d pos;
 		int edi;
         
         if (pcUtils->graphType != PointCloudUtils::POINT_GRAPH)
 		{
 			gridPos = pcUtils->nearestGridPoint(*pickedPoint);
-			pos = vec3f(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
+			pos = vec3d(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
 		}
 		else
 		{
@@ -603,14 +603,14 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
         // snapping when it is near curve
         bool isSnap = false;
         int breakLine , breakPoint;
-        float min_dist = 1e20f;
+        double min_dist = 1e20f;
         CurveNet& curveNet = pcUtils->curveNet;
         
         for (int i = 0; i < curveNet.numPolyLines; i++)
         {
             for (int j = 0; j < curveNet.polyLines[i].size(); j++)
             {
-                float tmp = (pos - curveNet.polyLines[i][j]).length();
+                double tmp = (pos - curveNet.polyLines[i][j]).length();
                 if (tmp < min_dist)
                 {
                     min_dist = tmp;
@@ -631,7 +631,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 		if (pcUtils->graphType != PointCloudUtils::POINT_GRAPH)
 		{
 			//gridPos = pcUtils->nearestGridPoint(*pickedPoint);
-			//pos = vec3f(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
+			//pos = vec3d(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
 			edi = pcUtils->grid2Index(gridPos);
             *pickedPoint = pos;
 		}

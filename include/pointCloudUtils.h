@@ -21,21 +21,21 @@ using namespace Eigen;
 
 struct BBox
 {
-	vec3f lb , rt;
+	vec3d lb , rt;
 };
 
 struct Data
 {
-	vec3f pos;
-	vec3f n;
+	vec3d pos;
+	vec3d n;
 };
 
 struct DistQuery
 {
-    float maxSqrDis;
-    vec3f nearest;
+    double maxSqrDis;
+    vec3d nearest;
 
-    void process(Data* d , float& dist2)
+    void process(Data* d , double& dist2)
     {
         nearest = d->pos;
         maxSqrDis = dist2;
@@ -46,7 +46,7 @@ struct Tensor
 {
 	Matrix3d hessian;
     Matrix3d tensor;
-	vec3f axis[3];
+	vec3d axis[3];
 	double eigenVal[3];
 	double axisLen[3];
 
@@ -81,17 +81,17 @@ struct Tensor
 struct Edge
 {
 	int y;
-	float w;
+	double w;
 	Edge() {}
-	Edge(const int& y , const float& w) : y(y) , w(w) {}
+	Edge(const int& y , const double& w) : y(y) , w(w) {}
 };
 
 struct ClosePoint
 {
 	const Data *point;
-	float sqrDis;
+	double sqrDis;
 
-	ClosePoint(const Data *p = NULL , float _sqrDis = 1e20f)
+	ClosePoint(const Data *p = NULL , double _sqrDis = 1e20f)
 	{
 		point = p;
 		sqrDis = _sqrDis;
@@ -108,7 +108,7 @@ struct KnnQuery
 {
 	int KNN;
 	vector<ClosePoint> knnPoints;
-	float maxSqrDis;
+	double maxSqrDis;
 
 	KnnQuery(int _KNN)
 	{
@@ -140,7 +140,7 @@ struct KnnQuery
 
 struct DijkstraInfo
 {
-	std::vector<float> dist;
+	std::vector<double> dist;
 	std::vector<int> prev;
 
 	DijkstraInfo() {}
@@ -175,7 +175,7 @@ public:
 
 	vec3i gridRes;
 	vec3i gridResx;
-	vec3f gridSize;
+	vec3d gridSize;
 
 	int*** isPointInside;
 
@@ -198,7 +198,7 @@ public:
 
 	int nodes , edges;
 	std::map<double , int> point2Index;
-	std::vector<vec3f> index2Point;
+	std::vector<vec3d> index2Point;
 	std::vector<Tensor*> index2Tensor;
 	int gridNodes , subdivNodes;
 	std::vector<Tensor> subdivTensor;
@@ -253,15 +253,15 @@ public:
 	void calcTensorDecomposition(Tensor& ts);
 	void calcTensorMetric(Tensor& ts);
 
-	float calcEdgeWeight(const vec3f& v , const Tensor& st , const Tensor& ed);
+	double calcEdgeWeight(const vec3d& v , const Tensor& st , const Tensor& ed);
 	void buildGraphFromUniformGrid();
 	void buildGraphFromAdaptiveGrid();
 
 	void subdivision();
 	void addSubdivisionEdges(Graph& g);
 
-    Matrix3d lerpHessian(const vec3f& pos);
-    Matrix3d lerpTensor(const vec3f& pos);
+    Matrix3d lerpHessian(const vec3d& pos);
+    Matrix3d lerpTensor(const vec3d& pos);
 	void calcPointTensor();
 	void buildGraphFromPoints();
 
@@ -272,7 +272,7 @@ public:
 
 	int grid2Index(const vec3i& gridPos);
 	vec3i index2Grid(const int& index);
-	vec3i nearestGridPoint(const vec3f& pos);
+	vec3i nearestGridPoint(const vec3d& pos);
 
     void laplacianSmooth(Path& path);
     void gradientDescentSmooth(Path& path);

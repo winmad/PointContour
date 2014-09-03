@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
-typedef float Real;
-typedef nv::vec3f Vector3;
+typedef double Real;
+typedef nv::vec3d Vector3;
 
 #define INF std::numeric_limits<float>::infinity()
 

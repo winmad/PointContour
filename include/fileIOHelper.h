@@ -29,7 +29,6 @@
 
 using namespace std;
 
-
 #define MAX_LINE_LENGTH 2048 // used in the maya file reader
 
 
@@ -43,12 +42,12 @@ public:
 
 	bool readPointCloudDataNpts(
 		const char* fileName,
-		std::vector<vec3f>& points,
-		std::vector<vec3f>& normals);
+		std::vector<vec3d>& points,
+		std::vector<vec3d>& normals);
 
 	bool readPointCloudDataPly(
 		const char* fileName,
-		std::vector<vec3f>& points);
+		std::vector<vec3d>& points);
 };
 
 #endif
