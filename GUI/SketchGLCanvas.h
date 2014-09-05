@@ -1,5 +1,5 @@
 #pragma once
-#include "wx/wxprec.h"
+#include "wx/wx.h"
 #include "wx/app.h"
 #include "wx/defs.h"
 #include "wx/frame.h"

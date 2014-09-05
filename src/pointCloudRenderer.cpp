@@ -1,4 +1,6 @@
+#define _WCHAR_H_CPLUSPLUS_98_CONFORMANCE_
 #include <GL/glut.h>
+#include "curveNet.h"
 #include "pointCloudUtils.h"
 #include "pointCloudRenderer.h"
 #include "nvVector.h"
@@ -284,36 +286,6 @@ void PointCloudRenderer::renderUniformGrid()
 	glDisable(GL_LINE_STIPPLE);
 }
 
-void PointCloudRenderer::renderAdaptiveGrid()
-{
-	if (pcUtils == NULL)
-		return;
-	if (!isShowAdaptiveGrid)
-		return;
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glEnable(GL_LINE_STIPPLE);
-	glLineStipple(2, 0x4444);
-	glLineWidth(0.5f);
-	for (int i = 0; i < pcUtils->gridRes.x; i++)
-	{
-		for (int j = 0; j < pcUtils->gridRes.y; j++)
-		{
-			for (int k = 0; k < pcUtils->gridRes.z; k++)
-			{
-				if (pcUtils->isPointInside[i][j][k] == 0)
-					continue;
-				vec3d lb(pcUtils->xval[i] , pcUtils->yval[j] , pcUtils->zval[k]);
-				vec3d rt = lb + pcUtils->gridSize;
-
-				glColor3f(0.1f , 1.f , 0.1f);
-				drawCube(lb , rt);
-			}
-		}
-	}
-	glDisable(GL_LINE_STIPPLE);
-}
-
 void PointCloudRenderer::renderHessian()
 {
 	if (pcUtils == NULL)
@@ -398,8 +370,7 @@ void PointCloudRenderer::renderSelectedPoints()
 	if (pickedPoint != NULL)
 	{
 		glColor3f(0.f , 1.f , 0.f);
-		vec3i gridPos = pcUtils->nearestGridPoint(*pickedPoint);
-		drawPoint(vec3d(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]));
+        drawPoint(*pickedPoint);
 	}
 
 	if (lastPoint != NULL)
@@ -457,7 +428,6 @@ void PointCloudRenderer::renderPathForComp()
 void PointCloudRenderer::render()
 {
 	renderPointCloud();
-	renderAdaptiveGrid();
 	renderHessian();
 	renderMetric();
 	renderSelectedPoints();
@@ -590,27 +560,18 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 		vec3d pos;
 		int edi;
         
-        if (pcUtils->graphType != PointCloudUtils::POINT_GRAPH)
-		{
-			gridPos = pcUtils->nearestGridPoint(*pickedPoint);
-			pos = vec3d(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
-		}
-		else
-		{
-			pos = *pickedPoint;
-		}
-
+        pos = *pickedPoint;
+		
         // snapping when it is near curve
         bool isSnap = false;
         int breakLine , breakPoint;
-        double min_dist = 1e20f;
-        CurveNet& curveNet = pcUtils->curveNet;
+        double min_dist = 1e20;
         
-        for (int i = 0; i < curveNet.numPolyLines; i++)
+        for (int i = 0; i < curveNet->numPolyLines; i++)
         {
-            for (int j = 0; j < curveNet.polyLines[i].size(); j++)
+            for (int j = 0; j < curveNet->polyLines[i].size(); j++)
             {
-                double tmp = (pos - curveNet.polyLines[i][j]).length();
+                double tmp = (pos - curveNet->polyLines[i][j]).length();
                 if (tmp < min_dist)
                 {
                     min_dist = tmp;
@@ -619,34 +580,26 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 }
             }
         }
-        
-        if (min_dist < selectionOffset)
+
+        double snapOffset = selectionOffset;
+        if (isSnap && (breakPoint == 0 || breakPoint == (int)curveNet->polyLines[breakLine].size() - 1))
         {
-            pos = curveNet.polyLines[breakLine][breakPoint];
+            snapOffset *= 2.0;
+        }
+        
+        if (min_dist < snapOffset)
+        {
+            pos = curveNet->polyLines[breakLine][breakPoint];
             *pickedPoint = pos;
             isSnap = true;
             //printf("snap!\n");
         }
         
-		if (pcUtils->graphType != PointCloudUtils::POINT_GRAPH)
-		{
-			//gridPos = pcUtils->nearestGridPoint(*pickedPoint);
-			//pos = vec3d(pcUtils->xval[gridPos.x] , pcUtils->yval[gridPos.y] , pcUtils->zval[gridPos.z]);
-			edi = pcUtils->grid2Index(gridPos);
-            *pickedPoint = pos;
-		}
-		else
-		{
-			edi = pcUtils->point2Index[point2double(pos)];
-		}
-        
+		edi = pcUtils->point2Index[point2double(pos)];
+		        
 		if (lastPoint != NULL)
 		{
-			if (pcUtils->graphType == PointCloudUtils::ADAPTIVE_GRAPH)
-				pcUtils->traceBack(pcUtils->adapGraphInfo , edi , pathVertex);
-			else if (pcUtils->graphType == PointCloudUtils::UNIFORM_GRAPH)
-				pcUtils->traceBack(pcUtils->uniGraphInfo , edi , pathVertex);
-			else if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+			if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
 				pcUtils->traceBack(pcUtils->pointGraphInfo , edi , pathVertex);
             /*
             writeLog("---------before smoothing------------\n");
@@ -692,19 +645,19 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             
             if (lastPoint == NULL)
             {
-                curveNet.startPath(pos);
+                curveNet->startPath(pos);
             }
             else
             {
-                curveNet.extendPath(*lastPoint , pos , pathForComp[0]);
+                curveNet->extendPath(*lastPoint , pos , pathForComp[0]);
                 if (isSnap)
                 {
-                    curveNet.breakPath(breakLine , breakPoint);
+                    curveNet->breakPath(breakLine , breakPoint);
                     //printf("snap!\n");
                 }
             }
             
-            curveNet.debugLog();
+            curveNet->debugLog();
             
 			sti = edi;
 
@@ -713,11 +666,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 				storedPaths.push_back(pathVertex);
 			}
             
-			if (pcUtils->graphType == PointCloudUtils::ADAPTIVE_GRAPH)
-				pcUtils->dijkstra(pcUtils->adapGraph , sti , pcUtils->adapGraphInfo);
-			else if (pcUtils->graphType == PointCloudUtils::UNIFORM_GRAPH)
-				pcUtils->dijkstra(pcUtils->uniGraph , sti , pcUtils->uniGraphInfo);
-			else if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+			if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
 				pcUtils->dijkstra(pcUtils->pointGraph , sti , pcUtils->pointGraphInfo);
 
 			lastPoint = &selectedPoints[selectedPoints.size() - 1];
@@ -738,4 +687,6 @@ void PointCloudRenderer::clearPaths()
         pathForComp[i].clear();
 	pickedPoint = NULL;
 	lastPoint = NULL;
+    
+    curveNet->clear();
 }

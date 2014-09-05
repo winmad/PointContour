@@ -425,6 +425,10 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 	{ 
 		m_pcUtils->pcRenderer->isCtrlPress = false; 
 	}
+    if (!event.AltDown())
+    {
+        m_pcUtils->pcRenderer->isAltPress = false;
+    }
 
 	if(!event.ControlDown() && !event.ShiftDown() ){startDraw=false;}
 
@@ -504,17 +508,20 @@ void SketchGLCanvas::OnSize ( wxSizeEvent &event )
 void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 {
 	int keycode = event.m_keyCode;
-	if ( keycode == 127){
+    // delete
+	if (keycode == 127){
+        m_pcUtils->pcRenderer->clearPaths();
+        /*
 		if(lastKeyBoard==0){
 			lastKeyBoard=-1;
 		}
 		else if(lastKeyBoard==1){
-			m_pcUtils->pcRenderer->clearPaths();
 			lastKeyBoard=-1;
 		}
 		else if(lastKeyBoard==2){
 			//lastKeyBoard=-1;
 		}
+        */
 		Render();
 	}
 

@@ -6,6 +6,7 @@
 #include <vector>
 
 class PointCloudUtils;
+class CurveNet;
 struct DijkstraInfo;
 
 class PointCloudRenderer
@@ -67,7 +68,6 @@ public:
 	void renderSurfelDisc();
 	void renderPointCloud();
 	void renderUniformGrid();
-	void renderAdaptiveGrid();
 	void renderHessian();
 	void renderMetric();
 	void renderSelectedPoints();
@@ -91,6 +91,7 @@ public:
 
 	bool isNormalInfo;
 	PointCloudUtils *pcUtils;
+    CurveNet *curveNet;
 	std::vector<vec3d> axisU , axisV;
 
 	std::vector<vec3d> selectedPoints;

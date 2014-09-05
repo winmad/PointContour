@@ -16,11 +16,13 @@ set(CMAKE_CXX_COMPILER "/Users/Winmad/llvm/build/Debug+Asserts/bin/clang2++")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -std=c++11")
 set(CXX_DEBUG -O2)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_DEBUG} -fopenmp -stdlib=libc++ -I/Users/Winmad/wxWidgets-3.0.1/build-osx/lib/wx/include/osx_cocoa-unicode-static-3.0 -I/Users/Winmad/wxWidgets-3.0.1/include -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX__ -D__WXOSX_COCOA__")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_DEBUG} -fopenmp -stdlib=libc++ -I/Users/Winmad/wxWidgets-3.0.1/build-osx/lib/wx/include/osx_cocoa-unicode-static-3.0 -I/Users/Winmad/wxWidgets-3.0.1/include")
 set(CMAKE_LINK_FLAGS "-framework IOKit -framework Carbon -framework Cocoa -framework AudioToolbox -framework System -framework OpenGL -framework AGL -lpng -lz -ljpeg -ltiff -framework WebKit -lwxregexu-3.0 -lz -lpthread -liconv")
 
 set(OPENMP_INCLUDE_DIRS "~/Intel-OpenMP/libomp_oss/exports/common/include")
 set(OPENMP_LIBRARY_DIRS "~/Intel-OpenMP/libomp_oss/exports/mac_32e/lib.thin/")
+
+add_definitions(-D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX__ -D__WXOSX_COCOA__)
 
 include_directories(
   ${OPENGL_INCLUDE_DIRS}

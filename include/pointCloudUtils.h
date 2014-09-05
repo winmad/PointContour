@@ -187,36 +187,30 @@ public:
 	std::vector<double> extXval , extYval , extZval;
 
 	double*** f;
-	//double*** df[3];
 	double*** ddf[3][3];
 	Tensor*** tensor;
 	double alpha1 , alpha2 , alphaN;
 
 	GraphType graphType;
-	int maxGridLength;
-	int bandwidth;
 
 	int nodes , edges;
 	std::map<double , int> point2Index;
 	std::vector<vec3d> index2Point;
 	std::vector<Tensor*> index2Tensor;
-	int gridNodes , subdivNodes;
-	std::vector<Tensor> subdivTensor;
 	std::vector<Tensor> pointTensor;
 
-	Graph uniGraph;
-	Graph adapGraph;
 	Graph pointGraph;
-	DijkstraInfo uniGraphInfo;
-	DijkstraInfo adapGraphInfo;
 	DijkstraInfo pointGraphInfo;
     
-    CurveNet curveNet;
-	
 	TimeManager timer;
 
 	wxString m_fileName;
 	wxStatusBar *statusBar;
+
+    // visualization
+	PointCloudRenderer *pcRenderer;
+    // curve network
+    CurveNet *curveNet;
 
 public:
 	PointCloudUtils();
@@ -229,22 +223,16 @@ public:
                     const double& _alphaN);
 
 	void getBBox();
-
-	// must be power of 2
+    
 	void buildUniformGrid(vec3i size);
 	void allocateMemory(vec3i resol , int extra);
 	void deallocateMemory(vec3i resol , int extra);
-
-	void buildAdaptiveGrid();	
-	void genNarrowBand();
 
 	void calcDistField();
 
 	// filter diameter \approx stddev * 6 
 	void gaussianSmooth(double***& origin , double*** &f , double stddev);
 
-	void calcFirstOrderDerivative(double*** &f , const int& dir ,
-						double*** &df);
 	void calcSecondOrderDerivative(double*** &f , int d1 , int d2 ,
 							       double*** &ddf);
 
@@ -254,12 +242,7 @@ public:
 	void calcTensorMetric(Tensor& ts);
 
 	double calcEdgeWeight(const vec3d& v , const Tensor& st , const Tensor& ed);
-	void buildGraphFromUniformGrid();
-	void buildGraphFromAdaptiveGrid();
-
-	void subdivision();
-	void addSubdivisionEdges(Graph& g);
-
+	
     Matrix3d lerpHessian(const vec3d& pos);
     Matrix3d lerpTensor(const vec3d& pos);
 	void calcPointTensor();
@@ -270,15 +253,8 @@ public:
 	void traceBack(const DijkstraInfo& info , const int& sink ,
 				   Path& pathVertex);
 
-	int grid2Index(const vec3i& gridPos);
-	vec3i index2Grid(const int& index);
-	vec3i nearestGridPoint(const vec3d& pos);
-
     void laplacianSmooth(Path& path);
     void gradientDescentSmooth(Path& path);
-    
-	// visualization
-	PointCloudRenderer *pcRenderer;
 };
 
 #endif

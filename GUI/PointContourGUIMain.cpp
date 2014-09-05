@@ -7,11 +7,11 @@
  * License:
  **************************************************************/
 
-#include "wx_pch.h"
 #include "SketchGLCanvas.h"
 #include "PointContourGUIMain.h"
 #include "pointCloudUtils.h"
 #include "fileIOHelper.h"
+#include <wx/wx.h>
 #include <wx/msgdlg.h>
 #include <wx/filedlg.h>
 #include <wx/colordlg.h>
@@ -587,17 +587,8 @@ void PointContourGUIFrame::OnUpdateParametersButtonClick(wxCommandEvent& event)
 		m_pcUtils->alpha2 = getDouble(Alpha2->GetValue());
         m_pcUtils->alphaN = getDouble(AlphaN->GetValue());
 		m_pcUtils->calcMetric(m_pcUtils->f);
-		if (m_pcUtils->graphType == PointCloudUtils::ADAPTIVE_GRAPH)
-		{
-			m_pcUtils->subdivision();
-			m_pcUtils->buildGraphFromAdaptiveGrid();
-			m_pcUtils->addSubdivisionEdges(m_pcUtils->adapGraph);
-		}
-		else if (m_pcUtils->graphType == PointCloudUtils::UNIFORM_GRAPH)
-		{
-			m_pcUtils->buildGraphFromUniformGrid();
-		}
-		else if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+		
+		if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
 		{
 			m_pcUtils->calcPointTensor();
 			m_pcUtils->buildGraphFromPoints();
@@ -609,17 +600,8 @@ void PointContourGUIFrame::OnUpdateParametersButtonClick(wxCommandEvent& event)
 		m_pcUtils->alpha2 = getDouble(Alpha2->GetValue());
         m_pcUtils->alphaN = getDouble(AlphaN->GetValue());
 		m_pcUtils->calcMetric(m_pcUtils->f);
-		if (m_pcUtils->graphType == PointCloudUtils::ADAPTIVE_GRAPH)
-		{
-			m_pcUtils->subdivision();
-			m_pcUtils->buildGraphFromAdaptiveGrid();
-			m_pcUtils->addSubdivisionEdges(m_pcUtils->adapGraph);
-		}
-		else if (m_pcUtils->graphType == PointCloudUtils::UNIFORM_GRAPH)
-		{
-			m_pcUtils->buildGraphFromUniformGrid();
-		}
-		else if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+		
+		if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
 		{
 			m_pcUtils->calcPointTensor();
 			m_pcUtils->buildGraphFromPoints();
@@ -649,19 +631,11 @@ void PointContourGUIFrame::OnPrintInfoButtonClick(wxCommandEvent& event)
 
     printf("\n------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
 
-    double hashVal = point2double(pos);
     Tensor ts;
-    if (m_pcUtils->point2Index.find(hashVal) == m_pcUtils->point2Index.end())
-    {
-        ts.hessian = m_pcUtils->lerpHessian(pos);
-        m_pcUtils->calcTensorDecomposition(ts);
-        m_pcUtils->calcTensorMetric(ts);
-    }
-    else
-    {
-        int index = m_pcUtils->point2Index[hashVal];
-        ts = *(m_pcUtils->index2Tensor[index]);
-    }
+    ts.hessian = m_pcUtils->lerpHessian(pos);
+    m_pcUtils->calcTensorDecomposition(ts);
+    m_pcUtils->calcTensorMetric(ts);
+    
     for (int a = 0; a < 3; a++)
     {
         printf("(%.6lf,%.6lf,%.6lf), eigenVal = %.6lf, length = %.6lf\n" ,

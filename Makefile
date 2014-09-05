@@ -2,4 +2,4 @@
 include /Users/Winmad/Projects/PointContour/build/CMakeFiles/PointContour.dir/flags.make
 .PHONY: check-syntax
 check-syntax:
-	${CXX} -o /dev/null ${CXX_FLAGS} ${CXX_DEFINES} -D_FILE_OFFSET_BITS=64 -D__WXMAC__ -D__WXOSX__ -D__WXOSX_COCOA__ -S ${CHK_SOURCES}
+	${CXX} -o /dev/null ${CXX_FLAGS} ${CXX_DEFINES}  -S ${CHK_SOURCES}
