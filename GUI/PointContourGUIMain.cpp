@@ -145,7 +145,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Create(parent, wxID_ANY, _("PointContour"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     SetClientSize(wxSize(1200,800));
     Move(wxPoint(50,20));
-    SplitterWindow1 = new wxSplitterWindow(this, ID_SPLITTERWINDOW1, wxPoint(0,0), wxSize(1200,800), wxSP_3D, _T("ID_SPLITTERWINDOW1"));
+    SplitterWindow1 = new wxSplitterWindow(this, ID_SPLITTERWINDOW1, wxPoint(0,0), wxSize(1200,780), wxSP_3D, _T("ID_SPLITTERWINDOW1"));
     SplitterWindow1->SetMinSize(wxSize(300,300));
     SplitterWindow1->SetMinimumPaneSize(300);
     SplitterWindow1->SetSashGravity(1);
@@ -155,7 +155,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     	WX_GL_DEPTH_SIZE,      16,
     	WX_GL_STENCIL_SIZE,    0,
     	0, 0 };
-    m_openGLView = new SketchGLCanvas(SplitterWindow1, ID_GLCANVAS1, wxPoint(0,0), wxSize(800,800), wxTRANSPARENT_WINDOW, _T("ID_GLCANVAS1"), GLCanvasAttributes_1);
+    m_openGLView = new SketchGLCanvas(SplitterWindow1, ID_GLCANVAS1, wxPoint(0,0), wxSize(800,780), wxTRANSPARENT_WINDOW, _T("ID_GLCANVAS1"), GLCanvasAttributes_1);
     m_openGLView->SetBackgroundColour(wxColour(255,255,255));
     ScrolledWindow1 = new wxScrolledWindow(SplitterWindow1, ID_SCROLLEDWINDOW1, wxPoint(900,0), wxSize(300,800), wxTRANSPARENT_WINDOW, _T("ID_SCROLLEDWINDOW1"));
     ScrolledWindow1->SetBackgroundColour(wxColour(255,255,255));
@@ -188,11 +188,11 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer11 = new wxFlexGridSizer(0, 2, 0, 0);
     StaticText12 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT12, _("lambda"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
     FlexGridSizer11->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    SmoothScale = new wxTextCtrl(ScrolledWindow2, ID_TEXTCTRL12, _("0.02"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL12"));
+    SmoothScale = new wxTextCtrl(ScrolledWindow2, ID_TEXTCTRL12, _("0.1"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL12"));
     FlexGridSizer11->Add(SmoothScale, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText13 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT13, _("Iters"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
     FlexGridSizer11->Add(StaticText13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    SmoothIter = new wxTextCtrl(ScrolledWindow2, ID_TEXTCTRL13, _("50"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL13"));
+    SmoothIter = new wxTextCtrl(ScrolledWindow2, ID_TEXTCTRL13, _("20"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL13"));
     FlexGridSizer11->Add(SmoothIter, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer2->Add(FlexGridSizer11, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     SmoothingChoice = new wxChoice(ScrolledWindow2, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
@@ -428,7 +428,7 @@ void PointContourGUIFrame::constructPointCloud(const char* fileName , const char
 		getInt(ExtNum->GetValue()) , getInt(FilterRadius->GetValue()) ,
 		getDouble(Alpha1->GetValue()) , getDouble(Alpha2->GetValue()) ,
         getDouble(AlphaN->GetValue()));
-    
+
     m_pcUtils->pcRenderer->pathChoice = SmoothingChoice->GetSelection();
     m_pcUtils->pcRenderer->smoothScale = getDouble(SmoothScale->GetValue());
     m_pcUtils->pcRenderer->smoothIter = getInt(SmoothIter->GetValue());
@@ -587,7 +587,7 @@ void PointContourGUIFrame::OnUpdateParametersButtonClick(wxCommandEvent& event)
 		m_pcUtils->alpha2 = getDouble(Alpha2->GetValue());
         m_pcUtils->alphaN = getDouble(AlphaN->GetValue());
 		m_pcUtils->calcMetric(m_pcUtils->f);
-		
+
 		if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
 		{
 			m_pcUtils->calcPointTensor();
@@ -600,7 +600,7 @@ void PointContourGUIFrame::OnUpdateParametersButtonClick(wxCommandEvent& event)
 		m_pcUtils->alpha2 = getDouble(Alpha2->GetValue());
         m_pcUtils->alphaN = getDouble(AlphaN->GetValue());
 		m_pcUtils->calcMetric(m_pcUtils->f);
-		
+
 		if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
 		{
 			m_pcUtils->calcPointTensor();
@@ -635,7 +635,7 @@ void PointContourGUIFrame::OnPrintInfoButtonClick(wxCommandEvent& event)
     ts.hessian = m_pcUtils->lerpHessian(pos);
     m_pcUtils->calcTensorDecomposition(ts);
     m_pcUtils->calcTensorMetric(ts);
-    
+
     for (int a = 0; a < 3; a++)
     {
         printf("(%.6lf,%.6lf,%.6lf), eigenVal = %.6lf, length = %.6lf\n" ,
