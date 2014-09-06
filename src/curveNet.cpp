@@ -4,6 +4,7 @@ void CurveNet::clear()
 {
     numNodes = numPolyLines = 0;
     nodes.clear();
+    nodesStat.clear();
     edges.clear();
     polyLines.clear();
     polyLinesIndex.clear();
@@ -12,28 +13,36 @@ void CurveNet::clear()
 void CurveNet::startPath(const vec3d& st)
 {
     nodes.push_back(st);
+    nodesStat.push_back(true);
     numNodes++;
     edges.resize(numNodes);
     edges[numNodes - 1].clear();
 }
 
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
-                          const Path& path)
+    const Path& path , bool newNode)
 {
-    int st_ni = getNodeIndex(st);
-    int ed_ni = numNodes;
-    
+    int st_ni , ed_ni;
     // nodes
-    nodes.push_back(ed);
-    numNodes++;
-    edges.resize(numNodes);
-    edges[numNodes - 1].clear();
-    
+    if (newNode)
+    {
+        st_ni = getNodeIndex(st);
+        ed_ni = numNodes;
+        nodes.push_back(ed);
+        nodesStat.push_back(true);
+        numNodes++;
+        edges.resize(numNodes);
+        edges[numNodes - 1].clear();
+    }
+    else
+    {
+        st_ni = getNodeIndex(st);
+        ed_ni = getNodeIndex(ed);
+    }
     // polyLines
     polyLines.push_back(path);
     polyLinesIndex.push_back(PolyLineIndex(st_ni , edges[st_ni].size() ,
-                                      ed_ni , edges[ed_ni].size()));
-    
+            ed_ni , edges[ed_ni].size()));
     // edges
     edges[st_ni].push_back(CurveEdge(ed_ni , numPolyLines));
     edges[ed_ni].push_back(CurveEdge(st_ni , numPolyLines));
@@ -77,12 +86,37 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     numPolyLines++;
 }
 
+void CurveNet::deletePath(const int& deleteLine)
+{
+    polyLines[deleteLine].clear();
+    
+    PolyLineIndex& index = polyLinesIndex[deleteLine];
+    int st_ni = index.ni[0] , st_ei = index.ei[0];
+    int ed_ni = index.ni[1] , ed_ei = index.ei[1];
+    edges[st_ni][st_ei] = CurveEdge(-1 , -1);
+    edges[ed_ni][ed_ei] = CurveEdge(-1 , -1);
+
+    index.ni[0] = index.ni[1] = index.ei[0] = index.ei[1] = -1;
+
+    if (linkNoEdges(st_ni)) nodesStat[st_ni] = false;
+    if (linkNoEdges(ed_ni)) nodesStat[ed_ni] = false;
+}
+
 int CurveNet::getNodeIndex(const vec3d& pos)
 {
     for (int i = 0; i < numNodes; i++)
-        if (isEqual(pos , nodes[i]))
+        if (nodesStat[i] && isEqual(pos , nodes[i]))
             return i;
     return -1;
+}
+
+bool CurveNet::linkNoEdges(const int& ni)
+{
+    for (int i = 0; i < edges[ni].size(); i++)
+    {
+        if (edges[ni][i].link != -1) return false;
+    }
+    return true;
 }
 
 void CurveNet::test()
@@ -94,7 +128,7 @@ void CurveNet::test()
     {
         path.push_back(vec3d(i , 0 , 0));
     }
-    extendPath(vec3d(0 , 0 , 0) , vec3d(10 , 0 , 0) , path);
+    extendPath(vec3d(0 , 0 , 0) , vec3d(10 , 0 , 0) , path , true);
     
     startPath(vec3d(5 , 2 , 0));
     path.clear();
@@ -102,7 +136,7 @@ void CurveNet::test()
     {
         path.push_back(vec3d(5 , i , 0));
     }
-    extendPath(vec3d(5 , 2 , 0) , vec3d(5 , 0 , 0) , path);
+    extendPath(vec3d(5 , 2 , 0) , vec3d(5 , 0 , 0) , path , true);
     breakPath(0 , 5);
     
     debugLog();
@@ -113,12 +147,14 @@ void CurveNet::debugPrint()
     printf("============ nodes list =============\n");
     for (int i = 0; i < numNodes; i++)
     {
+        if (!nodesStat[i]) continue;
         printf("node %d: (%.6f,%.6f,%.6f)\n" , i , nodes[i].x , nodes[i].y ,
                  nodes[i].z);
     }
     printf("========== poly lines list ==========\n");
     for (int i = 0; i < numPolyLines; i++)
     {
+        if (polyLines[i].size() == 0) continue;
         printf("------------------------------\n");
         printf("poly line %d:\n" , i);
         for (int j = 0; j < polyLines[i].size(); j++)
@@ -130,6 +166,7 @@ void CurveNet::debugPrint()
     printf("=========== edges list ==============\n");
     for (int i = 0; i < numNodes; i++)
     {
+        if (!nodesStat[i]) continue;
         printf("------------------------------\n");
         printf("node %d:\n" , i);
         for (int j = 0; j < edges[i].size(); j++)
@@ -146,12 +183,14 @@ void CurveNet::debugLog()
     writeLog("============ nodes list =============\n");
     for (int i = 0; i < numNodes; i++)
     {
+        if (!nodesStat[i]) continue;
         writeLog("node %d: (%.6f,%.6f,%.6f)\n" , i , nodes[i].x , nodes[i].y ,
                  nodes[i].z);
     }
     writeLog("========== poly lines list ==========\n");
     for (int i = 0; i < numPolyLines; i++)
     {
+        if (polyLines[i].size() == 0) continue;
         writeLog("------------------------------\n");
         writeLog("poly line %d:\n" , i);
         for (int j = 0; j < polyLines[i].size(); j++)
@@ -163,6 +202,7 @@ void CurveNet::debugLog()
     writeLog("=========== edges list ==============\n");
     for (int i = 0; i < numNodes; i++)
     {
+        if (!nodesStat[i]) continue;
         writeLog("------------------------------\n");
         writeLog("node %d:\n" , i);
         for (int j = 0; j < edges[i].size(); j++)

@@ -3,6 +3,7 @@
 
 #include "nvVector.h"
 #include "smallUtils.h"
+#include "curveNet.h"
 #include <vector>
 
 class PointCloudUtils;
@@ -15,6 +16,8 @@ public:
 	PointCloudRenderer() 
 	{
 		pcUtils = NULL;
+        curveNet = NULL;
+        dispCurveNet = new CurveNet();
 		cos36.resize(36);
 		sin36.resize(36);
 		for(unsigned i=0; i<36; i++)
@@ -25,6 +28,11 @@ public:
 		init();
 	}
 
+    ~PointCloudRenderer()
+    {
+        delete dispCurveNet;
+    }
+    
 	bool isShowPointCloud;
 	bool isShowPoints;
 	bool isShowUniformGrid;
@@ -73,6 +81,7 @@ public:
 	void renderSelectedPoints();
 	void renderCurrentPath();
 	void renderStoredPaths();
+    void renderPickedCurve();
     void renderPathForComp();
 
 	void render();
@@ -83,7 +92,7 @@ public:
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
 	void pickPoint(int mouseX , int mouseY , bool isStore);
-
+    void pickCurve(int mouseX , int mouseY , bool isDelete);
 public:
 	static const int LIST_SURFEL_DISC = 2;
 	static const int LIST_POINTS = LIST_SURFEL_DISC + 1;
@@ -92,18 +101,20 @@ public:
 	bool isNormalInfo;
 	PointCloudUtils *pcUtils;
     CurveNet *curveNet;
+    CurveNet *dispCurveNet;
 	std::vector<vec3d> axisU , axisV;
-
-	std::vector<vec3d> selectedPoints;
+    
 	Path pathVertex;
     std::vector<Path> pathForComp;
     int pathChoice;
     int smoothIter;
     double smoothScale;
     
-	std::vector<Path> storedPaths;
 	vec3d *pickedPoint;
+    vec3d *pickedDispPoint;
 	vec3d *lastPoint;
+    vec3d *lastDispPoint;
+    int pickedCurve;
 
 	std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;

@@ -44,10 +44,13 @@ public:
     
     void clear();
     void startPath(const vec3d& st);
-    void extendPath(const vec3d& st , const vec3d& ed , const Path& path);
+    void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
+        bool newNode);
     void breakPath(const int& breakLine , const int& breakPoint);
+    void deletePath(const int& deleteLine);
     
     int getNodeIndex(const vec3d& pos);
+    bool linkNoEdges(const int& ni);
     
     void test();
     void debugPrint();
@@ -55,6 +58,7 @@ public:
     
     int numNodes , numPolyLines;
     std::vector<vec3d> nodes;
+    std::vector<bool> nodesStat;
     std::vector<std::vector<CurveEdge> > edges;
     std::vector<Path> polyLines;
     std::vector<PolyLineIndex> polyLinesIndex;

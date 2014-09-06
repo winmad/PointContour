@@ -419,6 +419,14 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     {
         lastKeyBoard = 2;
         m_pcUtils->pcRenderer->isAltPress = true;
+
+		m_pcUtils->pcRenderer->pickCurve(x , y , false);
+		if (event.LeftIsDown()) 
+		{
+			m_pcUtils->pcRenderer->pickCurve(x , y , true);
+		}
+        
+		Render();
     }
 
 	if (!event.ControlDown())
