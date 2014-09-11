@@ -13,25 +13,8 @@ struct DijkstraInfo;
 class PointCloudRenderer
 {
 public:
-	PointCloudRenderer() 
-	{
-		pcUtils = NULL;
-        curveNet = NULL;
-        dispCurveNet = new CurveNet();
-		cos36.resize(36);
-		sin36.resize(36);
-		for(unsigned i=0; i<36; i++)
-		{
-			cos36[i] = cos(double(i) * PI / 18.);
-			sin36[i] = sin(double(i) * PI / 18.);
-		}
-		init();
-	}
-
-    ~PointCloudRenderer()
-    {
-        delete dispCurveNet;
-    }
+    PointCloudRenderer();
+    ~PointCloudRenderer();
     
 	bool isShowPointCloud;
 	bool isShowPoints;
@@ -109,6 +92,7 @@ public:
     int pathChoice;
     int smoothIter;
     double smoothScale;
+    bool useBSpline;
     
 	vec3d *pickedPoint;
     vec3d *pickedDispPoint;

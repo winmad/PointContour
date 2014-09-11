@@ -16,6 +16,7 @@
 #include <wx/statusbr.h>
 #include <ctime>
 #include <Eigen/Dense>
+#include "engine.h"
 
 using namespace Eigen;
 
@@ -170,7 +171,8 @@ public:
 
 	std::vector<Data> pcData;
 	PointKDTree<Data> *tree;
-	
+
+    bool initialized;
 	BBox box;
 
 	vec3i gridRes;
@@ -211,6 +213,8 @@ public:
 	PointCloudRenderer *pcRenderer;
     // curve network
     CurveNet *curveNet;
+    // matlab api
+    Engine *ep;
 
 public:
 	PointCloudUtils();
@@ -255,6 +259,8 @@ public:
 
     void laplacianSmooth(Path& path);
     void gradientDescentSmooth(Path& path);
+
+    void convert2Spline(Path& path);
 };
 
 #endif

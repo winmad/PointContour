@@ -55,6 +55,7 @@ public:
     void test();
     void debugPrint();
     void debugLog();
+    void outputPolyLines();
     
     int numNodes , numPolyLines;
     std::vector<vec3d> nodes;

@@ -76,6 +76,7 @@ const long PointContourGUIFrame::ID_TEXTCTRL12 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT13 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL13 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
+const long PointContourGUIFrame::ID_CHECKBOX5 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -200,6 +201,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     SmoothingChoice->Append(_("Laplacian"));
     SmoothingChoice->SetSelection( SmoothingChoice->Append(_("Gradient descent")) );
     FlexGridSizer2->Add(SmoothingChoice, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    UseBSpline = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX5, _("use B-Spline"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX5"));
+    UseBSpline->SetValue(true);
+    FlexGridSizer2->Add(UseBSpline, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -288,7 +292,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     MenuBar1 = new wxMenuBar();
     Menu1 = new wxMenu();
     MenuItem3 = new wxMenu();
-    OpenPointCloud = new wxMenuItem(MenuItem3, ID_MENUITEM2, _("Point Cloud"), wxEmptyString, wxITEM_NORMAL);
+    OpenPointCloud = new wxMenuItem(MenuItem3, ID_MENUITEM2, _("Point Cloud\tCtrl-F"), wxEmptyString, wxITEM_NORMAL);
     MenuItem3->Append(OpenPointCloud);
     Menu1->Append(ID_MENUITEM1, _("Open"), MenuItem3, wxEmptyString);
     MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);
@@ -318,6 +322,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL12,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothScaleTextEnter);
     Connect(ID_TEXTCTRL13,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothIterTextEnter);
     Connect(ID_CHOICE1,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothingChoiceSelect);
+    Connect(ID_CHECKBOX5,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUseBSplineClick);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -667,6 +672,9 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 	{
 		case WXK_ESCAPE:
 			exit(0);
+        case WXK_SPACE:
+            m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
+            break;
 	}
 	m_openGLView->OnKeyDown(event);
 	m_openGLView->Render();
@@ -706,6 +714,7 @@ void PointContourGUIFrame::OnSmoothingChoiceSelect(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnSmoothScaleTextEnter(wxCommandEvent& event)
 {
+    if (!m_pcUtils->initialized) return;
     m_pcUtils->pcRenderer->smoothScale = getDouble(SmoothScale->GetValue());
     m_pcUtils->pcRenderer->smoothIter = getInt(SmoothIter->GetValue());
     //printf("iter = %d, lambda = %.6f\n" , m_pcUtils->pcRenderer->smoothIter ,
@@ -724,6 +733,7 @@ void PointContourGUIFrame::OnSmoothScaleTextEnter(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnSmoothIterTextEnter(wxCommandEvent& event)
 {
+    if (!m_pcUtils->initialized) return;
     m_pcUtils->pcRenderer->smoothScale = getDouble(SmoothScale->GetValue());
     m_pcUtils->pcRenderer->smoothIter = getInt(SmoothIter->GetValue());
     //printf("iter = %d, lambda = %.6f\n" , m_pcUtils->pcRenderer->smoothIter ,
@@ -737,5 +747,22 @@ void PointContourGUIFrame::OnSmoothIterTextEnter(wxCommandEvent& event)
     }
     int choice = m_pcUtils->pcRenderer->pathChoice;
     m_pcUtils->pcRenderer->pathVertex = m_pcUtils->pcRenderer->pathForComp[choice];
+    m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnUseBSplineClick(wxCommandEvent& event)
+{
+    if (!m_pcUtils->initialized) return;
+    m_pcUtils->pcRenderer->useBSpline = !m_pcUtils->pcRenderer->useBSpline;
+    int choice = m_pcUtils->pcRenderer->pathChoice;
+    if (m_pcUtils->pcRenderer->useBSpline)
+    {
+        m_pcUtils->pcRenderer->pathVertex = m_pcUtils->pcRenderer->pathForComp[choice];
+        m_pcUtils->convert2Spline(m_pcUtils->pcRenderer->pathVertex);
+    }
+    else
+    {
+        m_pcUtils->pcRenderer->pathVertex = m_pcUtils->pcRenderer->pathForComp[choice];
+    }
     m_openGLView->Render();
 }

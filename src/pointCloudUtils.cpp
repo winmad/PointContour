@@ -9,6 +9,8 @@ PointCloudUtils::PointCloudUtils()
 {
 	pcRenderer = new PointCloudRenderer();
     curveNet = new CurveNet();
+    pcRenderer->pcUtils = this;
+    pcRenderer->curveNet = this->curveNet;
 	isPointInside = NULL;
 	originF = NULL;
 	f = NULL;
@@ -20,6 +22,15 @@ PointCloudUtils::PointCloudUtils()
 	tree = NULL;
 
     restartLog("debug.txt");
+
+    if (!(ep = engOpen("")))
+    {
+        fprintf(stderr , "\nCan't start MATLAB engine\n");
+    }
+    else
+    {
+        fprintf(stderr , "\nStart MATLAB successfully\n");
+    }
 }
 
 PointCloudUtils::~PointCloudUtils()
@@ -73,9 +84,8 @@ void PointCloudUtils::init()
 {
 	timer.PushCurrentTime();
     
+    initialized = true;
 	getBBox();
-	pcRenderer->pcUtils = this;
-    pcRenderer->curveNet = this->curveNet;
 	pcRenderer->init();
 	if (tree != NULL)
 		delete tree;
@@ -1192,3 +1202,48 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
     */
 }
 
+void PointCloudUtils::convert2Spline(Path& path)
+{
+    int N = path.size();
+    mxArray *pts = NULL;
+    pts = mxCreateDoubleMatrix(3 , N , mxREAL);
+    double *coors = NULL;
+    coors = new double[N * 3];
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            coors[3 * i + j] = path[i][j];
+        }
+    }
+    memcpy((double*)mxGetPr(pts) , coors , sizeof(double) * N * 3);
+    engPutVariable(ep , "pts" , pts);
+    char buf[256];
+    sprintf(buf , "bsp = spap2(%d , 4 , 1:%d , pts);" , std::max(1 , N / 5) , N);
+    engEvalString(ep , buf);
+    sprintf(buf , "p = fnval(bsp , 1:%d);" , N);
+    engEvalString(ep , buf);
+    mxArray *res = NULL;
+    res = engGetVariable(ep , "p");
+    memcpy(coors , (double*)mxGetPr(res) , sizeof(double) * N * 3);
+    for (int i = 1; i < N - 1; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            path[i][j] = coors[3 * i + j];
+        }
+    }
+    
+    // for (int i = 0; i < N; i++)
+    // {
+    //     for (int j = 0; j < 3; j++)
+    //     {
+    //         printf("%.6lf " , coors[3 * i + j]);
+    //     }
+    //     printf("\n");
+    // }
+
+    delete[] coors;
+    mxDestroyArray(res);
+    mxDestroyArray(pts);
+}

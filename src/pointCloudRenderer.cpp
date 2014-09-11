@@ -5,6 +5,26 @@
 #include "pointCloudRenderer.h"
 #include "nvVector.h"
 
+PointCloudRenderer::PointCloudRenderer()
+{
+    pcUtils = NULL;
+    curveNet = NULL;
+    dispCurveNet = new CurveNet();
+    cos36.resize(36);
+    sin36.resize(36);
+    for(unsigned i=0; i<36; i++)
+    {
+        cos36[i] = cos(double(i) * PI / 18.);
+        sin36[i] = sin(double(i) * PI / 18.);
+    }
+    init();
+}
+
+PointCloudRenderer::~PointCloudRenderer()
+{
+    delete dispCurveNet;
+}
+
 void PointCloudRenderer::init()
 {
 	isShowPoints = false;
@@ -75,7 +95,7 @@ void PointCloudRenderer::init()
     pathForComp.resize(3);
     for (int i = 0; i < 3; i++)
         pathForComp[i].clear();
-
+    useBSpline = true;
     dispCurveNet->clear();
 }
 
@@ -642,6 +662,11 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             
             if (pathChoice < 2)
                 pathVertex = pathForComp[pathChoice];
+
+            if (useBSpline)
+            {
+                pcUtils->convert2Spline(pathVertex);
+            }
             pathVertex[0] = dispPos;
 		}
         
@@ -669,7 +694,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 }
             }
             
-            //dispCurveNet->debugLog();
+            // dispCurveNet->debugLog();
             
 			sti = edi;
 

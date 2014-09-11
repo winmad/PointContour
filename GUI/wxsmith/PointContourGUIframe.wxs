@@ -179,6 +179,16 @@
 															<border>5</border>
 															<option>1</option>
 														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="ID_CHECKBOX5" variable="UseBSpline" member="yes">
+																<label>use B-Spline</label>
+																<checked>1</checked>
+																<handler function="OnUseBSplineClick" entry="EVT_CHECKBOX" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -511,6 +521,7 @@
 					<label>Open</label>
 					<object class="wxMenuItem" name="ID_MENUITEM2" variable="OpenPointCloud" member="yes">
 						<label>Point Cloud</label>
+						<accel>Ctrl-F</accel>
 						<handler function="OnOpenPointCloudSelected" entry="EVT_MENU" />
 					</object>
 				</object>

@@ -39,6 +39,8 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
         st_ni = getNodeIndex(st);
         ed_ni = getNodeIndex(ed);
     }
+    // if (st_ni == -1) printf("st index error\n");
+    // if (ed_ni == -1) printf("ed index error\n");
     // polyLines
     polyLines.push_back(path);
     polyLinesIndex.push_back(PolyLineIndex(st_ni , edges[st_ni].size() ,
@@ -212,4 +214,18 @@ void CurveNet::debugLog()
         }
     }
     writeLog("*************** End *****************\n");
+}
+
+void CurveNet::outputPolyLines()
+{
+    writeLog("%d\n" , numPolyLines);
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        writeLog("%d\n" , polyLines[i].size());
+        for (int j = 0; j < polyLines[i].size(); j++)
+        {
+            writeLog("%.6lf %.6lf %.6lf\n" , polyLines[i][j].x ,
+                polyLines[i][j].y , polyLines[i][j].z);
+        }
+    }
 }

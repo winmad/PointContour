@@ -73,6 +73,7 @@ class PointContourGUIFrame: public wxFrame
         void OnSmoothingChoiceSelect(wxCommandEvent& event);
         void OnSmoothScaleTextEnter(wxCommandEvent& event);
         void OnSmoothIterTextEnter(wxCommandEvent& event);
+        void OnUseBSplineClick(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -93,6 +94,7 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_STATICTEXT13;
         static const long ID_TEXTCTRL13;
         static const long ID_CHOICE1;
+        static const long ID_CHECKBOX5;
         static const long ID_STATICTEXT7;
         static const long ID_TEXTCTRL7;
         static const long ID_STATICTEXT8;
@@ -174,6 +176,7 @@ class PointContourGUIFrame: public wxFrame
         SketchGLCanvas* m_openGLView;
         wxTextCtrl* PosY;
         wxSlider* DiscRadius;
+        wxCheckBox* UseBSpline;
         wxMenuItem* OpenPointCloud;
         //*)
 
