@@ -7,6 +7,7 @@ void CurveNet::clear()
     nodesStat.clear();
     edges.clear();
     polyLines.clear();
+    bsplines.clear();
     polyLinesIndex.clear();
 }
 
@@ -21,6 +22,13 @@ void CurveNet::startPath(const vec3d& st)
 
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     const Path& path , bool newNode)
+{
+    BSpline bsp;
+    extendPath(st , ed , path , newNode , bsp);
+}
+
+void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
+    const Path& path , bool newNode , const BSpline& bsp)
 {
     int st_ni , ed_ni;
     // nodes
@@ -45,6 +53,8 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     polyLines.push_back(path);
     polyLinesIndex.push_back(PolyLineIndex(st_ni , edges[st_ni].size() ,
             ed_ni , edges[ed_ni].size()));
+    // bsplines
+    bsplines.push_back(bsp);
     // edges
     edges[st_ni].push_back(CurveEdge(ed_ni , numPolyLines));
     edges[ed_ni].push_back(CurveEdge(st_ni , numPolyLines));
@@ -86,11 +96,21 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     polyLinesIndex.push_back(PolyLineIndex(mid_ni , edges[mid_ni].size() - 1 ,
                                            ed_ni , ed_ei));
     numPolyLines++;
+
+    // recalculate both B-Splines
+    if (bsplines[breakLine].ctrlNodes.size() > 0)
+    {
+        convert2Spline(polyLines[breakLine] , bsplines[breakLine]);
+        BSpline bsp;
+        convert2Spline(polyLines[numPolyLines - 1] , bsp);
+        bsplines.push_back(bsp);
+    }
 }
 
 void CurveNet::deletePath(const int& deleteLine)
 {
     polyLines[deleteLine].clear();
+    bsplines[deleteLine].clear();
     
     PolyLineIndex& index = polyLinesIndex[deleteLine];
     int st_ni = index.ni[0] , st_ei = index.ei[0];

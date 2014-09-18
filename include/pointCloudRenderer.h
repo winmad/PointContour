@@ -23,6 +23,7 @@ public:
 	bool isShowHessian;
 	bool isShowMetric;
 	bool isShowPath;
+    bool isShowCtrlNodes;
 
 	bool isCtrlPress;
     bool isAltPress;
@@ -66,6 +67,7 @@ public:
 	void renderStoredPaths();
     void renderPickedCurve();
     void renderPathForComp();
+    void renderCtrlNodes();
 
 	void render();
 
@@ -88,6 +90,7 @@ public:
 	std::vector<vec3d> axisU , axisV;
     
 	Path pathVertex;
+    BSpline bsp;
     std::vector<Path> pathForComp;
     int pathChoice;
     int smoothIter;

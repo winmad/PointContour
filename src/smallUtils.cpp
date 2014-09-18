@@ -1,5 +1,145 @@
 #include "smallUtils.h"
 
+Engine *ep;
+
+void convert2Spline(Path& path , BSpline& bsp)
+{
+    int N = path.size();
+    if (N <= 2) return;
+    mxArray *pts = NULL;
+    pts = mxCreateDoubleMatrix(3 , N , mxREAL);
+    double *coors = NULL;
+    coors = new double[N * 3];
+    double curveLen = 0.0;
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            coors[3 * i + j] = path[i][j];
+        }
+        if (i > 0)
+        {
+            curveLen += (path[i] - path[i - 1]).length();
+        }
+    }
+    memcpy((double*)mxGetPr(pts) , coors , sizeof(double) * N * 3);
+    engPutVariable(ep , "pts" , pts);
+    char buf[256];
+    //sprintf(buf , "bsp = spaps(1:%d , pts , %.6lf)" , N , 0.05);
+    int L = std::max(2 , (int)(curveLen * 3.0));
+    sprintf(buf , "bsp = spap2(%d , 4 , 1:%d , pts)" , L , N);
+    engEvalString(ep , buf);
+
+    // count # control points
+    int numCtrlNodes;
+    mxArray *ctrlNodes = NULL;
+    sprintf(buf , "ctrlNodes = bsp.coefs");
+    engEvalString(ep , buf);
+    ctrlNodes = engGetVariable(ep , "ctrlNodes");
+    numCtrlNodes = mxGetN(ctrlNodes);
+    //printf("%d / %d\n" , numCtrlNodes , N);
+    
+    // change ends
+    sprintf(buf , "bsp.coefs(:,1)=[%.8lf; %.8lf; %.8lf]" , path[0].x , path[0].y , path[0].z);
+    engEvalString(ep , buf);
+    sprintf(buf , "bsp.coefs(:,%d)=[%.8lf; %.8lf; %.8lf]" , numCtrlNodes ,
+        path[N - 1].x , path[N - 1].y , path[N - 1].z);
+    engEvalString(ep , buf);
+    
+    sprintf(buf , "p = fnval(bsp , 1:%d);" , N);
+    engEvalString(ep , buf);
+
+    mxArray *res = NULL;
+    res = engGetVariable(ep , "p");
+    memcpy(coors , (double*)mxGetPr(res) , sizeof(double) * N * 3);
+
+    for (int i = 1; i < N - 1; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            path[i][j] = coors[3 * i + j];
+        }
+    }
+
+    bsp.clear();
+    mxArray *newCtrlNodes = NULL;
+    sprintf(buf , "ctrlNodes = bsp.coefs");
+    engEvalString(ep , buf);
+    newCtrlNodes = engGetVariable(ep , "ctrlNodes");
+    memcpy(coors , (double*)mxGetPr(newCtrlNodes) , sizeof(double) * numCtrlNodes * 3);
+    for (int i = 0; i < numCtrlNodes; i++)
+    {
+        vec3d p(coors[3 * i] , coors[3 * i + 1] , coors[3 * i + 2]);
+        bsp.ctrlNodes.push_back(p);
+    }
+
+    mxArray *knots = NULL;
+    sprintf(buf , "knots = bsp.knots");
+    engEvalString(ep , buf);
+    knots = engGetVariable(ep , "knots");
+    int numKnots = mxGetN(knots);
+    memcpy(coors , (double*)mxGetPr(knots) , sizeof(double) * numKnots);
+    for (int i = 0; i < numKnots; i++)
+    {
+        bsp.knots.push_back(coors[i]);
+    }
+    
+    /*
+    mxArray *res = NULL;
+    for (int l = 2; l <= N - 3; l++)
+    {
+        sprintf(buf , "bsp = spap2(%d , 4 , 1:%d , pts)" , l , N);
+        engEvalString(ep , buf);
+        sprintf(buf , "p = fnval(bsp , 1:%d);" , N);
+        engEvalString(ep , buf);
+        
+        res = engGetVariable(ep , "p");
+        memcpy(coors , (double*)mxGetPr(res) , sizeof(double) * N * 3);
+
+        // check diff
+        double diff = 0;
+        for (int i = 1; i < N - 1; i++)
+        {
+            vec3d p;
+            for (int j = 0; j < 3; j++) p[j] = coors[3 * i + j];
+            diff += (p - path[i]).length();
+        }
+        
+        if (diff < 0.001)
+        {
+            for (int i = 1; i < N - 1; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    path[i][j] = coors[3 * i + j];
+                }
+            }
+            break;
+        }
+        else
+        {
+            printf("%d : %.6lf\n" , l , diff);
+        }
+    }
+    mxDestroyArray(res);
+    */
+    // for (int i = 0; i < N; i++)
+    // {
+    //     for (int j = 0; j < 3; j++)
+    //     {
+    //         printf("%.6lf " , coors[3 * i + j]);
+    //     }
+    //     printf("\n");
+    // }
+
+    delete[] coors;
+    mxDestroyArray(pts);
+    mxDestroyArray(res);
+    mxDestroyArray(ctrlNodes);
+    mxDestroyArray(newCtrlNodes);
+    mxDestroyArray(knots);
+}
+
 bool restartLog(std::string fileName)
 {
     strcpy(logFileName , fileName.c_str());

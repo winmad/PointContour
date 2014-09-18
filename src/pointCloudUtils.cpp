@@ -22,7 +22,6 @@ PointCloudUtils::PointCloudUtils()
 	tree = NULL;
 
     restartLog("debug.txt");
-
     if (!(ep = engOpen("")))
     {
         fprintf(stderr , "\nCan't start MATLAB engine\n");
@@ -31,11 +30,32 @@ PointCloudUtils::PointCloudUtils()
     {
         fprintf(stderr , "\nStart MATLAB successfully\n");
     }
+    /*
+    if (!mclInitializeApplication(NULL,0))
+    {
+        fprintf(stderr , "\nmcl initialized error\n");
+    }
+    else
+    {
+        fprintf(stderr , "\nmcl init successfully");
+    }
+    
+    if (!libbsInitialize())
+    {
+        fprintf(stderr , "\nlibbs initialized error\n");
+    }
+    else
+    {
+        fprintf(stderr , "\nlibbs init successfully");
+    }
+    */
 }
 
 PointCloudUtils::~PointCloudUtils()
 {
-	if (pcRenderer != NULL)
+    //libbsTerminate();
+    //mclTerminateApplication();
+    if (pcRenderer != NULL)
 		delete pcRenderer;
 	if (tree != NULL)
 		delete tree;
@@ -147,6 +167,16 @@ void PointCloudUtils::getBBox()
 		box.rt.y = std::max(box.rt.y , pcData[i].pos.y);
 		box.rt.z = std::max(box.rt.z , pcData[i].pos.z);
 	}
+
+    // rescale
+    vec3d diag = box.rt - box.lb;
+    double scale = 0.8 / std::min(diag.x , std::min(diag.y , diag.z));
+    box.lb *= scale;
+    box.rt *= scale;
+    for (int i = 0; i < pcData.size(); i++)
+    {
+        pcData[i].pos *= scale;
+    }
 }
 
 void PointCloudUtils::buildUniformGrid(vec3i size)
@@ -1146,7 +1176,7 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
         p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5;
         mid = p - oldPath[i];
         double len = mid.length();
-        grad /= grad.length();
+        //grad /= grad.length();
         vec3d d = -grad;
         double alpha = lineSearch(d , oldPath[i - 1] , ts[i - 1] ,
             oldPath[i] , ts[i] , oldPath[i + 1] , ts[i + 1]);
@@ -1173,7 +1203,7 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
         */
         alpha = std::min(alpha , len);
         
-        path[i] = oldPath[i] - grad * alpha * pcRenderer->smoothScale;
+        path[i] = oldPath[i] + d * alpha * pcRenderer->smoothScale;
     }
     path[0] = oldPath[0];
     path[path.size() - 1] = oldPath[path.size() - 1];
@@ -1202,48 +1232,150 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
     */
 }
 
-void PointCloudUtils::convert2Spline(Path& path)
+double calcJuncF(const vec3d& pj , const Matrix3d& tsj ,
+    const std::vector<vec3d>& pts , const std::vector<Matrix3d>& ts)
 {
-    int N = path.size();
-    mxArray *pts = NULL;
-    pts = mxCreateDoubleMatrix(3 , N , mxREAL);
-    double *coors = NULL;
-    coors = new double[N * 3];
-    for (int i = 0; i < N; i++)
+    double res = 0;
+    for (int i = 0; i < pts.size(); i++)
     {
-        for (int j = 0; j < 3; j++)
-        {
-            coors[3 * i + j] = path[i][j];
-        }
+        vec3d v = pj - pts[i];
+        res += calcAnisDist(v , tsj) + calcAnisDist(v , ts[i]);
     }
-    memcpy((double*)mxGetPr(pts) , coors , sizeof(double) * N * 3);
-    engPutVariable(ep , "pts" , pts);
-    char buf[256];
-    sprintf(buf , "bsp = spap2(%d , 4 , 1:%d , pts);" , std::max(1 , N / 5) , N);
-    engEvalString(ep , buf);
-    sprintf(buf , "p = fnval(bsp , 1:%d);" , N);
-    engEvalString(ep , buf);
-    mxArray *res = NULL;
-    res = engGetVariable(ep , "p");
-    memcpy(coors , (double*)mxGetPr(res) , sizeof(double) * N * 3);
-    for (int i = 1; i < N - 1; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            path[i][j] = coors[3 * i + j];
-        }
-    }
-    
-    // for (int i = 0; i < N; i++)
-    // {
-    //     for (int j = 0; j < 3; j++)
-    //     {
-    //         printf("%.6lf " , coors[3 * i + j]);
-    //     }
-    //     printf("\n");
-    // }
+    return res;
+}
 
-    delete[] coors;
-    mxDestroyArray(res);
-    mxDestroyArray(pts);
+vec3d calcJuncGrad(const vec3d& pj , const Matrix3d& tsj ,
+    const std::vector<vec3d>& pts , const std::vector<Matrix3d>& ts)
+{
+    vec3d grad(0.0);
+    for (int i = 0; i < pts.size(); i++)
+    {
+        vec3d v = pj - pts[i];
+        grad += calcGradient(v , tsj) + calcGradient(v , ts[i]);
+    }
+    return grad;
+}
+
+double calcJuncAlpha(const vec3d& d , const vec3d& pj , const Matrix3d& tsj ,
+    const std::vector<vec3d>& pts , const std::vector<Matrix3d>& ts)
+{
+    vec3d grad(0.0);
+    Matrix3d f2;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++) f2(i , j) = 0;
+    }
+    for (int i = 0; i < pts.size(); i++)
+    {
+        vec3d v = pj - pts[i];
+        grad += calcGradient(v , tsj) + calcGradient(v , ts[i]);
+        f2 += lineSearchHessian(v , tsj) + lineSearchHessian(v , ts[i]);
+    }
+    Vector3d f1(grad.x , grad.y , grad.z);
+    Vector3d vd(d.x , d.y , d.z);
+    double res = -f1.dot(vd);
+    double denom = vd.transpose() * f2 * vd;
+    res /= denom;
+    return res;
+}
+
+void PointCloudUtils::optimizeJunction(CurveNet* cn , const vec3d& pos)
+{
+    std::vector<vec3d> pts;
+    std::vector<Matrix3d> ts;
+    int ni = cn->getNodeIndex(pos);
+    if (!cn->nodesStat[ni]) return;
+    double thr = 1e10;
+    for (int i = 0; i < cn->edges[ni].size(); i++)
+    {
+        Path& path = cn->polyLines[cn->edges[ni][i].pli];
+        if (path.size() <= 2) continue;
+        // PAOS's index is either 0 or L-1
+        int nextId = 1;
+        if (!isEqual(pos , path[0]))
+        {
+            nextId = path.size() - 2;
+            thr = std::min(thr , (path[nextId] - path[nextId + 1]).length());
+        }
+        else
+        {
+            thr = std::min(thr , (path[nextId] - path[nextId - 1]).length());
+        }
+        pts.push_back(path[nextId]);
+        ts.push_back(lerpTensor(path[nextId]));
+    }
+    vec3d p(pos);
+    for (int iter = 0; iter < 1; iter++)
+    {
+        Matrix3d tsj = lerpTensor(p);
+        vec3d grad = calcJuncGrad(p , tsj , pts , ts);
+        vec3d d = -grad;
+        double alpha = calcJuncAlpha(d , p , tsj , pts , ts);
+        d *= alpha;
+        if (d.length() <= thr)
+            p = p + d;
+        // else
+            // printf("too much\n");
+        //printf("prev = (%.6f,%.6f,%.6f), now = (%.6f,%.6f,%.6f)\n" , pos.x , pos.y , pos.z ,
+        //p.x , p.y , p.z);
+    }
+    cn->nodes[ni] = p;
+    for (int i = 0; i < cn->edges[ni].size(); i++)
+    {
+        Path& path = cn->polyLines[cn->edges[ni][i].pli];
+        if (path.size() <= 2) continue;
+        if (isEqual(pos , path[0]))
+        {
+            path[0] = p;
+        }
+        else
+        {
+            path[path.size() - 1] = p;
+        }
+    }
+    // double f = calcJuncF(pos , tsj , pts , ts);
+    // printf("===================\n");
+    /*
+    printf("f = %.6f, grad = (%.6f,%.6f,%.6f)\n" , f , grad.x , grad.y , grad.z);
+    vec3d p0 = pos + d * 1e-5;
+    double f0 = calcJuncF(p0 , tsj , pts , ts);
+    vec3d p1 = pos - d * 1e-5;
+    double f1 = calcJuncF(p1 , tsj , pts , ts);
+    if (f0 <= f && f <= f1)
+    {
+        printf("yes ");
+    }
+    else
+    {
+        printf("no ");
+    }
+    printf("f0 = %.8lf , f = %.8lf , f1 = %.8lf\n" , f0 , f , f1);
+    */
+    /*
+    vec3d q0 = pos + d * alpha - d * 1e-4;
+    double g0 = calcJuncF(q0 , tsj , pts , ts);
+    vec3d q1 = pos + d * alpha;
+    double g1 = calcJuncF(q1 , tsj , pts , ts);
+    vec3d q2 = pos + d * alpha + d * 1e-4;
+    double g2 = calcJuncF(q2 , tsj , pts , ts);
+    if (g0 >= g1 && g1 <= g2)
+    {
+        printf("yes ");
+    }
+    else
+    {
+        printf("no ");
+    }
+    printf("alpha = %.8lf , g0 = %.8lf , g1 = %.8lf , g2 = %.8lf\n" , alpha ,
+        g0 , g1 , g2);
+    */
+    /*
+    printf("======== (%.6f,%.6f,%.6f) =========\n" , pos.x , pos.y , pos.z);
+    printf("%d\n" , ni);
+
+    for (int i = 0; i < pts.size(); i++)
+    {
+        printf("adj pt = (%.6f,%.6f,%.6f)\n" , pts[i].x , pts[i].y , pts[i].z);
+    }
+    */
 }

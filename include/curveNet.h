@@ -41,9 +41,11 @@ class CurveNet
 {
 public:
     CurveNet() { clear(); }
-    
+
     void clear();
     void startPath(const vec3d& st);
+    void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
+        bool newNode , const BSpline& bsp);
     void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
         bool newNode);
     void breakPath(const int& breakLine , const int& breakPoint);
@@ -62,6 +64,7 @@ public:
     std::vector<bool> nodesStat;
     std::vector<std::vector<CurveEdge> > edges;
     std::vector<Path> polyLines;
+    std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
 };
 

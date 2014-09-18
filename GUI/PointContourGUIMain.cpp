@@ -77,6 +77,7 @@ const long PointContourGUIFrame::ID_STATICTEXT13 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL13 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX5 = wxNewId();
+const long PointContourGUIFrame::ID_CHECKBOX6 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -204,6 +205,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     UseBSpline = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX5, _("use B-Spline"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX5"));
     UseBSpline->SetValue(true);
     FlexGridSizer2->Add(UseBSpline, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    ShowCtrlPoints = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX6, _("show B-Spline Ctrl Points"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX6"));
+    ShowCtrlPoints->SetValue(false);
+    FlexGridSizer2->Add(ShowCtrlPoints, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -323,6 +327,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL13,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothIterTextEnter);
     Connect(ID_CHOICE1,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothingChoiceSelect);
     Connect(ID_CHECKBOX5,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUseBSplineClick);
+    Connect(ID_CHECKBOX6,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowCtrlPointsClick);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -423,7 +428,7 @@ void PointContourGUIFrame::constructPointCloud(const char* fileName , const char
 			m_pcUtils->pcData[i].n = vec3d(0 , 0 , 0);
 		}
 	}
-	else
+    else
 		return;
 
 	// preprocess
@@ -758,11 +763,18 @@ void PointContourGUIFrame::OnUseBSplineClick(wxCommandEvent& event)
     if (m_pcUtils->pcRenderer->useBSpline)
     {
         m_pcUtils->pcRenderer->pathVertex = m_pcUtils->pcRenderer->pathForComp[choice];
-        m_pcUtils->convert2Spline(m_pcUtils->pcRenderer->pathVertex);
+        convert2Spline(m_pcUtils->pcRenderer->pathVertex ,
+                                  m_pcUtils->pcRenderer->bsp);
     }
     else
     {
         m_pcUtils->pcRenderer->pathVertex = m_pcUtils->pcRenderer->pathForComp[choice];
     }
+    m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnShowCtrlPointsClick(wxCommandEvent& event)
+{
+    m_pcUtils->pcRenderer->isShowCtrlNodes = !m_pcUtils->pcRenderer->isShowCtrlNodes;
     m_openGLView->Render();
 }

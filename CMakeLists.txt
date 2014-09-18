@@ -18,7 +18,9 @@ set(CMAKE_CXX_COMPILER "/Users/Winmad/llvm/build/Debug+Asserts/bin/clang2++")
 set(CXX_DEBUG -O2)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_DEBUG} -fopenmp -stdlib=libc++")
 #-I/Users/Winmad/wxWidgets-3.0.1/build-osx/lib/wx/include/osx_cocoa-unicode-static-3.0 -I/Users/Winmad/wxWidgets-3.0.1/include")
-set(CMAKE_LINK_FLAGS "-framework IOKit -framework Carbon -framework Cocoa -framework AudioToolbox -framework System -framework OpenGL -framework AGL -lpng -lz -ljpeg -ltiff -framework WebKit -lwxregexu-3.0 -lz -lpthread -liconv -leng -lmx -lm -lmat -lut -lc++")
+set(CMAKE_LINK_FLAGS "-framework IOKit -framework Carbon -framework Cocoa -framework AudioToolbox -framework System -framework OpenGL -framework AGL -lpng -lz -ljpeg -ltiff -framework WebKit -lwxregexu-3.0 -lz -lpthread -liconv -lmx -leng -lm -lmat -lut -lc++")
+#-lmx -leng -lm -lmat -lut -lc++
+#-lmwmclmcrrt -lmwmclmcr -lbs
 
 set(OPENMP_INCLUDE_DIRS "~/Intel-OpenMP/libomp_oss/exports/common/include")
 set(OPENMP_LIBRARY_DIRS "~/Intel-OpenMP/libomp_oss/exports/mac_32e/lib.thin/")
@@ -35,6 +37,7 @@ include_directories(
   include
   src
   GUI
+  matlab/cpp
   external/include
   external/lib/wx/wx/include/osx_cocoa-unicode-static-3.0
   /Applications/MATLAB_R2014a.app/extern/include
@@ -48,8 +51,13 @@ link_directories(
   ${GLUT_LIBRARY_DIRS}
   ${GLEW_LIBRARY_DIRS}
   ${OPENMP_LIBRARY_DIRS}
+  /Users/Winmad/Projects/PointContour/matlab/cpp
   /Users/Winmad/wxWidgets-3.0.1/build-osx/lib
   /Applications/MATLAB_R2014a.app/bin/maci64
+  /Applications/MATLAB_R2014a.app/runtime/maci64
+  /Applications/MATLAB_R2014a.app/bin/maci64
+  #/Applications/MATLAB/MATLAB_Compiler_Runtime/v83/runtime/maci64
+  #/Applications/MATLAB/MATLAB_Compiler_Runtime/v83/bin/maci64
 )
 
 set(ALL_LIBS
@@ -63,15 +71,11 @@ set(ALL_LIBS
 
 AUX_SOURCE_DIRECTORY(src/ CPP_SOURCES)
 AUX_SOURCE_DIRECTORY(GUI/ GUI_SOURCES)
-set(CPP_SOURCES ${CPP_SOURCES} ${GUI_SOURCES})
+#AUX_SOURCE_DIRECTORY(matlab/cpp MATLAB_SOURCES)
+set(CPP_SOURCES ${CPP_SOURCES} ${GUI_SOURCES} ${MATLAB_SOURCES})
 add_executable(PointContour ${CPP_SOURCES})
 set_target_properties(PointContour
   PROPERTIES LINK_FLAGS ${CMAKE_LINK_FLAGS}
 )
 target_link_libraries(PointContour ${ALL_LIBS})
 
-#add_executable(canvas src/wxCanvasTest.cpp)
-#set_target_properties(canvas
-#  PROPERTIES LINK_FLAGS ${CMAKE_LINK_FLAGS}
-#)
-#target_link_libraries(canvas ${ALL_LIBS})

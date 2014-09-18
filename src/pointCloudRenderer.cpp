@@ -33,8 +33,10 @@ void PointCloudRenderer::init()
 	isShowHessian = false;
 	isShowMetric = false;
 	isShowPointCloud = true;
+    isShowCtrlNodes = false;
 
 	pathVertex.clear();
+    bsp.clear();
 	
 	axisU.clear();
 	axisV.clear();
@@ -416,7 +418,6 @@ void PointCloudRenderer::renderCurrentPath()
 	drawLines(pathVertex);
 }
 
-
 void PointCloudRenderer::renderStoredPaths()
 {
     if (dispCurveNet == NULL)
@@ -469,6 +470,25 @@ void PointCloudRenderer::renderPathForComp()
     glDisable(GL_LINE_STIPPLE);
 }
 
+void PointCloudRenderer::renderCtrlNodes()
+{
+    if (!isShowCtrlNodes) return;
+    if (dispCurveNet == NULL) return;
+    
+    glColor3f(0.f , 1.f , 0.f);
+	glLineWidth(3.f);
+	glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    
+    for (int i = 0; i < dispCurveNet->bsplines.size(); i++)
+    {
+        drawLines(dispCurveNet->bsplines[i].ctrlNodes);
+    }
+    drawLines(bsp.ctrlNodes);
+
+    glDisable(GL_LINE_STIPPLE);
+}
+
 void PointCloudRenderer::render()
 {
 	renderPointCloud();
@@ -478,6 +498,7 @@ void PointCloudRenderer::render()
 	renderCurrentPath();
 	renderStoredPaths();
     renderPickedCurve();
+    renderCtrlNodes();
     //renderPathForComp();
 }
 
@@ -636,8 +657,8 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
         {
             pos = curveNet->polyLines[breakLine][breakPoint];
             dispPos = dispCurveNet->polyLines[breakLine][breakPoint];
-            *pickedPoint = pos;
-            *pickedDispPoint = dispPos;
+            pickedPoint = &curveNet->polyLines[breakLine][breakPoint];
+            pickedDispPoint = &dispCurveNet->polyLines[breakLine][breakPoint];
             isSnap = true;
             //printf("snap!\n");
         }
@@ -665,7 +686,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 
             if (useBSpline)
             {
-                pcUtils->convert2Spline(pathVertex);
+                convert2Spline(pathVertex , bsp);
             }
             pathVertex[0] = dispPos;
 		}
@@ -685,13 +706,18 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 {
                     newNode = false;
                 }
-                curveNet->extendPath(*lastPoint , pos , pathForComp[0] , newNode);
-                dispCurveNet->extendPath(*lastDispPoint , dispPos , pathVertex , newNode);
+                vec3d lastp(lastPoint->x , lastPoint->y , lastPoint->z);
+                vec3d lastDisp(lastDispPoint->x , lastDispPoint->y , lastDispPoint->z);
+
+                curveNet->extendPath(lastp , pos , pathForComp[0] , newNode);
+                dispCurveNet->extendPath(lastDisp , dispPos , pathVertex , newNode , bsp);
                 if (isSnap && newNode)
                 {
                     curveNet->breakPath(breakLine , breakPoint);
                     dispCurveNet->breakPath(breakLine , breakPoint);
                 }
+
+                // pcUtils->optimizeJunction(dispCurveNet , lastDisp);
             }
             
             // dispCurveNet->debugLog();

@@ -16,7 +16,6 @@
 #include <wx/statusbr.h>
 #include <ctime>
 #include <Eigen/Dense>
-#include "engine.h"
 
 using namespace Eigen;
 
@@ -213,8 +212,6 @@ public:
 	PointCloudRenderer *pcRenderer;
     // curve network
     CurveNet *curveNet;
-    // matlab api
-    Engine *ep;
 
 public:
 	PointCloudUtils();
@@ -259,8 +256,7 @@ public:
 
     void laplacianSmooth(Path& path);
     void gradientDescentSmooth(Path& path);
-
-    void convert2Spline(Path& path);
+    void optimizeJunction(CurveNet* cn , const vec3d& pos);
 };
 
 #endif

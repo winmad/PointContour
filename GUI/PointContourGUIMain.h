@@ -74,6 +74,7 @@ class PointContourGUIFrame: public wxFrame
         void OnSmoothScaleTextEnter(wxCommandEvent& event);
         void OnSmoothIterTextEnter(wxCommandEvent& event);
         void OnUseBSplineClick(wxCommandEvent& event);
+        void OnShowCtrlPointsClick(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -95,6 +96,7 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_TEXTCTRL13;
         static const long ID_CHOICE1;
         static const long ID_CHECKBOX5;
+        static const long ID_CHECKBOX6;
         static const long ID_STATICTEXT7;
         static const long ID_TEXTCTRL7;
         static const long ID_STATICTEXT8;
@@ -168,6 +170,7 @@ class PointContourGUIFrame: public wxFrame
         wxButton* UpdateParametersButton;
         wxStatusBar* StatusBar1;
         wxScrolledWindow* ScrolledWindow2;
+        wxCheckBox* ShowCtrlPoints;
         wxStaticText* StaticText12;
         wxTextCtrl* GridResY;
         wxTextCtrl* GridResX;
