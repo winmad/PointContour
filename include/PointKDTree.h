@@ -11,11 +11,11 @@
 typedef double Real;
 typedef nv::vec3d Vector3;
 
-#define INF std::numeric_limits<float>::infinity()
+#define INF 1e20
 
 inline Real myabs(const Real& x)
 {
-	return (x < -1e-6 ? -x : x);
+	return (x < -1e-8 ? -x : x);
 }
 
 struct KdNode

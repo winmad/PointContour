@@ -10,10 +10,10 @@ public:
 	struct HeapNode
 	{
 		int index;
-		float key;
+		double key;
 
 		HeapNode() {}
-		HeapNode(const int& _index , const float& _key) :
+		HeapNode(const int& _index , const double& _key) :
 			index(_index) , key(_key) {}
 
 		bool operator <(const HeapNode& rhs)
@@ -33,7 +33,7 @@ public:
 		nodeNum = 0;
 	}
 
-	void push(int index , float key)
+	void push(int index , double key)
 	{
 		//if (indices[index] <= 0 || indices[index] > nodeNum)
         if (indices[index] == -1)

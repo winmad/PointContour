@@ -102,6 +102,7 @@ const long PointContourGUIFrame::ID_STATICTEXT6 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL6 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT10 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL10 = wxNewId();
+const long PointContourGUIFrame::ID_CHOICE2 = wxNewId();
 const long PointContourGUIFrame::ID_BUTTON1 = wxNewId();
 const long PointContourGUIFrame::ID_SCROLLEDWINDOW3 = wxNewId();
 const long PointContourGUIFrame::ID_NOTEBOOK1 = wxNewId();
@@ -136,6 +137,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer7;
     wxStaticBoxSizer* StaticBoxSizer3;
     wxFlexGridSizer* FlexGridSizer8;
+    wxFlexGridSizer* FlexGridSizer12;
     wxMenuBar* MenuBar1;
     wxFlexGridSizer* FlexGridSizer6;
     wxStaticBoxSizer* StaticBoxSizer1;
@@ -232,7 +234,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer9->Fit(ScrolledWindow2);
     FlexGridSizer9->SetSizeHints(ScrolledWindow2);
     ScrolledWindow3 = new wxScrolledWindow(Notebook1, ID_SCROLLEDWINDOW3, wxPoint(165,16), wxDefaultSize, wxVSCROLL|wxHSCROLL, _T("ID_SCROLLEDWINDOW3"));
-    FlexGridSizer10 = new wxFlexGridSizer(0, 3, 0, 0);
+    FlexGridSizer10 = new wxFlexGridSizer(0, 1, 0, 0);
     StaticBoxSizer2 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow3, _("Parameters"));
     FlexGridSizer3 = new wxFlexGridSizer(0, 1, 0, 0);
     StaticBoxSizer4 = new wxStaticBoxSizer(wxHORIZONTAL, ScrolledWindow3, _("Grid Resolution"));
@@ -278,6 +280,12 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     AlphaN = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL10, _("0.2"), wxDefaultPosition, wxSize(50,30), 0, wxDefaultValidator, _T("ID_TEXTCTRL10"));
     FlexGridSizer6->Add(AlphaN, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(FlexGridSizer6, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer12 = new wxFlexGridSizer(0, 3, 0, 0);
+    MetricChoice = new wxChoice(ScrolledWindow3, ID_CHOICE2, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE2"));
+    MetricChoice->SetSelection( MetricChoice->Append(_("Min curvature")) );
+    MetricChoice->Append(_("Max curvature"));
+    FlexGridSizer12->Add(MetricChoice, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer3->Add(FlexGridSizer12, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     UpdateParametersButton = new wxButton(ScrolledWindow3, ID_BUTTON1, _("Update"), wxDefaultPosition, wxSize(100,40), 0, wxDefaultValidator, _T("ID_BUTTON1"));
     FlexGridSizer3->Add(UpdateParametersButton, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer2->Add(FlexGridSizer3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -340,6 +348,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL11,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnAlpha1Text);
     Connect(ID_TEXTCTRL6,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnAlpha2Text);
     Connect(ID_TEXTCTRL10,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnAlphaNText);
+    Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnMetricChoiceSelect);
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUpdateParametersButtonClick);
     Connect(ID_MENUITEM2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenPointCloudSelected);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnQuit);
@@ -777,4 +786,8 @@ void PointContourGUIFrame::OnShowCtrlPointsClick(wxCommandEvent& event)
 {
     m_pcUtils->pcRenderer->isShowCtrlNodes = !m_pcUtils->pcRenderer->isShowCtrlNodes;
     m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnMetricChoiceSelect(wxCommandEvent& event)
+{
 }

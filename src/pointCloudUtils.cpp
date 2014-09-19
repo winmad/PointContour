@@ -563,7 +563,7 @@ void PointCloudUtils::calcMetric(double*** &f)
 #pragma omp parallel for
 	for (int i = 1; i < sizeOriginF.x - 1; i++)
 	{
-		for (int j = 1; j < sizeOriginF.y; j++)
+		for (int j = 1; j < sizeOriginF.y - 1; j++)
 		{
 			for (int k = 1; k < sizeOriginF.z - 1; k++)
 			{
@@ -766,6 +766,14 @@ void PointCloudUtils::calcPointTensor()
 		double hashVal = point2double(pos);
 		if (point2Index.find(hashVal) != point2Index.end())
         {
+            /*
+            int ind = point2Index[hashVal];
+            if (!isEqual(index2Point[ind] , pos))
+            {
+                printf("(%.6f,%.6f,%.6f) ~= (%.6f,%.6f,%.6f)\n" , pos.x , pos.y , pos.z ,
+                    index2Point[ind].x , index2Point[ind].y , index2Point[ind].z);
+            }
+            */
             continue;
         }
 
@@ -815,14 +823,16 @@ void PointCloudUtils::calcPointTensor()
         index2Tensor.push_back(&pointTensor[i]);
     }
 	timer.PopAndDisplayTime("\nInterpolate point tensors: %.6lf\n");
-	
+
     /*
 	for (int i = 0; i < nodes; i++)
 	{
 		writeLog("========%d=========\n" , i);
 		vec3d pos = index2Point[i];
-		writeLog("------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
-
+        double hashVal = point2double(pos);
+		writeLog("------index = %d , (%.6lf,%.6lf,%.6lf)------\n" , point2Index[hashVal] ,
+            pos.x , pos.y , pos.z);
+        
 		Tensor ts = pointTensor[i];
 		for (int a = 0; a < 3; a++)
 		{
@@ -854,7 +864,7 @@ void PointCloudUtils::buildGraphFromPoints()
 	for (int i = 0; i < nodes; i++)
 	{
 		KnnQuery query(50);
-		tree->searchKnn(0 , pcData[i].pos , query);
+		tree->searchKnn(0 , index2Point[i] , query);
         pointGraph[i].clear();
 		for (int k = 0; k < query.knnPoints.size(); k++)
 		{
@@ -866,24 +876,33 @@ void PointCloudUtils::buildGraphFromPoints()
 			double w;
             w = calcEdgeWeight(v , pointTensor[i] , pointTensor[j]);
 			pointGraph[i].push_back(Edge(j , w));
+
+            /*
+            if (i == 27330 || i == 28171)
+            {
+                writeLog("(%.6f,%.6f,%.6f) <-> (%.6f,%.6f,%.6f) , w=%.6f\n" ,
+                    pcData[i].pos.x , pcData[i].pos.y , pcData[i].pos.z ,
+                    query.knnPoints[k].point->pos.x , query.knnPoints[k].point->pos.y ,
+                    query.knnPoints[k].point->pos.z , w);
+            }
+            */
 		}
 	}
 
 	timer.PopAndDisplayTime("\nBuild point graph: %.6lf\n");
-
-/*
+    /*
 	for (int i = 0; i < nodes; i++)
 	{
-		fprintf(fp , "==============\n");
+		writeLog("==============\n");
 		for (int k = 0; k < pointGraph[i].size(); k++)
 		{
 			Edge e = pointGraph[i][k];
-			fprintf(fp , "(%d->%d), (%.6lf,%.6lf,%.6lf)->(%.6lf,%.6lf,%.6lf): %.6lf\n" ,
+			writeLog("(%d->%d), (%.6lf,%.6lf,%.6lf)->(%.6lf,%.6lf,%.6lf): %.6lf\n" ,
 				i , e.y , index2Point[i].x , index2Point[i].y , index2Point[i].z ,
 				index2Point[e.y].x , index2Point[e.y].y , index2Point[e.y].z , e.w);
 		}
 	}
-*/
+    */
 }
 
 bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
@@ -895,6 +914,8 @@ bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
 
 	info.dist[source] = 0.0;
 	q.push(source , 0.0);
+
+    // bool first = true;
 
 	while (!q.empty())
 	{
@@ -909,7 +930,13 @@ bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
 		for (int k = 0; k < g[now].size(); k++)
 		{
 			const Edge& e = g[now][k];
-
+            /*
+            if (first)
+            {
+                printf("(%.6f,%.6f,%.6f) , w=%.6f\n" , index2Point[e.y].x ,
+                    index2Point[e.y].y , index2Point[e.y].z , e.w);
+            }
+            */
 			if (info.dist[e.y] > d + e.w)
 			{
 				info.dist[e.y] = d + e.w;
@@ -918,6 +945,8 @@ bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
 				q.push(e.y , info.dist[e.y]);
 			}
 		}
+
+        // first = false;
 	}
 
 	if (sink != NULL && info.dist[*sink] > 1e20)
@@ -929,29 +958,27 @@ bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
 void PointCloudUtils::traceBack(const DijkstraInfo& info , const int& sink ,
 								Path& pathVertex)
 {
-	//std::vector<int> seq;
+	// std::vector<int> seq;
 	pathVertex.clear();
 	int now = sink;
 	while (info.prev[now] != -1)
 	{
 		pathVertex.push_back(index2Point[now]);
-		//seq.push_back(now);
+		// seq.push_back(now);
 		now = info.prev[now];
 	}
 	pathVertex.push_back(index2Point[now]);
+    /*
+    seq.push_back(now);
 	
-/*
-	seq.push_back(now);
-	
-	fprintf(fp , "===========%.6lf=========\n" , info.dist[sink]);
+	fprintf(stdout , "===========%.6lf=========\n" , info.dist[sink]);
 	
 	for (int i = (int)pathVertex.size() - 1; i >= 1; i--)
 	{
-		fprintf(fp , "(%.6lf,%.6lf,%.6lf) -> (%.6lf,%.6lf,%.6lf) , %.6lf\n" , pathVertex[i].x , pathVertex[i].y , pathVertex[i].z ,
+		fprintf(stdout , "(%.6lf,%.6lf,%.6lf) -> (%.6lf,%.6lf,%.6lf) , %.6lf\n" , pathVertex[i].x , pathVertex[i].y , pathVertex[i].z ,
 			pathVertex[i - 1].x , pathVertex[i - 1].y , pathVertex[i - 1].z , info.dist[seq[i - 1]] - info.dist[seq[i]]);
 	}
-	
-*/
+    */
 }
 
 void PointCloudUtils::laplacianSmooth(Path &path)
