@@ -633,6 +633,39 @@ void PointContourGUIFrame::OnUpdateParametersButtonClick(wxCommandEvent& event)
 	StatusBar1->SetStatusText("Finish Updating Parameters");
 }
 
+void PointContourGUIFrame::OnMetricChoiceSelect(wxCommandEvent& event)
+{
+    if (event.GetSelection() == 0)
+    {
+        m_pcUtils->metricType = PointCloudUtils::MIN_CURVATURE;
+    }
+    else
+    {
+        m_pcUtils->metricType = PointCloudUtils::MAX_CURVATURE;
+    }
+    
+    bool needUpdate = false;
+    Tensor& ts = m_pcUtils->tensor[1][1][1];
+    if ((m_pcUtils->metricType == PointCloudUtils::MIN_CURVATURE &&
+            ts.axisLen[1] < ts.axisLen[2]) ||
+        (m_pcUtils->metricType == PointCloudUtils::MAX_CURVATURE &&
+            ts.axisLen[1] > ts.axisLen[2]))
+    {
+        needUpdate = true;
+    }
+    if (needUpdate)
+    {
+        m_pcUtils->calcMetric(m_pcUtils->f);
+        if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+        {
+            m_pcUtils->calcPointTensor();
+            m_pcUtils->buildGraphFromPoints();
+        }
+        m_openGLView->Render();
+        StatusBar1->SetStatusText("Finish Updating Parameters");
+    }
+}
+
 void PointContourGUIFrame::OnPrintInfoButtonClick(wxCommandEvent& event)
 {
     vec3d pos;
@@ -786,8 +819,4 @@ void PointContourGUIFrame::OnShowCtrlPointsClick(wxCommandEvent& event)
 {
     m_pcUtils->pcRenderer->isShowCtrlNodes = !m_pcUtils->pcRenderer->isShowCtrlNodes;
     m_openGLView->Render();
-}
-
-void PointContourGUIFrame::OnMetricChoiceSelect(wxCommandEvent& event)
-{
 }

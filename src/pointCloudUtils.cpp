@@ -4,6 +4,7 @@
 #include "curveNet.h"
 #include <omp.h>
 #include <queue>
+#include <algorithm>
 
 PointCloudUtils::PointCloudUtils()
 {
@@ -112,6 +113,7 @@ void PointCloudUtils::init()
 	tree = new PointKDTree<Data>(pcData);
 
 	graphType = POINT_GRAPH;
+    metricType = MIN_CURVATURE;
 
 	nodes = edges = 0;
 
@@ -456,6 +458,11 @@ void PointCloudUtils::calcTensorMetric(Tensor& ts)
     //ts.axisLen[0] = (1.0 + alpha1 * s1) * scale;
     //ts.axisLen[1] = (1.0 + alpha2 * s2) * scale;
     //ts.axisLen[2] = 1.0 * scale;
+
+    if (metricType == MAX_CURVATURE)
+    {
+        std::swap(ts.axisLen[1] , ts.axisLen[2]);
+    }
     
     Matrix3d vec , d;
     for (int i = 0; i < 3; i++)

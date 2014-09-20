@@ -168,6 +168,12 @@ public:
 		POINT_GRAPH
 	};
 
+    enum MetricType
+    {
+        MIN_CURVATURE = 0,
+        MAX_CURVATURE
+    };
+    
 	std::vector<Data> pcData;
 	PointKDTree<Data> *tree;
 
@@ -193,6 +199,7 @@ public:
 	double alpha1 , alpha2 , alphaN;
 
 	GraphType graphType;
+    MetricType metricType;
 
 	int nodes , edges;
 	std::map<double , int> point2Index;
