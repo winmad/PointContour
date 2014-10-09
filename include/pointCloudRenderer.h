@@ -24,7 +24,12 @@ public:
 	bool isShowMetric;
 	bool isShowPath;
     bool isShowCtrlNodes;
+    bool isShowCollinear;
+    int bspIndex , curveIndex;
 
+    void incBspCurveIndex();
+    void decBspCurveIndex();
+    
 	bool isCtrlPress;
     bool isAltPress;
 
@@ -44,6 +49,7 @@ public:
 					const vec3d& n);
 	void drawQuad(const vec3d& origin , const vec3d& a , const vec3d& b , const double& r ,
 				  const vec3d& n);
+    void drawLine(const vec3d& st , const vec3d& ed);
 	void drawLines(const Path& v);
 	void drawCube(const vec3d& lb , const vec3d& rt);
 	void drawEllipse(const vec3d& origin , const vec3d& majorAxis , const double& majorLen ,
@@ -68,6 +74,7 @@ public:
     void renderPickedCurve();
     void renderPathForComp();
     void renderCtrlNodes();
+    void renderCollinearLines();
 
 	void render();
 

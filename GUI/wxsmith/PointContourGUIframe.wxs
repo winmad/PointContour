@@ -198,6 +198,15 @@
 															<border>5</border>
 															<option>1</option>
 														</object>
+														<object class="sizeritem">
+															<object class="wxButton" name="ID_BUTTON3" variable="CollinearButton" member="yes">
+																<label>show collinear lines</label>
+																<handler function="OnCollinearButtonClick" entry="EVT_BUTTON" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>

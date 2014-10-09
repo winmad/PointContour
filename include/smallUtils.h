@@ -21,7 +21,22 @@ struct BSpline
 {
     std::vector<double> knots;
     std::vector<vec3d> ctrlNodes;
-
+    /*
+    BSpline& operator =(const BSpline& bsp)
+    {
+        knots.clear();
+        ctrlNodes.clear();
+        for (int i = 0; i < bsp.knots.size(); i++)
+        {
+            knots.push_back(bsp.knots[i]);
+        }
+        for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+        {
+            ctrlNodes.push_back(bsp.ctrlNodes[i]);
+        }
+        return this;
+    }
+    */
     void clear()
     {
         knots.clear();

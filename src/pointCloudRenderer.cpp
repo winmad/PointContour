@@ -34,6 +34,8 @@ void PointCloudRenderer::init()
 	isShowMetric = false;
 	isShowPointCloud = true;
     isShowCtrlNodes = false;
+    isShowCollinear = false;
+    bspIndex = 0; curveIndex = 0;
 
 	pathVertex.clear();
     bsp.clear();
@@ -145,6 +147,14 @@ void PointCloudRenderer::drawCircle(const vec3d& origin , const vec3d& a , const
 		glVertex3f(p.x , p.y , p.z);
 	}
 	glEnd();
+}
+
+void PointCloudRenderer::drawLine(const vec3d& st , const vec3d& ed)
+{
+    glBegin(GL_LINE_STRIP);
+    glVertex3f(st.x , st.y , st.z);
+    glVertex3f(ed.x , ed.y , ed.z);
+    glEnd();
 }
 
 void PointCloudRenderer::drawLines(const Path& v)
@@ -411,6 +421,8 @@ void PointCloudRenderer::renderSelectedPoints()
 
 void PointCloudRenderer::renderCurrentPath()
 {
+    if (isShowCollinear)
+        return;
 	glColor3f(0.f , 0.f , 1.f);
 	glLineWidth(3.f);
 	glEnable(GL_LINE_STIPPLE);
@@ -422,7 +434,8 @@ void PointCloudRenderer::renderStoredPaths()
 {
     if (dispCurveNet == NULL)
         return;
-    
+    if (isShowCollinear)
+        return;
 	glColor3f(0.f , 0.f , 1.f);
 	glLineWidth(3.f);
 	glEnable(GL_LINE_STIPPLE);
@@ -489,6 +502,31 @@ void PointCloudRenderer::renderCtrlNodes()
     glDisable(GL_LINE_STIPPLE);
 }
 
+void PointCloudRenderer::renderCollinearLines()
+{
+    if (!isShowCollinear) return;
+    if (dispCurveNet->bsplines.size() == 0) return;
+
+    glColor3f(1.f , 0.f , 0.f);
+    glLineWidth(3.f);
+    glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    drawLine(dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex] ,
+        dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
+
+    glColor3f(0.f , 0.f , 1.f);
+    for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+    {
+        for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
+        {
+            if (i == bspIndex && j == curveIndex) continue;
+            if (!dispCurveNet->collinearSet.sameRoot(bspIndex , curveIndex , i , j)) continue;
+            drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
+                dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
+        }
+    }
+}
+
 void PointCloudRenderer::render()
 {
 	renderPointCloud();
@@ -500,6 +538,7 @@ void PointCloudRenderer::render()
     renderPickedCurve();
     renderCtrlNodes();
     //renderPathForComp();
+    renderCollinearLines();
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -717,6 +756,9 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                     dispCurveNet->breakPath(breakLine , breakPoint);
                 }
 
+                dispCurveNet->collinearSet.printLog();
+                // dispCurveNet->collinearSet.test();
+
                 // pcUtils->optimizeJunction(dispCurveNet , lastDisp);
             }
             
@@ -819,4 +861,26 @@ void PointCloudRenderer::clearPaths()
     
     curveNet->clear();
     dispCurveNet->clear();
+}
+
+void PointCloudRenderer::incBspCurveIndex()
+{
+    if (dispCurveNet->numPolyLines == 0) return;
+    curveIndex++;
+    while (curveIndex >= (int)dispCurveNet->bsplines[bspIndex].ctrlNodes.size() - 1)
+    {
+        curveIndex = 0;
+        bspIndex = (bspIndex + 1) % dispCurveNet->numPolyLines;
+    }
+}
+
+void PointCloudRenderer::decBspCurveIndex()
+{
+    if (dispCurveNet->numPolyLines == 0) return;
+    curveIndex--;
+    while (curveIndex < 0)
+    {
+        bspIndex = (bspIndex - 1 + dispCurveNet->numPolyLines) % dispCurveNet->numPolyLines;
+        curveIndex = (int)dispCurveNet->bsplines[bspIndex].ctrlNodes.size() - 2;
+    }
 }

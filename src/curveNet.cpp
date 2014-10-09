@@ -9,6 +9,7 @@ void CurveNet::clear()
     polyLines.clear();
     bsplines.clear();
     polyLinesIndex.clear();
+    collinearSet.clear();
 }
 
 void CurveNet::startPath(const vec3d& st)
@@ -59,6 +60,36 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     edges[st_ni].push_back(CurveEdge(ed_ni , numPolyLines));
     edges[ed_ni].push_back(CurveEdge(st_ni , numPolyLines));
     numPolyLines++;
+
+    if (bsp.ctrlNodes.size() == 0) return;
+    
+    printf("===== merge extend =====\n");
+    for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
+    {
+        collinearSet.makeSet(numPolyLines - 1 , i);
+        for (int j = 0; j < numPolyLines; j++)
+        {
+            for (int k = 0; k < (int)bsplines[j].ctrlNodes.size() - 1; k++)
+            {
+                if (j == numPolyLines - 1 && k >= i) break;
+                if (collinearSet.sameRoot(numPolyLines - 1 , i , j , k)) continue;
+                if (checkCollinear(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
+                        bsplines[j].ctrlNodes[k] , bsplines[j].ctrlNodes[k + 1] , 0.05))
+                {
+                    printf("merge: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
+                        j , k);
+                    /*
+                    vec3d v1 = bsp.ctrlNodes[i + 1] - bsp.ctrlNodes[i];
+                    v1 /= v1.length();
+                    vec3d v2 = bsplines[j].ctrlNodes[k + 1] - bsplines[j].ctrlNodes[k];
+                    v2 /= v2.length();
+                    printf("(%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n(%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , bsp.ctrlNodes[i].x , bsp.ctrlNodes[i].y , bsp.ctrlNodes[i].z , bsp.ctrlNodes[i + 1].x , bsp.ctrlNodes[i + 1].y , bsp.ctrlNodes[i + 1].z , v1.x , v1.y , v1.z , bsplines[j].ctrlNodes[k].x , bsplines[j].ctrlNodes[k].y , bsplines[j].ctrlNodes[k].z , bsplines[j].ctrlNodes[k + 1].x , bsplines[j].ctrlNodes[k + 1].y , bsplines[j].ctrlNodes[k + 1].z , v2.x , v2.y , v2.z);
+                    */
+                    collinearSet.merge(numPolyLines - 1 , i , j , k);
+                }
+            }
+        }
+    }
 }
 
 void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
@@ -104,6 +135,50 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
         BSpline bsp;
         convert2Spline(polyLines[numPolyLines - 1] , bsp);
         bsplines.push_back(bsp);
+        
+        printf("===== merge split ======\n");
+        for (int t = 0; t < 2; t++)
+        {
+            BSpline bsp;
+            int bspIndex;
+            if (t == 0)
+            {
+                bsp = bsplines[breakLine];
+                bspIndex = breakLine;
+            }
+            else
+            {
+                bsp = bsplines[numPolyLines - 1];
+                bspIndex = numPolyLines - 1;
+            }
+            for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
+            {
+                collinearSet.makeSet(bspIndex , i);
+                for (int j = 0; j < numPolyLines; j++)
+                {
+                    for (int k = 0; k < (int)bsplines[j].ctrlNodes.size() - 1; k++)
+                    {
+                        if (j == bspIndex && k >= i) break;
+                        if (t == 0 && j == numPolyLines - 1) break;
+                        if (collinearSet.sameRoot(numPolyLines - 1 , i , j , k)) continue;
+                        if (checkCollinear(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
+                                bsplines[j].ctrlNodes[k] , bsplines[j].ctrlNodes[k + 1] , 0.05))
+                        {
+                            printf("merge: (%d , %d) , (%d , %d)\n" , bspIndex , i ,
+                                j , k);
+                            /*
+                            vec3d v1 = bsp.ctrlNodes[i + 1] - bsp.ctrlNodes[i];
+                            v1 /= v1.length();
+                            vec3d v2 = bsplines[j].ctrlNodes[k + 1] - bsplines[j].ctrlNodes[k];
+                            v2 /= v2.length();
+                            printf("(%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n(%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , bsp.ctrlNodes[i].x , bsp.ctrlNodes[i].y , bsp.ctrlNodes[i].z , bsp.ctrlNodes[i + 1].x , bsp.ctrlNodes[i + 1].y , bsp.ctrlNodes[i + 1].z , v1.x , v1.y , v1.z , bsplines[j].ctrlNodes[k].x , bsplines[j].ctrlNodes[k].y , bsplines[j].ctrlNodes[k].z , bsplines[j].ctrlNodes[k + 1].x , bsplines[j].ctrlNodes[k + 1].y , bsplines[j].ctrlNodes[k + 1].z , v2.x , v2.y , v2.z);
+                            */
+                            collinearSet.merge(bspIndex , i , j , k);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -138,6 +213,42 @@ bool CurveNet::linkNoEdges(const int& ni)
     {
         if (edges[ni][i].link != -1) return false;
     }
+    return true;
+}
+
+bool CurveNet::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
+    const vec3d& x2 , const vec3d& y2 , const double& threshold)
+{
+    vec3d v1 , v2;
+    /*
+    v1 = y1 - x1; v2 = x2 - x1;
+    double cosine = v1.dot(v2) / (v1.length() * v2.length());
+    if (1.0 - std::abs(cosine) > threshold) return false;
+
+    v1 = y1 - x1; v2 = y2 - x1;
+    cosine = v1.dot(v2) / (v1.length() * v2.length());
+    if (1.0 - std::abs(cosine) > threshold) return false;
+
+    v1 = x2 - y1; v2 = y2 - y1;
+    cosine = v1.dot(v2) / (v1.length() * v2.length());
+    if (1.0 - std::abs(cosine) > threshold) return false;
+
+    v1 = x2 - x1; v2 = y2 - x1;
+    cosine = v1.dot(v2) / (v1.length() * v2.length());
+    if (1.0 - std::abs(cosine) > threshold) return false;
+    */
+    v1 = y1 - x1;
+    v1.normalize();
+    v2 = y2 - x2;
+    v2.normalize();
+    if (1.0 - std::abs(v1.dot(v2)) > threshold) return false;
+    
+    vec3d denom = (y1 - x1).cross(y2 - x2);
+    vec3d numer = (x2 - x1).dot(denom);
+    double d = numer.length() / denom.length();
+    // printf("dist = %.6f\n" , d);
+    if (d > 0.01) return false;
+    
     return true;
 }
 

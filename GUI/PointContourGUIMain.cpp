@@ -78,6 +78,7 @@ const long PointContourGUIFrame::ID_TEXTCTRL13 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX5 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX6 = wxNewId();
+const long PointContourGUIFrame::ID_BUTTON3 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -210,6 +211,8 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     ShowCtrlPoints = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX6, _("show B-Spline Ctrl Points"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX6"));
     ShowCtrlPoints->SetValue(false);
     FlexGridSizer2->Add(ShowCtrlPoints, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    CollinearButton = new wxButton(ScrolledWindow2, ID_BUTTON3, _("show collinear lines"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
+    FlexGridSizer2->Add(CollinearButton, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -336,6 +339,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_CHOICE1,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothingChoiceSelect);
     Connect(ID_CHECKBOX5,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUseBSplineClick);
     Connect(ID_CHECKBOX6,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowCtrlPointsClick);
+    Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnCollinearButtonClick);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -643,7 +647,7 @@ void PointContourGUIFrame::OnMetricChoiceSelect(wxCommandEvent& event)
     {
         m_pcUtils->metricType = PointCloudUtils::MAX_CURVATURE;
     }
-    
+
     bool needUpdate = false;
     Tensor& ts = m_pcUtils->tensor[1][1][1];
     if ((m_pcUtils->metricType == PointCloudUtils::MIN_CURVATURE &&
@@ -721,6 +725,12 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 			exit(0);
         case WXK_SPACE:
             m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
+            break;
+        case WXK_UP:
+            m_pcUtils->pcRenderer->incBspCurveIndex();
+            break;
+        case WXK_DOWN:
+            m_pcUtils->pcRenderer->decBspCurveIndex();
             break;
 	}
 	m_openGLView->OnKeyDown(event);
@@ -818,5 +828,28 @@ void PointContourGUIFrame::OnUseBSplineClick(wxCommandEvent& event)
 void PointContourGUIFrame::OnShowCtrlPointsClick(wxCommandEvent& event)
 {
     m_pcUtils->pcRenderer->isShowCtrlNodes = !m_pcUtils->pcRenderer->isShowCtrlNodes;
+    m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnCollinearButtonClick(wxCommandEvent& event)
+{
+    if (m_pcUtils->pcRenderer->dispCurveNet->bsplines.size() == 0) return;
+    m_pcUtils->pcRenderer->isShowCollinear = !m_pcUtils->pcRenderer->isShowCollinear;
+    if (m_pcUtils->pcRenderer->isShowCollinear)
+    {
+        CollinearButton->SetLabel("hide collinear lines");
+    }
+    else
+    {
+        CollinearButton->SetLabel("show collinear lines");
+    }
+    int& bspIndex = m_pcUtils->pcRenderer->bspIndex;
+    int& curveIndex = m_pcUtils->pcRenderer->curveIndex;
+    if (bspIndex >= m_pcUtils->pcRenderer->dispCurveNet->bsplines.size() ||
+        curveIndex >= m_pcUtils->pcRenderer->dispCurveNet->bsplines[bspIndex].ctrlNodes.size())
+    {
+        bspIndex = 0;
+        curveIndex = 0;
+    }
     m_openGLView->Render();
 }

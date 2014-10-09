@@ -2,6 +2,7 @@
 #define CURVE_NET_H
 
 #include "smallUtils.h"
+#include "disjointSet.h"
 
 struct PolyLineIndex
 {
@@ -37,6 +38,11 @@ public:
     int pli;
 };
 
+struct CurveColor
+{
+    std::vector<int> colors;
+};
+
 class CurveNet
 {
 public:
@@ -53,6 +59,9 @@ public:
     
     int getNodeIndex(const vec3d& pos);
     bool linkNoEdges(const int& ni);
+
+    bool checkCollinear(const vec3d& x1 , const vec3d& y1 ,
+        const vec3d& x2 , const vec3d& y2 , const double& threshold);
     
     void test();
     void debugPrint();
@@ -66,6 +75,12 @@ public:
     std::vector<Path> polyLines;
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
+
+    std::vector<int> curveType;
+
+    int collinearMarks;
+    DisjointSet collinearSet;
+    std::vector<CurveColor> collinear;
 };
 
 #endif
