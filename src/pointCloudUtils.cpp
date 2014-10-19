@@ -31,6 +31,7 @@ PointCloudUtils::PointCloudUtils()
     {
         fprintf(stderr , "\nStart MATLAB successfully\n");
     }
+    engEvalString(ep , "addpath ~/Projects/PointContour/matlab/");
     /*
     if (!mclInitializeApplication(NULL,0))
     {

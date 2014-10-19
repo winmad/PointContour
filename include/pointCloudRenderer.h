@@ -25,6 +25,7 @@ public:
 	bool isShowPath;
     bool isShowCtrlNodes;
     bool isShowCollinear;
+    int constraintsVisual;
     int bspIndex , curveIndex;
 
     void incBspCurveIndex();
@@ -75,6 +76,8 @@ public:
     void renderPathForComp();
     void renderCtrlNodes();
     void renderCollinearLines();
+    void renderParallelLines();
+    void renderCoplanarLines();
 
 	void render();
 

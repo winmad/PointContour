@@ -37,7 +37,6 @@ include_directories(
   include
   src
   GUI
-  matlab/cpp
   external/include
   external/lib/wx/wx/include/osx_cocoa-unicode-static-3.0
   /Applications/MATLAB_R2014a.app/extern/include
@@ -51,7 +50,6 @@ link_directories(
   ${GLUT_LIBRARY_DIRS}
   ${GLEW_LIBRARY_DIRS}
   ${OPENMP_LIBRARY_DIRS}
-  /Users/Winmad/Projects/PointContour/matlab/cpp
   /Users/Winmad/wxWidgets-3.0.1/build-osx/lib
   /Applications/MATLAB_R2014a.app/bin/maci64
   /Applications/MATLAB_R2014a.app/runtime/maci64

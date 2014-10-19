@@ -207,6 +207,21 @@
 															<border>5</border>
 															<option>1</option>
 														</object>
+														<object class="sizeritem">
+															<object class="wxChoice" name="ID_CHOICE3" variable="ConstraintsVisual" member="yes">
+																<content>
+																	<item>none</item>
+																	<item>collinear</item>
+																	<item>parallel</item>
+																	<item>coplanar</item>
+																</content>
+																<selection>0</selection>
+																<handler function="OnConstraintsVisualSelect" entry="EVT_CHOICE" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>

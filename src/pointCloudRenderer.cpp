@@ -35,6 +35,7 @@ void PointCloudRenderer::init()
 	isShowPointCloud = true;
     isShowCtrlNodes = false;
     isShowCollinear = false;
+    constraintsVisual = 0;
     bspIndex = 0; curveIndex = 0;
 
 	pathVertex.clear();
@@ -89,7 +90,7 @@ void PointCloudRenderer::init()
 	}
 	
 	vec3d diag = pcUtils->box.rt - pcUtils->box.lb;
-	selectionOffset = std::min(diag.x , std::min(diag.y , diag.z)) / 40.0;
+	selectionOffset = std::min(diag.x , std::min(diag.y , diag.z)) / 50.0;
 
 	initSelectionBuffer();
 
@@ -421,8 +422,9 @@ void PointCloudRenderer::renderSelectedPoints()
 
 void PointCloudRenderer::renderCurrentPath()
 {
-    if (isShowCollinear)
-        return;
+    if (isShowCollinear) return;
+    if (constraintsVisual != 0) return;
+    
 	glColor3f(0.f , 0.f , 1.f);
 	glLineWidth(3.f);
 	glEnable(GL_LINE_STIPPLE);
@@ -432,10 +434,10 @@ void PointCloudRenderer::renderCurrentPath()
 
 void PointCloudRenderer::renderStoredPaths()
 {
-    if (dispCurveNet == NULL)
-        return;
-    if (isShowCollinear)
-        return;
+    if (dispCurveNet == NULL) return;
+    if (isShowCollinear) return;
+    if (constraintsVisual != 0) return;
+    
 	glColor3f(0.f , 0.f , 1.f);
 	glLineWidth(3.f);
 	glEnable(GL_LINE_STIPPLE);
@@ -504,7 +506,7 @@ void PointCloudRenderer::renderCtrlNodes()
 
 void PointCloudRenderer::renderCollinearLines()
 {
-    if (!isShowCollinear) return;
+    if (constraintsVisual != 1) return;
     if (dispCurveNet->bsplines.size() == 0) return;
 
     glColor3f(1.f , 0.f , 0.f);
@@ -527,6 +529,65 @@ void PointCloudRenderer::renderCollinearLines()
     }
 }
 
+void PointCloudRenderer::renderParallelLines()
+{
+    if (constraintsVisual != 2) return;
+    if (dispCurveNet->bsplines.size() == 0) return;
+
+    glColor3f(1.f , 0.f , 0.f);
+    glLineWidth(3.f);
+    glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    drawLine(dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex] ,
+        dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
+
+    if (dispCurveNet->curveType[bspIndex] != 1) return;
+    
+    glColor3f(0.f , 0.f , 1.f);
+    for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+    {
+        if (dispCurveNet->bsplines[i].ctrlNodes.size() == 0) continue;
+        if (dispCurveNet->curveType[i] != 1) continue;
+        if (i != bspIndex && !dispCurveNet->parallelSet.sameRoot(bspIndex , 0 , i , 0)) continue;
+        for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
+        {
+            if (i == bspIndex && j == curveIndex) continue;
+            drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
+                dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
+        }
+    }
+}
+
+void PointCloudRenderer::renderCoplanarLines()
+{
+    if (constraintsVisual != 3) return;
+    if (dispCurveNet->bsplines.size() == 0) return;
+
+    glColor3f(1.f , 0.f , 0.f);
+    glLineWidth(3.f);
+    glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    drawLine(dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex] ,
+        dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
+
+    if (dispCurveNet->curveType[bspIndex] == 2) return;
+
+    glColor3f(0.f , 0.f , 1.f);
+
+    for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+    {
+        if (dispCurveNet->bsplines[i].ctrlNodes.size() == 0) continue;
+        if (dispCurveNet->curveType[i] == 2) continue;
+        if (dispCurveNet->coplanarSet.getMark(bspIndex , 0 , i , 0) != 1) continue;
+        for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
+        {
+            if (i == bspIndex && j == curveIndex) continue;
+            drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
+                dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
+        }
+    }
+}
+
 void PointCloudRenderer::render()
 {
 	renderPointCloud();
@@ -539,6 +600,8 @@ void PointCloudRenderer::render()
     renderCtrlNodes();
     //renderPathForComp();
     renderCollinearLines();
+    renderParallelLines();
+    renderCoplanarLines();
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -725,7 +788,10 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 
             if (useBSpline)
             {
-                convert2Spline(pathVertex , bsp);
+                if (!dispCurveNet->collinearTest(pathVertex , bsp))
+                {
+                    convert2Spline(pathVertex , bsp);
+                }
             }
             pathVertex[0] = dispPos;
 		}
