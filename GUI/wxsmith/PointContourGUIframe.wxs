@@ -199,21 +199,14 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxButton" name="ID_BUTTON3" variable="CollinearButton" member="yes">
-																<label>show collinear lines</label>
-																<handler function="OnCollinearButtonClick" entry="EVT_BUTTON" />
-															</object>
-															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
 															<object class="wxChoice" name="ID_CHOICE3" variable="ConstraintsVisual" member="yes">
 																<content>
 																	<item>none</item>
 																	<item>collinear</item>
 																	<item>parallel</item>
 																	<item>coplanar</item>
+																	<item>orthogonal</item>
+																	<item>tangent</item>
 																</content>
 																<selection>0</selection>
 																<handler function="OnConstraintsVisualSelect" entry="EVT_CHOICE" />

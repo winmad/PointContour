@@ -1,5 +1,15 @@
 #include "curveNet.h"
 
+CurveNet::CurveNet()
+{
+    clear();
+    collinearThr = 0.05;
+    parallelThr = 0.05;
+    coplanarThr = 0.1;
+    orthoThr = 0.05;
+    tangentThr = 0.05;
+}
+
 void CurveNet::clear()
 {
     numNodes = numPolyLines = 0;
@@ -36,6 +46,12 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     const Path& path , bool newNode , const BSpline& bsp)
 {
+    if (path.size() < 2)
+    {
+        printf("degenerated path\n");
+        return;
+    }
+
     int st_ni , ed_ni;
     // nodes
     if (newNode)
@@ -67,7 +83,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     numPolyLines++;
 
     if (bsp.ctrlNodes.size() == 0) return;
-
+    
     // collinear detection
     printf("===== merge extend =====\n");
     for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
@@ -80,9 +96,10 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
                 if (j == numPolyLines - 1 && k >= i) break;
                 if (collinearSet.sameRoot(numPolyLines - 1 , i , j , k)) continue;
                 if (checkCollinear(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
-                        bsplines[j].ctrlNodes[k] , bsplines[j].ctrlNodes[k + 1] , 0.1))
+                        bsplines[j].ctrlNodes[k] , bsplines[j].ctrlNodes[k + 1] ,
+                        collinearThr))
                 {
-                    printf("merge: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
+                    printf("collinear: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
                         j , k);
                     /*
                     vec3d v1 = bsp.ctrlNodes[i + 1] - bsp.ctrlNodes[i];
@@ -113,7 +130,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     {
         curveType.push_back(2);
     }
-
+    
     // parallel detection
     if (curveType[numPolyLines - 1] == 1)
     {
@@ -124,7 +141,8 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
             if (bsplines[i].ctrlNodes.size() == 0) continue;
             if (checkParallel(bsp.ctrlNodes[0] , bsp.ctrlNodes[bsp.ctrlNodes.size() - 1] ,
                     bsplines[i].ctrlNodes[0] ,
-                    bsplines[i].ctrlNodes[bsplines[i].ctrlNodes.size() - 1] , 0.05))
+                    bsplines[i].ctrlNodes[bsplines[i].ctrlNodes.size() - 1] ,
+                    parallelThr))
             {
                 printf("parallel: (%d , %d)\n" , i , numPolyLines - 1);
                 parallelSet.merge(numPolyLines - 1 , 0 , i , 0);
@@ -135,13 +153,15 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     // coplanar detection
     if (curveType[numPolyLines - 1] == 2)
     {
+        /*
         bool flag = true;
         for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
         {
             for (int j = i + 1; j < (int)bsp.ctrlNodes.size() - 1; j++)
             {
                 if (!checkCoplanar(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
-                        bsp.ctrlNodes[j] , bsp.ctrlNodes[j + 1] , 0.1))
+                        bsp.ctrlNodes[j] , bsp.ctrlNodes[j + 1] ,
+                        coplanarThr))
                 {
                     flag = false;
                     break;
@@ -150,18 +170,24 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
             if (!flag) break;
         }
         if (flag) curveType[numPolyLines - 1] = 3;
+        */
+        if (checkCoplanar(bsp , coplanarThr)) curveType[numPolyLines - 1] = 3;
     }
     printf("curve %d is type %d\n" , numPolyLines - 1 , curveType[numPolyLines - 1]);
     
     if (curveType[numPolyLines - 1] != 2)
     {
         coplanarSet.newCurve(numPolyLines - 1 , 0);
+        coplanarSet.connect(numPolyLines - 1 , 0 , numPolyLines - 1 , 0 , 1);
         for (int i = 0; i < numPolyLines - 1; i++)
         {
             if (curveType[i] == 2) continue;
             if (bsplines[i].ctrlNodes.size() == 0) continue;
-            if (checkCoplanar(bsp.ctrlNodes[0] , bsp.ctrlNodes[1] ,
-                    bsplines[i].ctrlNodes[0] , bsplines[i].ctrlNodes[1] , 0.1))
+            /*if (checkCoplanar(bsp.ctrlNodes[0] , bsp.ctrlNodes[1] ,
+                    bsplines[i].ctrlNodes[0] , bsplines[i].ctrlNodes[1] ,
+                    coplanarThr))
+            */
+            if (checkCoplanar(bsp , bsplines[i] , coplanarThr))
             {
                 printf("coplanar: (%d , %d)\n" , i , numPolyLines - 1);
                 coplanarSet.connect(numPolyLines - 1 , 0 , i , 0 , 1);
@@ -173,14 +199,24 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
     {
         orthoSet.newCurve(numPolyLines - 1 , i);
+    }
+    for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
+    {
         if (i - 1 >= 0)
         {
             if (checkOrtho(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
-                    bsp.ctrlNodes[i - 1] , 0.05))
+                    bsp.ctrlNodes[i - 1] , orthoThr))
             {
                 printf("orthogonal: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
                     numPolyLines - 1 , i - 1);
                 orthoSet.connect(numPolyLines - 1 , i , numPolyLines - 1 , i - 1 , 1);
+            }
+            else if (checkTangent(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
+                    bsp.ctrlNodes[i - 1] , tangentThr))
+            {
+                printf("tangent: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
+                    numPolyLines - 1 , i - 1);
+                orthoSet.connect(numPolyLines - 1 , i , numPolyLines - 1 , i - 1 , 2);
             }
         }
         else
@@ -194,13 +230,21 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
                     i , edges[ni][j].link , edges[ni][j].pli);
                 int nodeIndex = (int)bsplines[ei].ctrlNodes.size() - 2;
                 if (isEqual(bsp.ctrlNodes[0] , bsplines[ei].ctrlNodes[0])) nodeIndex = 1;
+                
+                int curveIndex = (nodeIndex == 1 ? 0 : nodeIndex);
                 if (checkOrtho(bsp.ctrlNodes[0] , bsp.ctrlNodes[1] ,
-                        bsplines[ei].ctrlNodes[nodeIndex] , 0.05))
+                        bsplines[ei].ctrlNodes[nodeIndex] , orthoThr))
                 {
-                    int curveIndex = nodeIndex == 1 ? 0 : nodeIndex;
                     printf("orthogonal: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
                         ei , curveIndex);
                     orthoSet.connect(numPolyLines - 1 , i , ei , curveIndex , 1);
+                }
+                else if (checkTangent(bsp.ctrlNodes[0] , bsp.ctrlNodes[1] ,
+                        bsplines[ei].ctrlNodes[nodeIndex] , tangentThr))
+                {
+                    printf("tangent: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
+                        ei , curveIndex);
+                    orthoSet.connect(numPolyLines - 1 , i , ei , curveIndex , 2);
                 }
             }
         }
@@ -208,11 +252,18 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
         if (i + 1 < (int)bsp.ctrlNodes.size() - 1)
         {
             if (checkOrtho(bsp.ctrlNodes[i + 1] , bsp.ctrlNodes[i] ,
-                    bsp.ctrlNodes[i + 2] , 0.05))
+                    bsp.ctrlNodes[i + 2] , orthoThr))
             {
                 printf("orthogonal: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
                     numPolyLines - 1 , i + 1);
                 orthoSet.connect(numPolyLines - 1 , i , numPolyLines - 1 , i + 1 , 1);
+            }
+            else if (checkTangent(bsp.ctrlNodes[i + 1] , bsp.ctrlNodes[i] ,
+                    bsp.ctrlNodes[i + 2] , tangentThr))
+            {
+                printf("tangent: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
+                    numPolyLines - 1 , i + 1);
+                orthoSet.connect(numPolyLines - 1 , i , numPolyLines - 1 , i + 1 , 2);
             }
         }
         else
@@ -226,13 +277,21 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
                     i , edges[ni][j].link , edges[ni][j].pli);
                 int nodeIndex = (int)bsplines[ei].ctrlNodes.size() - 2;
                 if (isEqual(bsp.ctrlNodes[i + 1] , bsplines[ei].ctrlNodes[0])) nodeIndex = 1;
+                
+                int curveIndex = (nodeIndex == 1 ? 0 : nodeIndex);
                 if (checkOrtho(bsp.ctrlNodes[i + 1] , bsp.ctrlNodes[i] ,
-                        bsplines[ei].ctrlNodes[nodeIndex] , 0.05))
+                        bsplines[ei].ctrlNodes[nodeIndex] , orthoThr))
                 {
-                    int curveIndex = nodeIndex == 1 ? 0 : nodeIndex;
                     printf("orthogonal: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
                         ei , curveIndex);
                     orthoSet.connect(numPolyLines - 1 , i , ei , curveIndex , 1);
+                }
+                else if (checkTangent(bsp.ctrlNodes[i + 1] , bsp.ctrlNodes[i] ,
+                        bsplines[ei].ctrlNodes[nodeIndex] , tangentThr))
+                {
+                    printf("tangent: (%d , %d) , (%d , %d)\n" , numPolyLines - 1 , i ,
+                        ei , curveIndex);
+                    orthoSet.connect(numPolyLines - 1 , i , ei , curveIndex , 2);
                 }
             }
         }
@@ -403,7 +462,8 @@ bool CurveNet::collinearTest(Path& path , BSpline& bsp)
         totDist += numer / denom;
     }
 
-    if (totDist / (double)path.size() < 0.01)
+    //printf("--- %.6f ---\n" , totDist / (double)path.size());
+    if (totDist / (double)path.size() < 0.02)
     {
         bsp.clear();
         bsp.ctrlNodes.push_back(x1);
@@ -464,14 +524,71 @@ bool CurveNet::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
     return true;
 }
 
+bool CurveNet::checkCoplanar(const BSpline& bsp , const double& threshold)
+{
+    double sum = 0.0;
+    double denom = 0.0;
+    for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
+    {
+        for (int j = i + 1; j < (int)bsp.ctrlNodes.size() - 1; j++)
+        {
+            denom += 1.0;
+            vec3d x1 = bsp.ctrlNodes[i] , y1 = bsp.ctrlNodes[i + 1];
+            vec3d x2 = bsp.ctrlNodes[j] , y2 = bsp.ctrlNodes[j + 1];
+            if (checkParallel(x1 , y1 , x2 , y2 , parallelThr))
+            {
+                continue;
+            }
+            vec3d n = (y1 - x1).cross(y2 - x2);
+            n.normalize();
+            vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
+            d.normalize();
+            sum += std::abs(d.dot(n));
+        }
+    }
+    //printf("%.8f\n" , sum / denom);
+    if (sum / denom < threshold) return true;
+    return false;
+}
+
+bool CurveNet::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2 ,
+    const double& threshold)
+{
+    double sum = 0.0;
+    double denom = 0.0;
+    for (int i = 0; i < (int)bsp1.ctrlNodes.size() - 1; i++)
+    {
+        for (int j = 0; j < (int)bsp2.ctrlNodes.size() - 1; j++)
+        {
+            denom += 1.0;
+            vec3d x1 = bsp1.ctrlNodes[i] , y1 = bsp1.ctrlNodes[i + 1];
+            vec3d x2 = bsp2.ctrlNodes[j] , y2 = bsp2.ctrlNodes[j + 1];
+            if (checkParallel(x1 , y1 , x2 , y2 , parallelThr))
+            {
+                continue;
+            }
+            vec3d n = (y1 - x1).cross(y2 - x2);
+            n.normalize();
+            vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
+            d.normalize();
+            sum += std::abs(d.dot(n));
+        }
+    }
+    //printf("%.8f\n" , sum / denom);
+    if (sum / denom < threshold) return true;
+    return false;
+}
+
 bool CurveNet::checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
     const vec3d& x2 , const vec3d& y2 , const double& threshold)
 {
+    if (checkParallel(x1 , y1 , x2 , y2 , parallelThr)) return true;
     vec3d n = (y1 - x1).cross(y2 - x2);
     n.normalize();
-    vec3d d = x2 - x1;
+    vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
     d.normalize();
-    if (d.dot(n) < threshold) return true;
+    //printf("%.8f\n" , std::abs(d.dot(n)));
+    if (std::abs(d.dot(n)) < threshold) return true;
     return false;
 }
 
@@ -485,6 +602,17 @@ bool CurveNet::checkOrtho(const vec3d& x0 , const vec3d& x1 ,
     // printf("v1 = (%.6f,%.6f,%.6f) , v2 = (%.6f,%.6f,%.6f)\n" , v1.x , v1.y , v1.z ,
         // v2.x , v2.y , v2.z);
     if (std::abs(v1.dot(v2)) < threshold) return true;
+    return false;
+}
+
+bool CurveNet::checkTangent(const vec3d& x0 , const vec3d& x1 ,
+    const vec3d& x2 , const double& threshold)
+{
+    vec3d v1 = x1 - x0;
+    v1.normalize();
+    vec3d v2 = x2 - x0;
+    v2.normalize();
+    if (1.0 - std::abs(v1.dot(v2)) < threshold) return true;
     return false;
 }
 

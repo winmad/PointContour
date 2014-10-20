@@ -2,10 +2,12 @@
 
 AdjMatrix::AdjMatrix()
 {
-    maxN = 100;
-    mat = new int*[maxN];
-    for (int i = 0; i < maxN; i++) mat[i] = new int[maxN];
-    numCurves = 0;
+    maxN = 200;
+    // mat = new int*[maxN];
+    // for (int i = 0; i < maxN; i++) mat[i] = new int[maxN];
+    mat.resize(maxN);
+    for (int i = 0; i < maxN; i++) mat[i].resize(maxN);
+    clear();
 }
 
 void AdjMatrix::clear()
@@ -31,6 +33,11 @@ void AdjMatrix::connect(int bspIndex1 , int curveIndex1 , int bspIndex2 , int cu
 {
     int x = forHash(bspIndex1 , curveIndex1);
     int y = forHash(bspIndex2 , curveIndex2);
+    /*
+    printf("(%d,%d), %d<->(%d,%d), %d=%d\n" , bspIndex1 , curveIndex1 , x ,
+        bspIndex2 , curveIndex2 , y ,
+        mark);
+    */
     mat[x][y] = mat[y][x] = mark;
 }
 
@@ -50,4 +57,24 @@ std::pair<int , int> AdjMatrix::backHash(int index)
 {
     int x = curveId[index];
     return std::make_pair(x / 1000 , x % 1000);
+}
+
+void AdjMatrix::printLog()
+{
+    writeLog("====================\n");
+    for (int i = 0; i < curveId.size(); i++)
+    {
+        writeLog("%d " , curveId[i]);
+    }
+    writeLog("\n");
+    for (std::map<int , int>::iterator it = curveDict.begin(); it != curveDict.end(); it++)
+    {
+        writeLog("%d %d\n" , it->first , it->second);
+    }
+    for (int i = 0; i < 40; i++)
+    {
+        for (int j = 0; j < 40; j++) writeLog("%d " , mat[i][j]);
+        writeLog("\n");
+    }
+    writeLog("\n");
 }

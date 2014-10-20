@@ -100,7 +100,6 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_CHOICE1;
         static const long ID_CHECKBOX5;
         static const long ID_CHECKBOX6;
-        static const long ID_BUTTON3;
         static const long ID_CHOICE3;
         static const long ID_STATICTEXT7;
         static const long ID_TEXTCTRL7;
@@ -152,7 +151,6 @@ class PointContourGUIFrame: public wxFrame
         wxNotebook* Notebook1;
         wxStaticText* StaticText13;
         wxStaticText* StaticText2;
-        wxButton* CollinearButton;
         wxScrolledWindow* ScrolledWindow3;
         wxScrolledWindow* ScrolledWindow1;
         wxTextCtrl* Alpha2;

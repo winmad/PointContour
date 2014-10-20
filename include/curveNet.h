@@ -42,7 +42,7 @@ public:
 class CurveNet
 {
 public:
-    CurveNet() { clear(); }
+    CurveNet();
 
     void clear();
     void startPath(const vec3d& st);
@@ -61,10 +61,15 @@ public:
         const vec3d& x2 , const vec3d& y2 , const double& threshold);
     bool checkParallel(const vec3d& x1 , const vec3d& y1 ,
         const vec3d& x2 , const vec3d& y2 , const double& threshold);
+    bool checkCoplanar(const BSpline& bsp , const double& threshold);
+    bool checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2 ,
+        const double& threshold);
     bool checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
-        const vec3d& x2 , const vec3d& y2 , const double& thershold);
+        const vec3d& x2 , const vec3d& y2 , const double& threshold);
     bool checkOrtho(const vec3d& x0 , const vec3d& x1 ,
-        const vec3d& x2 , const double& thershold);
+        const vec3d& x2 , const double& threshold);
+    bool checkTangent(const vec3d& x0 , const vec3d& x1 ,
+        const vec3d& x2 , const double& threshold);
     
     void test();
     void debugPrint();
@@ -79,8 +84,15 @@ public:
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
 
+    // 1: line, 2: nothing, 3: coplanar
     std::vector<int> curveType;
 
+    double collinearThr;
+    double coplanarThr;
+    double parallelThr;
+    double orthoThr;
+    double tangentThr;
+    
     DisjointSet collinearSet;
     DisjointSet parallelSet;
     AdjMatrix coplanarSet;

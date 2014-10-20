@@ -25,7 +25,10 @@ public:
     std::map<int , int> curveDict;
     std::vector<int> curveId;
     int maxN;
-    int **mat;
+    /* int **mat; */
+    std::vector<std::vector<int> > mat;
+
+    void printLog();
 };
 
 #endif

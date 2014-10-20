@@ -588,6 +588,63 @@ void PointCloudRenderer::renderCoplanarLines()
     }
 }
 
+void PointCloudRenderer::renderOrthogonalLines()
+{
+    if (constraintsVisual != 4) return;
+    if (dispCurveNet->bsplines.size() == 0) return;
+
+    glColor3f(1.f , 0.f , 0.f);
+    glLineWidth(3.f);
+    glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    drawLine(dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex] ,
+        dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
+    
+    glColor3f(0.f , 0.f , 1.f);
+    for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+    {
+        if (dispCurveNet->bsplines[i].ctrlNodes.size() == 0) continue;
+        
+        for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
+        {
+            if (i == bspIndex && j == curveIndex) continue;
+            if (dispCurveNet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 1) continue;
+            drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
+                dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
+        }
+    }
+}
+
+void PointCloudRenderer::renderTangentLines()
+{
+    if (constraintsVisual != 5) return;
+    if (dispCurveNet->bsplines.size() == 0) return;
+
+    glColor3f(1.f , 0.f , 0.f);
+    glLineWidth(3.f);
+    glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    drawLine(dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex] ,
+        dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
+
+    // printf("/======= (%d , %d) ======/\n" , bspIndex , curveIndex);
+    glColor3f(0.f , 0.f , 1.f);
+    for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+    {
+        if (dispCurveNet->bsplines[i].ctrlNodes.size() == 0) continue;
+        
+        for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
+        {
+            if (i == bspIndex && j == curveIndex) continue;
+            if (dispCurveNet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 2) continue;
+            // printf("(%d , %d) <==> (%d , %d), %d\n" , bspIndex , curveIndex , i , j ,
+                // dispCurveNet->orthoSet.getMark(bspIndex , curveIndex , i , j));
+            drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
+                dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
+        }
+    }
+}
+
 void PointCloudRenderer::render()
 {
 	renderPointCloud();
@@ -602,6 +659,8 @@ void PointCloudRenderer::render()
     renderCollinearLines();
     renderParallelLines();
     renderCoplanarLines();
+    renderOrthogonalLines();
+    renderTangentLines();
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -733,7 +792,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 		
         // snapping when it is near curve
         bool isSnap = false;
-        int breakLine , breakPoint;
+        int breakLine = -1 , breakPoint = -1;
         double min_dist = 1e20;
         
         for (int i = 0; i < dispCurveNet->numPolyLines; i++)
@@ -750,7 +809,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             }
         }
         double snapOffset = selectionOffset;
-        if (isSnap && (breakPoint == 0 || breakPoint == (int)dispCurveNet->polyLines[breakLine].size() - 1))
+        if (breakLine != -1 && (breakPoint == 0 || breakPoint == (int)dispCurveNet->polyLines[breakLine].size() - 1))
         {
             snapOffset *= 2.0;
         }
@@ -800,6 +859,12 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 		{
 			int sti;
             bool newNode = true;
+            
+            if (isSnap && breakLine != -1 && (breakPoint == 0 || breakPoint == (int)curveNet->polyLines[breakLine].size() - 1))
+            {
+                newNode = false;
+            }
+
             if (lastPoint == NULL)
             {
                 curveNet->startPath(pos);
@@ -807,25 +872,23 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             }
             else
             {
-                if (isSnap && (breakPoint == 0 || breakPoint == (int)curveNet->polyLines[breakLine].size() - 1))
-                {
-                    newNode = false;
-                }
                 vec3d lastp(lastPoint->x , lastPoint->y , lastPoint->z);
                 vec3d lastDisp(lastDispPoint->x , lastDispPoint->y , lastDispPoint->z);
 
                 curveNet->extendPath(lastp , pos , pathForComp[0] , newNode);
                 dispCurveNet->extendPath(lastDisp , dispPos , pathVertex , newNode , bsp);
-                if (isSnap && newNode)
-                {
-                    curveNet->breakPath(breakLine , breakPoint);
-                    dispCurveNet->breakPath(breakLine , breakPoint);
-                }
 
-                dispCurveNet->collinearSet.printLog();
+                // dispCurveNet->orthoSet.printLog();
+                // dispCurveNet->collinearSet.printLog();
                 // dispCurveNet->collinearSet.test();
 
                 // pcUtils->optimizeJunction(dispCurveNet , lastDisp);
+            }
+            
+            if (isSnap && newNode)
+            {
+                curveNet->breakPath(breakLine , breakPoint);
+                dispCurveNet->breakPath(breakLine , breakPoint);
             }
             
             // dispCurveNet->debugLog();

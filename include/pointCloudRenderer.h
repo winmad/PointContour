@@ -78,6 +78,8 @@ public:
     void renderCollinearLines();
     void renderParallelLines();
     void renderCoplanarLines();
+    void renderOrthogonalLines();
+    void renderTangentLines();
 
 	void render();
 
