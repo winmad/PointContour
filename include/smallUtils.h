@@ -8,7 +8,7 @@
 #include <cstdarg>
 #include <algorithm>
 #include "engine.h"
-                                                \
+                                               
 #define PI 3.14159265358979
 #define EPS 1e-8
 #define SQR(x) ((x) * (x))

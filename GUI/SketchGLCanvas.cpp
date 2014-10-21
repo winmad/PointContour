@@ -30,7 +30,7 @@ SketchGLCanvas::SketchGLCanvas(	wxWindow *parent, wxWindowID id,
     m_rotationTimes=1;
 	m_rotationCount=0;
     
-    lastTime = glutGet(GLUT_ELAPSED_TIME);
+    //lastTime = glutGet(GLUT_ELAPSED_TIME);
 	frames = 0;
 
     Initialize();
@@ -447,6 +447,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
 double SketchGLCanvas::fpsCounter()
 {
+	/*
 	int currentTime = glutGet(GLUT_ELAPSED_TIME);
 	double elapsedTime = currentTime - lastTime;
 	double fps;
@@ -458,6 +459,8 @@ double SketchGLCanvas::fpsCounter()
 	}
 	frames++;;
 	return fps;
+	*/
+	return 0;
 }
 
 void SketchGLCanvas::OnIdle ( wxIdleEvent &event )
@@ -477,7 +480,7 @@ void SketchGLCanvas::OnIdle ( wxIdleEvent &event )
 		//		SetTimer(1,40,NULL);
 
 	}
-
+	/*
 	double fps = fpsCounter();
 	if (fps > 1)
 	{
@@ -486,6 +489,7 @@ void SketchGLCanvas::OnIdle ( wxIdleEvent &event )
 		wxString str(tmp);
 		m_pcUtils->statusBar->SetStatusText(str);
 	}
+	*/
 }
 
 void SketchGLCanvas::OnSize ( wxSizeEvent &event )
