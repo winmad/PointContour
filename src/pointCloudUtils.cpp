@@ -31,7 +31,11 @@ PointCloudUtils::PointCloudUtils()
     {
         fprintf(stderr , "\nStart MATLAB successfully\n");
     }
+#ifdef _WIN32
+	engEvalString(ep , "addpath Y:\\Projects\\PointContour\\matlab");
+#else
     engEvalString(ep , "addpath ~/Projects/PointContour/matlab/");
+#endif
     /*
     if (!mclInitializeApplication(NULL,0))
     {
@@ -966,13 +970,13 @@ bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,
 void PointCloudUtils::traceBack(const DijkstraInfo& info , const int& sink ,
 								Path& pathVertex)
 {
-	// std::vector<int> seq;
+	//std::vector<int> seq;
 	pathVertex.clear();
 	int now = sink;
 	while (info.prev[now] != -1)
 	{
 		pathVertex.push_back(index2Point[now]);
-		// seq.push_back(now);
+		//seq.push_back(now);
 		now = info.prev[now];
 	}
 	pathVertex.push_back(index2Point[now]);

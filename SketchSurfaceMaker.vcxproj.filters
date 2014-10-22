@@ -18,15 +18,6 @@
     <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GUI\PointContourGUIApp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\PointContourGUIMain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GUI\SketchGLCanvas.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\colormap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -63,6 +54,15 @@
     <ClInclude Include="include\adjMatrix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GUI_win\PointContourGUIApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI_win\PointContourGUIMain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI_win\SketchGLCanvas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\curveNet.cpp">
@@ -86,19 +86,19 @@
     <ClCompile Include="src\TimeManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GUI\PointContourGUIApp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\PointContourGUIMain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GUI\SketchGLCanvas.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\colormap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\adjMatrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI_win\PointContourGUIApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI_win\PointContourGUIMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GUI_win\SketchGLCanvas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
