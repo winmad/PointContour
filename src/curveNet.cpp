@@ -5,9 +5,9 @@ CurveNet::CurveNet()
     clear();
     collinearThr = 0.05;
     parallelThr = 0.05;
-    coplanarThr = 0.1;
-    orthoThr = 0.05;
-    tangentThr = 0.05;
+    coplanarThr = 0.05;
+    orthoThr = 0.1;
+    tangentThr = 0.1;
 }
 
 void CurveNet::clear()
