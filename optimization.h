@@ -13,7 +13,7 @@ public:
 	void run(CurveNet *net);
 private:
 	std::string generateLineOrtho(int, int, int, int);
-	//std::string generateLineParallel(int, int, int, int);
+	std::string generateLineParallel(int, int, int, int);
 	CurveNet *net = NULL;
 };
 

@@ -21,9 +21,9 @@ void Optimization::generateDAT(string file)
 		for (int j = 0; j < net->bsplines[i].ctrlNodes.size(); ++ j)
 		{
 			fout << "\t[" << i << ", " << j << ", *]";
-			fout << " x " << net->bsplines[i].ctrlNodes[j].x
-				 << " y " << net->bsplines[i].ctrlNodes[j].y
-				 << " z " << net->bsplines[i].ctrlNodes[j].z
+			fout << " 1 " << net->bsplines[i].ctrlNodes[j].x
+				 << " 2 " << net->bsplines[i].ctrlNodes[j].y
+				 << " 3 " << net->bsplines[i].ctrlNodes[j].z
 				 << endl;
 		}
 	}
@@ -35,21 +35,21 @@ void Optimization::generateMOD(string file)
 {
 	ofstream fout(file.data());
 	fout << "# parameters\n";
-	fout << "set Point := x y z;\n";
+	fout << "set Dim3 = 1..3;\n";
 	fout << "param BN;\n";
 	fout << "param CN {0..BN};\n";
-	fout << "param init_p {i in 0..BN, 0..CN[i], Point};\n";
+	fout << "param init_p {i in 0..BN, 0..CN[i], Dim3};\n";
 	
-	fout << "# variables\n";
-	fout << "var p {i in 0..BN, 0..CN[i], Point} := init_p;\n";
+	fout << "\n# variables\n";
+	fout << "var p {i in 0..BN, j in 0..CN[i], t in Dim3} := init_p[i, j, t];\n";
 
-	fout << "# intermediate variables\n";
+	fout << "\n# intermediate variables\n";
 
-	fout << "objective\n";
+	fout << "\nobjective\n";
 	fout << "minimize total_cost:\n";
-	fout << "sum {i in 0..BN, j in 0..CN[i], t in Point}"
+	fout << "sum {i in 0..BN, j in 0..CN[i], t in Dim3} "
 		 << "(p[i, j, t] - init_p[i, j, t]) ^ 2\n";
-	fout << ";\n";
+	fout << ";\n\n";
 
 	//ortho
 	int num = 0;
@@ -63,7 +63,7 @@ void Optimization::generateMOD(string file)
 			{
 				++ num;
 				fout << "subject to lineOrtho" << num << ": "
-					 << generateLineOrtho(i, 0, j, 0) << endl;
+					 << generateLineOrtho(i, 0, j, 0);
 			}
 		}
 	}
@@ -78,8 +78,8 @@ void Optimization::generateRUN(string file)
 		 << "data test.dat;\n"
 		 << "solve;\n"
 		 << "printf {i in 0..BN, j in 0..CN[i]} \"%f %f %f\\n\", "
-		 << "p[i, j, x] p[i, j, y] p[i, j, z] "
-		 << ">> result.out;\n";
+		 << "p[i, j, 1] p[i, j, 2] p[i, j, 3] "
+		 << ">> E:\\reconstruction\\point_cloud\\PointContour\\result.out;\n";
 	fout.close();
 }
 
@@ -88,7 +88,7 @@ void Optimization::generateBAT(string file)
 	ofstream fout(file.data());
 	fout << "E:\n"
 		 << "cd E:\\reconstruction\\AMPLcml\n"
-		 << "ampl.exe E:\\reconstruction\\point cloud\\PointContour\\test.run\n"
+		 << "ampl.exe E:\\reconstruction\\point_cloud\\PointContour\\test.run\n"
 		 << "pause\n";
 	fout.close();
 }
@@ -105,17 +105,33 @@ void Optimization::run(CurveNet *net)
 string Optimization::generateLineOrtho(int i, int j, int p, int q)
 {
 	stringstream ss;
-	ss << "(p[" << i << ", " << j+1 << ", x] - p[" << i << ", " << j << ", x])"
+	ss << "sum {t in Dim3}"
+	   << "((p[" << i << "," << j+1 << ",t] - p[" << i << "," << j << ",t])"
 	   << " * "
-	   << "(p[" << p << ", " << q+1 << ", x] - p[" << p << ", " << q << ", x])"
-	   << " + "
-	   << "(p[" << i << ", " << j+1 << ", y] - p[" << i << ", " << j << ", y])"
-	   << " * "
-	   << "(p[" << p << ", " << q+1 << ", y] - p[" << p << ", " << q << ", y])"
-	   << " + "
-	   << "(p[" << i << ", " << j+1 << ", z] - p[" << i << ", " << j << ", z])"
-	   << " * "
-	   << "(p[" << p << ", " << q+1 << ", z] - p[" << p << ", " << q << ", z])"
+	   << "(p[" << p << "," << q+1 << ",t] - p[" << p << "," << q << ",t]))"
+	   << " / "
+	   << "sqrt(sum {t in Dim3}"
+	   << "(p[" << i << "," << j+1 << ",t] - p[" << i << "," << j << ",t]) ^ 2)"
+	   << " / "
+	   << "sqrt(sum {t in Dim3}"
+	   << "(p[" << p << "," << q+1 << ",t] - p[" << p << "," << q << ",t]) ^ 2)"
 	   << " = 0;\n";
+	return ss.str();
+}
+
+string Optimization::generateLineParallel(int i, int j, int p, int q)
+{
+	stringstream ss;
+	ss << "abs(sum {t in Dim3}"
+	   << "((p[" << i << "," << j+1 << ",t] - p[" << i << "," << j << ",t])"
+	   << " * "
+	   << "(p[" << p << "," << q+1 << ",t] - p[" << p << "," << q << ",t]))"
+	   << " / "
+	   << "sqrt(sum {t in Dim3}"
+	   << "(p[" << i << "," << j+1 << ",t] - p[" << i << "," << j << ",t]) ^ 2)"
+	   << " / "
+	   << "sqrt(sum {t in Dim3}"
+	   << "(p[" << p << "," << q+1 << ",t] - p[" << p << "," << q << ",t]) ^ 2))"
+	   << " -1 = 0;\n";
 	return ss.str();
 }
