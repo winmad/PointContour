@@ -1,4 +1,5 @@
 #include "curveNet.h"
+#include "cycleDiscovery.h"
 
 CurveNet::CurveNet()
 {

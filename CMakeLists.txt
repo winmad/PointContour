@@ -18,7 +18,7 @@ set(CMAKE_CXX_COMPILER "/Users/Winmad/llvm/build/Debug+Asserts/bin/clang2++")
 set(CXX_DEBUG -O2)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_DEBUG} -fopenmp -stdlib=libc++")
 #-I/Users/Winmad/wxWidgets-3.0.1/build-osx/lib/wx/include/osx_cocoa-unicode-static-3.0 -I/Users/Winmad/wxWidgets-3.0.1/include")
-set(CMAKE_LINK_FLAGS "-framework IOKit -framework Carbon -framework Cocoa -framework AudioToolbox -framework System -framework OpenGL -framework AGL -lpng -lz -ljpeg -ltiff -framework WebKit -lwxregexu-3.0 -lz -lpthread -liconv -lmx -leng -lm -lmat -lut -lc++")
+set(CMAKE_LINK_FLAGS "-framework IOKit -framework Carbon -framework Cocoa -framework AudioToolbox -framework System -framework OpenGL -framework AGL -lpng -lz -ljpeg -ltiff -framework WebKit -lwxregexu-3.0 -lz -lpthread -liconv -lmx -leng -lm -lmat -lut")
 #-lmx -leng -lm -lmat -lut -lc++
 #-lmwmclmcrrt -lmwmclmcr -lbs
 
