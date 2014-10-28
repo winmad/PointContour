@@ -59,7 +59,7 @@ void Optimization::generateMOD(string file)
 	fout << "param init_p {i in 0..BN, 0..CN[i], Dim3};\n";
 	
 	fout << "\n# variables\n";
-	fout << "var p {i in 0..BN, j in 0..CN[i], t in Dim3} >= init_p[i, j, t] - 1, <= init_p[i, j, t] + 1;\n";
+	fout << "var p {i in 0..BN, j in 0..CN[i], t in Dim3} := init_p[i, j, t];\n";
 
 	fout << "\n# intermediate variables\n";
 
