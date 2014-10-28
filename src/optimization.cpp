@@ -59,7 +59,7 @@ void Optimization::generateMOD(string file)
 	fout << "param init_p {i in 0..BN, 0..CN[i], Dim3};\n";
 	
 	fout << "\n# variables\n";
-	fout << "var p {i in 0..BN, j in 0..CN[i], t in Dim3} >= init_p[i, j, t] - 1, <= init_p[i, j, t] + 1;\n";
+	fout << "var p {i in 0..BN, j in 0..CN[i], t in Dim3} >= init_p[i, j, t] - 0.1, <= init_p[i, j, t] + 0.1, := init_p[i, j, t] - 0.1;\n";
 
 	fout << "\n# intermediate variables\n";
 
@@ -226,7 +226,7 @@ void Optimization::generateRUN(string file)
 	fout << "reset;\n"
 		 << "option ampl_include 'E:\\reconstruction\\point_cloud\\PointContour\\Release';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=1 bar_feasible=3 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
+		 << "option knitro_options \"alg=1 bar_feasible=1 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -237,7 +237,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=1 bar_feasible=3 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
+		 << "option knitro_options \"alg=1 bar_feasible=1 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
