@@ -1,9 +1,17 @@
 data/
 build/
 xcode/
+ampl/
 *.bmp
 *.pfm
 *.log
+
+## vs 2010
+*.sln
+*.vcproj
+*.vcxproj
+*.filters
+*.user
 
 #################
 ## Eclipse
