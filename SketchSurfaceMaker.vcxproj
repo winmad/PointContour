@@ -157,7 +157,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>external_win;D:\win7_soft\matlab2014\extern\include;E:\libs\wxWidgets-3.0.2\include\msvc;E:\libs\wxWidgets-3.0.2\include;external_win/freeglut/include;external_win/glew/include;external/include/Eigen;external/include/freetype;include;GUI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>external_win;C:\Program Files\MATLAB\R2014a\extern\include;C:\wxWidgets-3.0.2\include\msvc;C:\wxWidgets-3.0.2\include;external_win/freeglut/include;external_win/glew/include;external/include/Eigen;external/include/freetype;include;GUI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -170,7 +170,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>libeng.lib;libmat.lib;libmx.lib;glew32.lib;freeglut.lib;freeglut_static.lib;wxmsw30u_gl.lib;wxmsw30u_core.lib;wxbase30u.lib;wxtiff.lib;wxjpeg.lib;wxpng.lib;wxzlib.lib;wxregexu.lib;wxexpat.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\win7_soft\matlab2014\extern\lib\win64\microsoft;external_win/freeglut/lib;external_win/glew/lib;E:\libs\wxWidgets-3.0.2\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\MATLAB\R2014a\extern\lib\win64\microsoft;external_win/freeglut/lib;external_win/glew/lib;C:\wxWidgets-3.0.2\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

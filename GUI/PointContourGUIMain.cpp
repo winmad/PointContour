@@ -725,12 +725,14 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
 
 void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 {
+    Optimization opt;
     switch (event.GetKeyCode())
 	{
 		case WXK_ESCAPE:
 			exit(0);
         case WXK_SPACE:
-            m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
+            opt.run(m_pcUtils->pcRenderer->dispCurveNet);
+            //m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
             break;
         case WXK_UP:
             m_pcUtils->pcRenderer->incBspCurveIndex();
