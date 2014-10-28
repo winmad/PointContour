@@ -131,7 +131,6 @@ void Optimization::generateMOD(string file)
 			}
 		}
 	}
-    /*
 	//ortho
 	num = 0;
 	for (int i = 0; i < net->bsplines.size(); ++ i)
@@ -182,7 +181,6 @@ void Optimization::generateMOD(string file)
 			}
 		}
 	}
-    */
 	//parallel
 	num = 0;
 	for (int i = 0; i < net->bsplines.size(); ++ i)
@@ -228,7 +226,7 @@ void Optimization::generateRUN(string file)
 	fout << "reset;\n"
 		 << "option ampl_include 'E:\\reconstruction\\point_cloud\\PointContour\\Release';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=1 bar_feasible=3 honorbnds=1 ms_enable=1 par_numthreads=4\";\n\n"
+		 << "option knitro_options \"alg=1 bar_feasible=3 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -292,12 +290,33 @@ void Optimization::run(CurveNet *net)
 	{
 		for (int j = 0; j < net->bsplines[i].ctrlNodes.size(); ++ j)
 		{
-			double x, y, z;
-			fin >> x >> y >> z;
-			net->bsplines[i].ctrlNodes[j].x = x;
-			net->bsplines[i].ctrlNodes[j].y = y;
-			net->bsplines[i].ctrlNodes[j].z = z;
+            vec3d pos;
+            fin >> pos.x >> pos.y >> pos.z;
+            if ((net->bsplines[i].ctrlNodes[j] - pos).length() < 0.1)
+            {
+                net->bsplines[i].ctrlNodes[j] = pos;
+            }
 		}
+        printf("before\n");
+        if (net->bsplines[i].ctrlNodes.size() == 2)
+        {
+            vec3d x1 = net->bsplines[i].ctrlNodes[0];
+            vec3d x2 = net->bsplines[i].ctrlNodes[1];
+            vec3d v = x2 - x1;
+            v.normalize();
+            printf("%d\n" , net->polyLines[i].size());
+            /*
+            net->polyLines[i][0] = x1;
+            net->polyLines[i][(int)net->polyLines[i].size() - 1] = x2;
+            for (int j = 1; i < (int)net->polyLines[i].size() - 1; j++)
+            {
+                vec3d u = net->polyLines[i][j] - x1;
+                double proj = u.dot(v);
+                net->polyLines[i][j] = x1 + v * proj;
+            }
+            */
+        }
+        printf("after\n");
 	}
 	fin.close();
 }
