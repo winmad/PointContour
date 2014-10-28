@@ -131,6 +131,7 @@ void Optimization::generateMOD(string file)
 			}
 		}
 	}
+    /*
 	//ortho
 	num = 0;
 	for (int i = 0; i < net->bsplines.size(); ++ i)
@@ -181,6 +182,7 @@ void Optimization::generateMOD(string file)
 			}
 		}
 	}
+    */
 	//parallel
 	num = 0;
 	for (int i = 0; i < net->bsplines.size(); ++ i)
@@ -222,8 +224,20 @@ void Optimization::generateMOD(string file)
 void Optimization::generateRUN(string file)
 {
 	ofstream fout(file.data());
+#if defined(_WIN32)
 	fout << "reset;\n"
 		 << "option ampl_include 'E:\\reconstruction\\point_cloud\\PointContour\\Release';\n"
+		 << "option solver knitroampl;\n"
+		 << "option knitro_options \"alg=1 bar_feasible=3 honorbnds=1 ms_enable=1 par_numthreads=4\";\n\n"
+		 << "model test.mod;\n"
+		 << "data test.dat;\n"
+		 << "solve;\n"
+		 << "printf {i in 0..BN, j in 0..CN[i]} \"%f %f %f\\n\", "
+		 << "p[i, j, 1], p[i, j, 2], p[i, j, 3] "
+		 << "> E:\\reconstruction\\point_cloud\\PointContour\\Release\\result.out;\n";
+#elif defined(__APPLE__)
+    fout << "reset;\n"
+		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
 		 << "option knitro_options \"alg=1 bar_feasible=3 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
 		 << "model test.mod;\n"
@@ -231,31 +245,49 @@ void Optimization::generateRUN(string file)
 		 << "solve;\n"
 		 << "printf {i in 0..BN, j in 0..CN[i]} \"%f %f %f\\n\", "
 		 << "p[i, j, 1], p[i, j, 2], p[i, j, 3] "
-		 << "> E:\\reconstruction\\point_cloud\\PointContour\\Release\\result.out;\n";
+		 << "> /Users/Winmad/Projects/PointContour/ampl/result.out;\n";
+#endif
 	fout.close();
 }
 
 void Optimization::generateBAT(string file)
 {
 	ofstream fout(file.data());
+#if defined(_WIN32)
 	fout << "E:\n"
 		 << "cd E:\\reconstruction\\AMPLcml\n"
 		 << "ampl.exe E:\\reconstruction\\point_cloud\\PointContour\\Release\\test.run\n";
 		 //<< "pause\n";
+#elif defined(__APPLE__)
+    fout << "cd /Users/Winmad/AMPL_win\n"
+		 << "wine ampl.exe /Users/Winmad/Projects/PointContour/ampl/test.run\n";
+#endif
 	fout.close();
 }
 
 void Optimization::run(CurveNet *net)
 {
 	this->net = net;
-	printf("(%.6f,%.6f,%.6f)\n" , net->bsplines[0].ctrlNodes[0].x ,
-		net->bsplines[0].ctrlNodes[0].y , net->bsplines[0].ctrlNodes[0].z);
+#if defined(_WIN32)
 	generateDAT("test.dat");
 	generateMOD("test.mod");
 	generateRUN("test.run");
 	generateBAT("test.bat");
 	system("test.bat");
 	ifstream fin("result.out");
+#elif defined(__APPLE__)
+    string fileroot = "/Users/Winmad/Projects/PointContour/ampl/";
+    generateDAT(fileroot + "test.dat");
+	generateMOD(fileroot + "test.mod");
+	generateRUN(fileroot + "test.run");
+	generateBAT(fileroot + "test.sh");
+    string cmd = "chmod u+x " + fileroot + "test.sh";
+    system(cmd.c_str());
+    cmd = fileroot + "test.sh";
+	system(cmd.c_str());
+	ifstream fin(fileroot + "result.out");
+#endif
+    // change ctrl nodes and resample
 	for (int i = 0; i < net->bsplines.size(); ++ i)
 	{
 		for (int j = 0; j < net->bsplines[i].ctrlNodes.size(); ++ j)
@@ -313,7 +345,7 @@ string Optimization::generateLineParallel(int i, int j, int p, int q)
 string Optimization::generateLineColinear(int i, int j, int p, int q)
 {
 	stringstream ss;
-	ss << "abs((sum {t in Dim3}"
+	ss << "abs(sum {t in Dim3}"
 	   << "((p[" << i << "," << j+1 << ",t] - p[" << i << "," << j << ",t])"
 	   << " * "
 	   << "(p[" << i << "," << j << ",t] - p[" << p << "," << q << ",t])))"
@@ -322,7 +354,7 @@ string Optimization::generateLineColinear(int i, int j, int p, int q)
 	   << "(p[" << i << "," << j+1 << ",t] - p[" << i << "," << j << ",t]) ^ 2)"
 	   << " * "
 	   << "sqrt(sum {t in Dim3}"
-	   << "(p[" << i << "," << j << ",t] - p[" << p << "," << q << ",t]) ^ 2))";
+	   << "(p[" << i << "," << j << ",t] - p[" << p << "," << q << ",t]) ^ 2)";
 	return ss.str();
 }
 
