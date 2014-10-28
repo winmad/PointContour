@@ -18,6 +18,8 @@ private:
 	std::string generateLineParallel(int, int, int, int);
 	std::string generateLineCoplanar(int, int, int, int);
 	std::string generateLineColinear(int, int, int, int);
+	std::string generateSamePoint(int, int, int, int);
+	bool isLinked(int, int, int, int);
 	CurveNet *net;
 };
 
