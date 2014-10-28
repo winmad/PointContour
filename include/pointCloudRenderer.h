@@ -4,6 +4,7 @@
 #include "nvVector.h"
 #include "smallUtils.h"
 #include "curveNet.h"
+#include "optimization.h"
 #include <vector>
 
 class PointCloudUtils;

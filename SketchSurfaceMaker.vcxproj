@@ -193,6 +193,7 @@
     <ClInclude Include="include\fileIOHelper.h" />
     <ClInclude Include="include\heap.h" />
     <ClInclude Include="include\nvVector.h" />
+    <ClInclude Include="include\optimization.h" />
     <ClInclude Include="include\pointCloudRenderer.h" />
     <ClInclude Include="include\pointCloudUtils.h" />
     <ClInclude Include="include\PointKDTree.h" />
@@ -208,6 +209,7 @@
     <ClCompile Include="src\curveNet.cpp" />
     <ClCompile Include="src\disjointSet.cpp" />
     <ClCompile Include="src\fileIOHelper.cpp" />
+    <ClCompile Include="src\optimization.cpp" />
     <ClCompile Include="src\pointCloudRenderer.cpp" />
     <ClCompile Include="src\pointCloudUtils.cpp" />
     <ClCompile Include="src\smallUtils.cpp" />
