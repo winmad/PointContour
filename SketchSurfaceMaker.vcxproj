@@ -193,23 +193,23 @@
     <ClInclude Include="include\fileIOHelper.h" />
     <ClInclude Include="include\heap.h" />
     <ClInclude Include="include\nvVector.h" />
+    <ClInclude Include="include\optimization.h" />
     <ClInclude Include="include\pointCloudRenderer.h" />
     <ClInclude Include="include\pointCloudUtils.h" />
     <ClInclude Include="include\PointKDTree.h" />
     <ClInclude Include="include\smallUtils.h" />
     <ClInclude Include="include\TimeManager.h" />
-    <ClInclude Include="optimization.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GUI_win\PointContourGUIApp.cpp" />
     <ClCompile Include="GUI_win\PointContourGUIMain.cpp" />
     <ClCompile Include="GUI_win\SketchGLCanvas.cpp" />
-    <ClCompile Include="optimization.cpp" />
     <ClCompile Include="src\adjMatrix.cpp" />
     <ClCompile Include="src\colormap.cpp" />
     <ClCompile Include="src\curveNet.cpp" />
     <ClCompile Include="src\disjointSet.cpp" />
     <ClCompile Include="src\fileIOHelper.cpp" />
+    <ClCompile Include="src\optimization.cpp" />
     <ClCompile Include="src\pointCloudRenderer.cpp" />
     <ClCompile Include="src\pointCloudUtils.cpp" />
     <ClCompile Include="src\smallUtils.cpp" />

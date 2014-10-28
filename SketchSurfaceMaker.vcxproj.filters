@@ -63,7 +63,7 @@
     <ClInclude Include="GUI_win\SketchGLCanvas.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="optimization.h">
+    <ClInclude Include="include\optimization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -104,7 +104,7 @@
     <ClCompile Include="GUI_win\SketchGLCanvas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="optimization.cpp">
+    <ClCompile Include="src\optimization.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
