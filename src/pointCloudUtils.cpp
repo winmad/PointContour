@@ -11,7 +11,7 @@ PointCloudUtils::PointCloudUtils()
 	pcRenderer = new PointCloudRenderer();
     curveNet = new CurveNet();
     pcRenderer->pcUtils = this;
-    pcRenderer->curveNet = this->curveNet;
+    pcRenderer->dispCurveNet = this->curveNet;
 	isPointInside = NULL;
 	originF = NULL;
 	f = NULL;
@@ -21,6 +21,8 @@ PointCloudUtils::PointCloudUtils()
 	tensor = NULL;
 
 	tree = NULL;
+
+    KNN = 50;
 
     restartLog("debug.txt");
     if (!(ep = engOpen("")))
@@ -875,7 +877,7 @@ void PointCloudUtils::buildGraphFromPoints()
 #pragma omp parallel for
 	for (int i = 0; i < nodes; i++)
 	{
-		KnnQuery query(50);
+		KnnQuery query(KNN);
 		tree->searchKnn(0 , index2Point[i] , query);
         pointGraph[i].clear();
 		for (int k = 0; k < query.knnPoints.size(); k++)
@@ -915,6 +917,39 @@ void PointCloudUtils::buildGraphFromPoints()
 		}
 	}
     */
+}
+
+bool PointCloudUtils::addPointToGraph(const vec3d& pos)
+{
+    // new node
+    double hashVal = point2double(pos);
+    if (point2Index.find(hashVal) != point2Index.end())
+    {
+        return false;
+    }
+    index2Point.push_back(pos);
+    point2Index[hashVal] = nodes;
+    Tensor ts;
+    ts.tensor = lerpTensor(pos);
+    pointTensor.push_back(ts);
+    index2Tensor.push_back(&pointTensor[nodes]);
+    nodes++;
+    // new edges
+    pointGraph.push_back(std::vector<Edge>());
+    KnnQuery query(KNN);
+    tree->searchKnn(0 , pos , query);
+    for (int k = 0; k < query.knnPoints.size(); k++)
+    {
+        double hashVal = point2double(query.knnPoints[k].point->pos);
+        int j = point2Index[hashVal];
+        if (nodes - 1 == j) continue;
+        vec3d v = index2Point[j] - pos;
+        double w = calcEdgeWeight(v , pointTensor[nodes - 1] , pointTensor[j]);
+        pointGraph[nodes - 1].push_back(Edge(j , w));
+        pointGraph[j].push_back(Edge(nodes - 1 , w));
+    }
+    printf("add new point (%.6f,%.6f,%.6f)\n" , pos.x , pos.y , pos.z);
+    return true;
 }
 
 bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,

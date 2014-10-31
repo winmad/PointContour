@@ -202,6 +202,7 @@ public:
     MetricType metricType;
 
 	int nodes , edges;
+    int KNN;
 	std::map<double , int> point2Index;
 	std::vector<vec3d> index2Point;
 	std::vector<Tensor*> index2Tensor;
@@ -255,6 +256,7 @@ public:
     Matrix3d lerpTensor(const vec3d& pos);
 	void calcPointTensor();
 	void buildGraphFromPoints();
+    bool addPointToGraph(const vec3d& pos);
 
 	bool dijkstra(const Graph& g , const int& source ,
 				  DijkstraInfo& info , int *sink = NULL);

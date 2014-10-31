@@ -57,6 +57,8 @@ bool writeLog(const char* msg , ...);
 double point2double(const vec3d& p);
 
 bool isEqual(const vec3d& lhs , const vec3d& rhs);
+bool isValid(const vec3d& pos);
+void setNull(vec3d& pos);
 
 template<typename T>
 bool allocate3(T*** &d , const vec3i& size)
