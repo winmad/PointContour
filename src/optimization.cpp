@@ -297,26 +297,24 @@ void Optimization::run(CurveNet *net)
                 net->bsplines[i].ctrlNodes[j] = pos;
             }
 		}
-        printf("before\n");
+
+        /*
         if (net->bsplines[i].ctrlNodes.size() == 2)
         {
             vec3d x1 = net->bsplines[i].ctrlNodes[0];
             vec3d x2 = net->bsplines[i].ctrlNodes[1];
             vec3d v = x2 - x1;
             v.normalize();
-            printf("%d\n" , net->polyLines[i].size());
-            /*
             net->polyLines[i][0] = x1;
             net->polyLines[i][(int)net->polyLines[i].size() - 1] = x2;
-            for (int j = 1; i < (int)net->polyLines[i].size() - 1; j++)
+            for (int j = 1; j < (int)net->polyLines[i].size() - 1; j++)
             {
                 vec3d u = net->polyLines[i][j] - x1;
                 double proj = u.dot(v);
                 net->polyLines[i][j] = x1 + v * proj;
             }
-            */
         }
-        printf("after\n");
+        */
 	}
 	fin.close();
 }
