@@ -22,19 +22,6 @@ public:
     CurveEdge() {}
     CurveEdge(int _link , int _pli) :
         link(_link) , pli(_pli) {}
-    /*
-    CurveEdge(const CurveEdge& edge)
-    {
-        link = edge.link;
-        polyLine = edge.polyLine;
-    }
-    
-    CurveEdge& operator =(const CurveEdge& edge)
-    {
-        link = edge.link;
-        polyLine = edge.polyLine;
-    }
-    */
     int link;
     int pli;
 };

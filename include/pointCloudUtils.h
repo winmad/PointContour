@@ -220,6 +220,7 @@ public:
 	PointCloudRenderer *pcRenderer;
     // curve network
     CurveNet *curveNet;
+    Optimization opt;
 
 public:
 	PointCloudUtils();
