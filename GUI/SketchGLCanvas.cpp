@@ -29,7 +29,7 @@ SketchGLCanvas::SketchGLCanvas(	wxWindow *parent, wxWindowID id,
     isChangeView=true;
     m_rotationTimes=1;
 	m_rotationCount=0;
-    
+
     //lastTime = glutGet(GLUT_ELAPSED_TIME);
 	frames = 0;
 
@@ -43,7 +43,7 @@ SketchGLCanvas::~SketchGLCanvas ()
 void SketchGLCanvas::Initialize()
 {
     SetCurrent();
-     
+
     GetClientSize( &m_width, &m_height );
     //printf("w=%d, h=%d\n" , m_width , m_height);
     m_initialized = true;
@@ -56,7 +56,7 @@ void SketchGLCanvas::Initialize()
     glViewport(0, 0, (GLint) m_width, (GLint) m_height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    
+
     gluPerspective(m_PerspectiveAngleDegrees,
         (GLfloat)m_width/(GLfloat)m_height,
         m_NearPlane,
@@ -152,7 +152,7 @@ void SketchGLCanvas::Initialize()
       GLfloat mat_emit[] = { 0.1f, 0.1f, .1f, 1.0f };
       glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION , mat_emit);
     */
-		
+
 
     if (isTwoSided){
         glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
@@ -238,7 +238,7 @@ void SketchGLCanvas::Render()
 		m_NearPlane + m_FarPlaneOffset);
 
 	glMatrixMode(GL_MODELVIEW);
-    
+
 	m_pcUtils->pcRenderer->render();
 
 	/*
@@ -313,17 +313,17 @@ void SketchGLCanvas::renderSelectionBuffer()
 	glShadeModel(GL_FLAT);							// Enable Smooth Shading
 	glDisable(GL_POINT_SMOOTH);
 	glDisable(GL_LINE_SMOOTH); //anti-aliased lines
-	glDisable(GL_BLEND); 
+	glDisable(GL_BLEND);
 
 	m_pcUtils->pcRenderer->updateSelectionBuffer();
-    
+
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_LIGHTING);
 	//glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
 	glEnable(GL_POINT_SMOOTH);
 	glEnable(GL_LINE_SMOOTH); //anti-aliased lines
-	glEnable(GL_BLEND); 
+	glEnable(GL_BLEND);
 }
 
 void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
@@ -345,7 +345,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 			double yNormalized = (halfHeight-y)/halfHeight;
 			double oldXNormalized = (m_lastx-halfWidth)/halfWidth;
 			double oldYNormalized = (halfHeight-m_lasty)/halfHeight;
-			
+
 			// rotates screen
 			float rot[3]={0};
 			rot[1] -= (m_lasty - y) * 0.5;
@@ -389,30 +389,30 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		Render();
 		isChangeView=true;
 	}
-	
+
     if (event.ControlDown())
     {
         lastKeyBoard=1;
 		m_pcUtils->pcRenderer->isCtrlPress = true;
-        
+
 		if(isChangeView){
 			renderSelectionBuffer();
 			isChangeView=false;
 		}
-		
+
 		m_pcUtils->pcRenderer->pickPoint(x , y , false);
 
-		if (event.LeftIsDown()) 
+		if (event.LeftIsDown())
 		{
 			m_pcUtils->pcRenderer->pickPoint(x , y , true);
 		}
-		if (event.RightIsDown()) 
+		if (event.RightIsDown())
 		{
 			m_pcUtils->pcRenderer->pathVertex.clear();
             m_pcUtils->pcRenderer->bsp.clear();
 			m_pcUtils->pcRenderer->lastPoint = NULL;
 		}
-		
+
 		Render();
 
 	}
@@ -422,17 +422,17 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         m_pcUtils->pcRenderer->isAltPress = true;
 
 		m_pcUtils->pcRenderer->pickCurve(x , y , false);
-		if (event.LeftIsDown()) 
+		if (event.LeftIsDown())
 		{
 			m_pcUtils->pcRenderer->pickCurve(x , y , true);
 		}
-        
+
 		Render();
     }
 
 	if (!event.ControlDown())
-	{ 
-		m_pcUtils->pcRenderer->isCtrlPress = false; 
+	{
+		m_pcUtils->pcRenderer->isCtrlPress = false;
 	}
     if (!event.AltDown())
     {
@@ -451,8 +451,8 @@ double SketchGLCanvas::fpsCounter()
 	int currentTime = glutGet(GLUT_ELAPSED_TIME);
 	double elapsedTime = currentTime - lastTime;
 	double fps;
-	if (elapsedTime > 1000) 
-	{	
+	if (elapsedTime > 1000)
+	{
 		fps = (double)frames * 1000.f / elapsedTime;
 		frames = 0;
 		lastTime = currentTime;
