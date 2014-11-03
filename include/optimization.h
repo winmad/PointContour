@@ -61,8 +61,10 @@ private:
 	std::string generateLineOrtho(int, int, int, int);
 	std::string generateLineParallel(int, int, int, int);
 	std::string generateLineCoplanar(int, int, int, int);
-	std::string generateLineColinear(int, int, int, int);
-	std::string generateSamePoint(int, int, int, int);
+	std::string generateLineCollinear(int, int, int, int);
+	std::string generateLineTangent(int, int, int, int);
+	std::string generateSamePoint(int, int);
+
 	bool isLinked(int, int, int, int);
 
     void addOptVariable(OptVariable optVar);
@@ -72,6 +74,7 @@ private:
 
     CurveNet *net;
 
+	int tmpVarNum;
     int numVars;
     std::vector<OptVariable> vars;
     std::map<double , int> double2vi;

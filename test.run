@@ -1,0 +1,9 @@
+reset;
+option ampl_include 'E:\reconstruction\point_cloud\PointContour';
+model test.mod;
+data test.dat;
+solve;
+
+printf "total_cost %f\n", total_cost > E:\reconstruction\point_cloud\PointContour\result.out;
+printf {i in 0..BN, j in 0..CN[i]} "%f %f %f\n", p[i, j, 1], p[i, j, 2], p[i, j, 3] >> E:\reconstruction\point_cloud\PointContour\result.out;
+
