@@ -293,7 +293,7 @@ void Optimization::generateMOD(string file)
 
 	for (int i = 0; i < numCons; ++ i)
 	{
-		fout << "subject to constraint " << i << ": ";
+		fout << "subject to constraint" << i << ": ";
 		switch(cons[i].type)
 		{
             //case ConstraintsType::st_collinear:
@@ -635,34 +635,6 @@ string Optimization::generateLineCollinear(int u1, int u2, int v1, int v2)
 string Optimization::generateLineCoplanar(int u1, int u2, int v1, int v2)
 {
 	stringstream ss;
-	//++ tmpVarNum;
-	//ss << "var tmpx" << tmpVarNum << " := "
-	//   << "(p[" << u1 << ",2]-p[" << u2 << ",2])"
-	//   << "*"
-	//   << "(p[" << v1 << ",3]-p[" << v2 << ",3])"
-	//   << "-"
-	//   << "(p[" << u1 << ",3]-p[" << u2 << ",3])"
-	//   << "*"
-	//   << "(p[" << v1 << ",2]-p[" << v2 << ",2])"
-	//   << ";\n";
-	//ss << "var tmpy" << tmpVarNum << " := "
-	//   << "(p[" << u1 << ",3]-p[" << u2 << ",3])"
-	//   << "*"
-	//   << "(p[" << v1 << ",1]-p[" << v2 << ",1])"
-	//   << "-"
-	//   << "(p[" << u1 << ",1]-p[" << u2 << ",1])"
-	//   << "*"
-	//   << "(p[" << v1 << ",3]-p[" << v2 << ",3])"
-	//   << ";\n";
-	//ss << "var tmpz" << tmpVarNum << " := "
-	//   << "(p[" << u1 << ",1]-p[" << u2 << ",1])"
-	//   << "*"
-	//   << "(p[" << v1 << ",2]-p[" << v2 << ",2])"
-	//   << "-"
-	//   << "(p[" << u1 << ",2]-p[" << u2 << ",2])"
-	//   << "*"
-	//   << "(p[" << v1 << ",1]-p[" << v2 << ",1])"
-	//   << ";\n";
 	ss << "abs("
 	   << "(" << "(p[" << u1 << ",2]-p[" << u2 << ",2])"
 	   << "*"
@@ -721,7 +693,8 @@ string Optimization::generateLineCoplanar(int u1, int u2, int v1, int v2)
 	   << "-"
 	   << "(p[" << u1 << ",2]-p[" << u2 << ",2])"
 	   << "*"
-	   << "(p[" << v1 << ",1]-p[" << v2 << ",1])" << ")" << "^2";
+	   << "(p[" << v1 << ",1]-p[" << v2 << ",1])" << ")" << "^2"
+	   << ")";
 
 	return ss.str();
 }

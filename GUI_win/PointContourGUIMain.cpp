@@ -678,7 +678,7 @@ void PointContourGUIFrame::OnMetricChoiceSelect(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnPrintInfoButtonClick(wxCommandEvent& event)
 {
-    vec3d pos;
+     vec3d pos;
     if (debugPosChanged)
     {
         pos.x = getDouble(PosX->GetValue());
@@ -688,7 +688,7 @@ void PointContourGUIFrame::OnPrintInfoButtonClick(wxCommandEvent& event)
     }
     else
     {
-        pos = *(m_pcUtils->pcRenderer->pickedPoint);
+        pos = (m_pcUtils->pcRenderer->pickedDispPoint);
     }
 
     printf("\n------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
@@ -731,8 +731,8 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 		case WXK_ESCAPE:
 			exit(0);
         case WXK_SPACE:
-			
-			opti.run(m_pcUtils->pcRenderer->dispCurveNet);
+			m_pcUtils->opt.init(m_pcUtils->curveNet);
+			m_pcUtils->opt.run(m_pcUtils->curveNet);
 			//m_pcUtils->pcRenderer->dispCurveNet
             //m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
             break;
