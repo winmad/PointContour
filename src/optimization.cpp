@@ -200,14 +200,14 @@ void Optimization::generateDAT(string file)
 			fout << " 1 " << net->nodes[vars[i].ni].x
 				 << " 2 " << net->nodes[vars[i].ni].y
 				 << " 3 " << net->nodes[vars[i].ni].z
-				 << endl;
+				 << "\n";
 		}
 		else
 		{
 			fout << " 1 " << net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci].x
 				 << " 2 " << net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci].y
 				 << " 3 " << net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci].z
-				 << endl;
+				 << "\n";
 		}
 	}
 	fout << ";\n";
@@ -264,23 +264,28 @@ void Optimization::generateMOD(string file)
 		fout << "+";
 		switch(cons[i].type)
 		{
-		case ConstraintsType::st_collinear:
-			fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_coplanar:
-			fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_ortho:
-			fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_parallel:
-			fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_tangent:
-			fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		default:
-			break;
+            //case ConstraintsType::st_collinear:
+            case st_collinear:
+                fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_coplanar:
+            case st_coplanar:
+                fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_ortho:
+            case st_ortho:
+                fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_parallel:
+            case st_parallel:
+                fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_tangent:
+            case st_tangent:
+                fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+            default:
+                break;
 		}
 		fout << "\n";
 	}
@@ -291,23 +296,28 @@ void Optimization::generateMOD(string file)
 		fout << "subject to constraint " << i << ": ";
 		switch(cons[i].type)
 		{
-		case ConstraintsType::st_collinear:
-			fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_coplanar:
-			fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_ortho:
-			fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_parallel:
-			fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		case ConstraintsType::st_tangent:
-			fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-			break;
-		default:
-			break;
+            //case ConstraintsType::st_collinear:
+            case st_collinear:
+                fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_coplanar:
+            case st_coplanar:
+                fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_ortho:
+            case st_ortho:
+                fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_parallel:
+            case st_parallel:
+                fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+                //case ConstraintsType::st_tangent:
+            case st_tangent:
+                fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                break;
+            default:
+                break;
 		}
 		fout << " = 0;\n";
 	}
@@ -491,7 +501,6 @@ void Optimization::generateBAT(string file)
 
 void Optimization::run(CurveNet *net)
 {
-	this->net = net;
 #if defined(_WIN32)
 	generateDAT("test.dat");
 	generateMOD("test.mod");
@@ -539,18 +548,37 @@ void Optimization::run(CurveNet *net)
                 net->polyLines[i][j] = x1 + v * proj;
             }
         }
-	}*/
-	for (int i = 0; i < vars.size(); ++ i)
+	}
+    */
+    std::vector<vec3d> varbuff;
+    for (int i = 0; i < vars.size(); i++)
+    {
+        vec3d pos;
+        fin >> pos.x >> pos.y >> pos.z;
+        varbuff.push_back(pos);
+    }
+
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->curveType[i] == -1) continue;
+        int ci[2] = {0 , net->bsplines[i].ctrlNodes.size() - 1};
+        for (int j = 0; j < 2; j++)
+        {
+            int ni = net->getNodeIndex(net->bsplines[i].ctrlNodes[ci[j]]);
+            int vi = getOptVarIndex(OptVariable(0 , ni));
+            net->bsplines[i].ctrlNodes[ci[j]] = varbuff[vi];
+        }
+    }
+
+    for (int i = 0; i < vars.size(); ++ i)
 	{
-		vec3d pos;
-		fin >> pos.x >> pos.y >> pos.z;
 		if (vars[i].type == 0)
 		{
-			net->nodes[vars[i].ni] = pos;
+			net->nodes[vars[i].ni] = varbuff[i];
 		}
 		else
 		{
-			net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci] = pos;
+			net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci] = varbuff[i];
 		}
 	}
 	fin.close();

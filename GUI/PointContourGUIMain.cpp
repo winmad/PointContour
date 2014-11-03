@@ -731,7 +731,7 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 			exit(0);
         case WXK_SPACE:
             m_pcUtils->opt.init(m_pcUtils->curveNet);
-            // opt.run(m_pcUtils->pcRenderer->dispCurveNet);
+            m_pcUtils->opt.run(m_pcUtils->pcRenderer->dispCurveNet);
             //m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
             break;
         case WXK_UP:
