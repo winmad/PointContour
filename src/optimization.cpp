@@ -5,10 +5,174 @@
 
 using namespace std;
 
+Optimization::Optimization()
+{
+    net = NULL;
+}
+
+void Optimization::init(CurveNet *_net)
+{
+    net = _net;
+
+    numVars = 0;
+    vars.clear();
+    double2vi.clear();
+
+    numCons = 0;
+    cons.clear();
+
+    for (int i = 0; i < net->numNodes; i++)
+    {
+        if (!net->nodesStat[i]) continue;
+        addOptVariable(OptVariable(0 , i));
+    }
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->bsplines[i].ctrlNodes.size() <= 2) continue;
+        for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; j++)
+        {
+            addOptVariable(OptVariable(1 , i  , j));
+        }
+    }
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->curveType[i] != 1) continue;
+
+        PolyLineIndex u , v;
+        int u1 , u2 , v1 , v2;
+
+        // collinear
+        std::pair<int , int> root = net->collinearSet.find(i , 0);
+        if (root.first != i)
+        {
+            u = net->polyLinesIndex[i];
+            v = net->polyLinesIndex[root.first];
+            u1 = getOptVarIndex(OptVariable(0 , u.ni[0]));
+            u2 = getOptVarIndex(OptVariable(0 , u.ni[1]));
+            v1 = getOptVarIndex(OptVariable(0 , v.ni[0]));
+            v2 = getOptVarIndex(OptVariable(0 , v.ni[1]));
+            cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_collinear));
+        }
+        // parallel
+        root = net->parallelSet.find(i , 0);
+        if (root.first != i)
+        {
+            u = net->polyLinesIndex[i];
+            v = net->polyLinesIndex[root.first];
+            u1 = getOptVarIndex(OptVariable(0 , u.ni[0]));
+            u2 = getOptVarIndex(OptVariable(0 , u.ni[1]));
+            v1 = getOptVarIndex(OptVariable(0 , v.ni[0]));
+            v2 = getOptVarIndex(OptVariable(0 , v.ni[1]));
+            cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_parallel));
+        }
+    }
+
+    // coplanar
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->curveType[i] == 3)
+        {
+            int numCtrlCurves = (int)net->bsplines[i].ctrlNodes.size() - 1;
+            for (int j = 0; j < numCtrlCurves; j++)
+            {
+                for (int k = j + 1; k < numCtrlCurves; k++)
+                {
+                    std::pair<OptVariable , OptVariable> u = bsp2var(i , j , numCtrlCurves);
+                    std::pair<OptVariable , OptVariable> v = bsp2var(i , k , numCtrlCurves);
+                    int u1 = getOptVarIndex(u.first);
+                    int u2 = getOptVarIndex(u.second);
+                    int v1 = getOptVarIndex(v.first);
+                    int v2 = getOptVarIndex(v.second);
+                    cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->curveType[i] == 2 || net->curveType[i] == -1) continue;
+        for (int j = i + 1; j < net->numPolyLines; j++)
+        {
+            if (net->curveType[j] == 2 || net->curveType[i] == -1) continue;
+            if (net->coplanarSet.getMark(i , 0 , j , 0) == 1)
+            {
+                for (int x = 0; x < (int)net->bsplines[i].ctrlNodes.size() - 1; x++)
+                {
+                    for (int y = 0; y < (int)net->bsplines[j].ctrlNodes.size() - 1; y++)
+                    {
+                        std::pair<OptVariable , OptVariable> u = bsp2var(i , x ,
+                            (int)net->bsplines[i].ctrlNodes.size() - 1);
+                        std::pair<OptVariable , OptVariable> v = bsp2var(j , y ,
+                            (int)net->bsplines[j].ctrlNodes.size() - 1);
+                        int u1 = getOptVarIndex(u.first);
+                        int u2 = getOptVarIndex(u.second);
+                        int v1 = getOptVarIndex(v.first);
+                        int v2 = getOptVarIndex(v.second);
+                        cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
+                    }
+                }
+            }
+        }
+    }
+
+    // ortho & tangent
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->curveType[i] == -1) continue;
+        for (int j = i; j < net->numPolyLines; j++)
+        {
+            if (net->curveType[i] == -1) continue;
+            for (int x = 0; x < (int)net->bsplines[i].ctrlNodes.size() - 1; x++)
+            {
+                for (int y = (i != j ? 0 : x + 1); y < (int)net->bsplines[j].ctrlNodes.size() - 1; y++)
+                {
+                    int mark = net->orthoSet.getMark(i , x , j , y);
+                    if (mark == 1 || mark == 2)
+                    {
+                        std::pair<OptVariable , OptVariable> u = bsp2var(i , x ,
+                            (int)net->bsplines[i].ctrlNodes.size() - 1);
+                        std::pair<OptVariable , OptVariable> v = bsp2var(j , y ,
+                            (int)net->bsplines[j].ctrlNodes.size() - 1);
+                        int u1 = getOptVarIndex(u.first);
+                        int u2 = getOptVarIndex(u.second);
+                        int v1 = getOptVarIndex(v.first);
+                        int v2 = getOptVarIndex(v.second);
+                        if (mark == 1)
+                        {
+                            cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_ortho));
+                        }
+                        else if (mark == 2)
+                        {
+                            cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_tangent));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    numCons = cons.size();
+
+    // print vars
+    writeLog("===== vars =====\n");
+    for (int i = 0; i < numVars; i++)
+    {
+        writeLog("var %d: (%d , %d , %d)\n" , i , vars[i].type , vars[i].ni , vars[i].ci);
+    }
+    // print constraints
+    writeLog("===== cons =====\n");
+    for (int i = 0; i < numCons; i++)
+    {
+        writeLog("cons %d: type = %d, (%d , %d) <-> (%d , %d)\n" , i , (int)cons[i].type ,
+            cons[i].u1 , cons[i].u2 , cons[i].v1 , cons[i].v2);
+    }
+}
+
 bool samepoint(vec3d &a, vec3d &b)
 {
 	return abs(a.x - b.x) < EPS && abs(a.y - b.y) < EPS && abs(a.z - b.z) < EPS;
 }
+
 bool Optimization::isLinked(int i, int j, int p, int q)
 {
 	if (samepoint(net->bsplines[i].ctrlNodes[j], net->bsplines[p].ctrlNodes[q]))
@@ -131,7 +295,6 @@ void Optimization::generateMOD(string file)
 			}
 		}
 	}
-    
 	//ortho
 	num = 0;
 	for (int i = 0; i < net->bsplines.size(); ++ i)
@@ -182,7 +345,6 @@ void Optimization::generateMOD(string file)
 			}
 		}
 	}
-    
 	//parallel
 	num = 0;
 	for (int i = 0; i < net->bsplines.size(); ++ i)
@@ -239,7 +401,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=1 bar_feasible=3 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
+		 << "option knitro_options \"alg=1 bar_feasible=1 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -292,12 +454,31 @@ void Optimization::run(CurveNet *net)
 	{
 		for (int j = 0; j < net->bsplines[i].ctrlNodes.size(); ++ j)
 		{
-			double x, y, z;
-			fin >> x >> y >> z;
-			net->bsplines[i].ctrlNodes[j].x = x;
-			net->bsplines[i].ctrlNodes[j].y = y;
-			net->bsplines[i].ctrlNodes[j].z = z;
+            vec3d pos;
+            fin >> pos.x >> pos.y >> pos.z;
+            if ((net->bsplines[i].ctrlNodes[j] - pos).length() < 0.1)
+            {
+                net->bsplines[i].ctrlNodes[j] = pos;
+            }
 		}
+
+        /*
+        if (net->bsplines[i].ctrlNodes.size() == 2)
+        {
+            vec3d x1 = net->bsplines[i].ctrlNodes[0];
+            vec3d x2 = net->bsplines[i].ctrlNodes[1];
+            vec3d v = x2 - x1;
+            v.normalize();
+            net->polyLines[i][0] = x1;
+            net->polyLines[i][(int)net->polyLines[i].size() - 1] = x2;
+            for (int j = 1; j < (int)net->polyLines[i].size() - 1; j++)
+            {
+                vec3d u = net->polyLines[i][j] - x1;
+                double proj = u.dot(v);
+                net->polyLines[i][j] = x1 + v * proj;
+            }
+        }
+        */
 	}
 	fin.close();
 }
@@ -397,4 +578,61 @@ string Optimization::generateLineCoplanar(int i, int j, int p, int q)
 	   << "*"
 	   << "(p[" << p << "," << q << ",3]-p[" << i << "," << j << ",3])";
 	return ss.str();
+}
+
+void Optimization::addOptVariable(OptVariable optVar)
+{
+    double hashVal = var2double(optVar);
+    if (double2vi.find(hashVal) != double2vi.end()) return;
+    double2vi[hashVal] = numVars;
+    vars.push_back(optVar);
+    numVars++;
+}
+
+int Optimization::getOptVarIndex(const OptVariable& optVar)
+{
+    double hashVal = var2double(optVar);
+    if (double2vi.find(hashVal) == double2vi.end())
+    {
+        return -1;
+    }
+    else
+    {
+        return double2vi[hashVal];
+    }
+}
+
+double Optimization::var2double(const OptVariable& v)
+{
+    return v.type * pow2[2] + v.ni * pow2[1] + v.ci;
+}
+
+std::pair<OptVariable , OptVariable> Optimization::bsp2var(int bspIndex , int curveIndex , int numCtrlCurves)
+{
+    OptVariable u1 , u2;
+    if (curveIndex == 0 && curveIndex == numCtrlCurves - 1)
+    {
+        int ni = net->getNodeIndex(net->bsplines[bspIndex].ctrlNodes[curveIndex]);
+        u1 = OptVariable(0 , ni);
+        ni = net->getNodeIndex(net->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
+        u2 = OptVariable(0 , ni);
+    }
+    else if (curveIndex == 0)
+    {
+        int ni = net->getNodeIndex(net->bsplines[bspIndex].ctrlNodes[curveIndex]);
+        u1 = OptVariable(0 , ni);
+        u2 = OptVariable(1 , bspIndex , curveIndex + 1);
+    }
+    else if (curveIndex == numCtrlCurves - 1)
+    {
+        u1 = OptVariable(1 , bspIndex , curveIndex);
+        int ni = net->getNodeIndex(net->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
+        u2 = OptVariable(0 , ni);
+    }
+    else
+    {
+        u1 = OptVariable(1 , bspIndex , curveIndex);
+        u2 = OptVariable(1 , bspIndex , curveIndex + 1);
+    }
+    return std::make_pair(u1 , u2);
 }

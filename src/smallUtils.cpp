@@ -112,6 +112,16 @@ bool isEqual(const vec3d& lhs , const vec3d& rhs)
     return true;
 }
 
+bool isValid(const vec3d& pos)
+{
+    return pos.x > -1e5;
+}
+
+void setNull(vec3d& pos)
+{
+    pos.x = -1e10;
+}
+
 void writeBMP(const char* filename , int w , int h ,
               unsigned char* rgb)
 {

@@ -21,22 +21,7 @@ struct BSpline
 {
     std::vector<double> knots;
     std::vector<vec3d> ctrlNodes;
-    /*
-    BSpline& operator =(const BSpline& bsp)
-    {
-        knots.clear();
-        ctrlNodes.clear();
-        for (int i = 0; i < bsp.knots.size(); i++)
-        {
-            knots.push_back(bsp.knots[i]);
-        }
-        for (int i = 0; i < bsp.ctrlNodes.size(); i++)
-        {
-            ctrlNodes.push_back(bsp.ctrlNodes[i]);
-        }
-        return this;
-    }
-    */
+
     void clear()
     {
         knots.clear();
@@ -57,6 +42,8 @@ bool writeLog(const char* msg , ...);
 double point2double(const vec3d& p);
 
 bool isEqual(const vec3d& lhs , const vec3d& rhs);
+bool isValid(const vec3d& pos);
+void setNull(vec3d& pos);
 
 template<typename T>
 bool allocate3(T*** &d , const vec3i& size)

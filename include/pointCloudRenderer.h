@@ -98,7 +98,7 @@ public:
 
 	bool isNormalInfo;
 	PointCloudUtils *pcUtils;
-    CurveNet *curveNet;
+    /* CurveNet *curveNet; */
     CurveNet *dispCurveNet;
 	std::vector<vec3d> axisU , axisV;
     
@@ -110,10 +110,10 @@ public:
     double smoothScale;
     bool useBSpline;
     
-	vec3d *pickedPoint;
-    vec3d *pickedDispPoint;
-	vec3d *lastPoint;
-    vec3d *lastDispPoint;
+	/* vec3d *pickedPoint; */
+    vec3d pickedDispPoint;
+	/* vec3d *lastPoint; */
+    vec3d lastDispPoint;
     int pickedCurve;
 
 	std::vector<vec3uc> glObjColors;

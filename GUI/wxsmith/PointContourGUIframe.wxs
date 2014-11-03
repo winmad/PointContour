@@ -477,7 +477,7 @@
 																</object>
 																<object class="sizeritem">
 																	<object class="wxTextCtrl" name="ID_TEXTCTRL6" variable="Alpha2" member="yes">
-																		<value>0.1</value>
+																		<value>0.4</value>
 																		<size>50,30</size>
 																		<handler function="OnAlpha2Text" entry="EVT_TEXT" />
 																	</object>

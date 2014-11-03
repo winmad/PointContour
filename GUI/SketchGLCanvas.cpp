@@ -410,7 +410,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		{
 			m_pcUtils->pcRenderer->pathVertex.clear();
             m_pcUtils->pcRenderer->bsp.clear();
-			m_pcUtils->pcRenderer->lastPoint = NULL;
+			setNull(m_pcUtils->pcRenderer->lastDispPoint);
 		}
 
 		Render();

@@ -282,7 +282,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer6->Add(Alpha1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText6 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT6, _("A2"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
     FlexGridSizer6->Add(StaticText6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Alpha2 = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL6, _("0.1"), wxDefaultPosition, wxSize(50,30), 0, wxDefaultValidator, _T("ID_TEXTCTRL6"));
+    Alpha2 = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL6, _("0.4"), wxDefaultPosition, wxSize(50,30), 0, wxDefaultValidator, _T("ID_TEXTCTRL6"));
     FlexGridSizer6->Add(Alpha2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText10 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT10, _("An"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
     FlexGridSizer6->Add(StaticText10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -688,7 +688,7 @@ void PointContourGUIFrame::OnPrintInfoButtonClick(wxCommandEvent& event)
     }
     else
     {
-        pos = *(m_pcUtils->pcRenderer->pickedPoint);
+        pos = (m_pcUtils->pcRenderer->pickedDispPoint);
     }
 
     printf("\n------(%.6lf,%.6lf,%.6lf)------\n" , pos.x , pos.y , pos.z);
@@ -725,13 +725,13 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
 
 void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 {
-    Optimization opt;
     switch (event.GetKeyCode())
 	{
 		case WXK_ESCAPE:
 			exit(0);
         case WXK_SPACE:
-            opt.run(m_pcUtils->pcRenderer->dispCurveNet);
+            m_pcUtils->opt.init(m_pcUtils->curveNet);
+            // opt.run(m_pcUtils->pcRenderer->dispCurveNet);
             //m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
             break;
         case WXK_UP:

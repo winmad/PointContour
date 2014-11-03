@@ -22,19 +22,6 @@ public:
     CurveEdge() {}
     CurveEdge(int _link , int _pli) :
         link(_link) , pli(_pli) {}
-    /*
-    CurveEdge(const CurveEdge& edge)
-    {
-        link = edge.link;
-        polyLine = edge.polyLine;
-    }
-    
-    CurveEdge& operator =(const CurveEdge& edge)
-    {
-        link = edge.link;
-        polyLine = edge.polyLine;
-    }
-    */
     int link;
     int pli;
 };
@@ -57,6 +44,7 @@ public:
     bool linkNoEdges(const int& ni);
 
     bool collinearTest(Path& path , BSpline& bsp);
+    
     bool checkCollinear(const vec3d& x1 , const vec3d& y1 ,
         const vec3d& x2 , const vec3d& y2 , const double& threshold);
     bool checkParallel(const vec3d& x1 , const vec3d& y1 ,
@@ -70,6 +58,12 @@ public:
         const vec3d& x2 , const double& threshold);
     bool checkTangent(const vec3d& x0 , const vec3d& x1 ,
         const vec3d& x2 , const double& threshold);
+
+    void addCurveType(int bspIndex);
+    void addCollinearConstraint(int bspIndex);
+    void addParallelConstraint(int bspIndex);
+    void addCoplanarConstraint(int bspIndex);
+    void addJunctionConstraint(int bspIndex);
     
     void test();
     void debugPrint();
