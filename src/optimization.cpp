@@ -456,8 +456,8 @@ void Optimization::generateRUN(string file)
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
-		 << "printf {i in 0..BN, j in 0..CN[i]} \"%f %f %f\\n\", "
-		 << "p[i, j, 1], p[i, j, 2], p[i, j, 3] "
+		 << "printf {i in 0..N} \"%f %f %f\\n\", "
+		 << "p[i, 1], p[i, 2], p[i, 3] "
 		 << "> E:\\reconstruction\\point_cloud\\PointContour\\Release\\result.out;\n";
 #elif defined(__APPLE__)
     fout << "reset;\n"
@@ -467,8 +467,8 @@ void Optimization::generateRUN(string file)
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
-		 << "printf {i in 0..BN, j in 0..CN[i]} \"%f %f %f\\n\", "
-		 << "p[i, j, 1], p[i, j, 2], p[i, j, 3] "
+		 << "printf {i in 0..N} \"%f %f %f\\n\", "
+		 << "p[i, 1], p[i, 2], p[i, 3] "
 		 << "> /Users/Winmad/Projects/PointContour/ampl/result.out;\n";
 #endif
 	fout.close();
@@ -512,7 +512,7 @@ void Optimization::run(CurveNet *net)
 	ifstream fin(fileroot + "result.out");
 #endif
     // change ctrl nodes and resample
-	for (int i = 0; i < net->bsplines.size(); ++ i)
+	/*for (int i = 0; i < net->bsplines.size(); ++ i)
 	{
 		for (int j = 0; j < net->bsplines[i].ctrlNodes.size(); ++ j)
 		{
@@ -524,7 +524,6 @@ void Optimization::run(CurveNet *net)
             }
 		}
 
-        /*
         if (net->bsplines[i].ctrlNodes.size() == 2)
         {
             vec3d x1 = net->bsplines[i].ctrlNodes[0];
@@ -540,7 +539,19 @@ void Optimization::run(CurveNet *net)
                 net->polyLines[i][j] = x1 + v * proj;
             }
         }
-        */
+	}*/
+	for (int i = 0; i < vars.size(); ++ i)
+	{
+		vec3d pos;
+		fin >> pos.x >> pos.y >> pos.z;
+		if (vars[i].type == 0)
+		{
+			net->nodes[vars[i].ni] = pos;
+		}
+		else
+		{
+			net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci] = pos;
+		}
 	}
 	fin.close();
 }
