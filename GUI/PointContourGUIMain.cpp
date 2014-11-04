@@ -79,6 +79,7 @@ const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX5 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX6 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE3 = wxNewId();
+const long PointContourGUIFrame::ID_CHECKBOX7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -219,6 +220,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     ConstraintsVisual->Append(_("orthogonal"));
     ConstraintsVisual->Append(_("tangent"));
     FlexGridSizer2->Add(ConstraintsVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    AutoOpt = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX7, _("Auto Optimization"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX7"));
+    AutoOpt->SetValue(true);
+    FlexGridSizer2->Add(AutoOpt, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -282,7 +286,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer6->Add(Alpha1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText6 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT6, _("A2"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
     FlexGridSizer6->Add(StaticText6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Alpha2 = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL6, _("0.4"), wxDefaultPosition, wxSize(50,30), 0, wxDefaultValidator, _T("ID_TEXTCTRL6"));
+    Alpha2 = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL6, _("0.1"), wxDefaultPosition, wxSize(50,30), 0, wxDefaultValidator, _T("ID_TEXTCTRL6"));
     FlexGridSizer6->Add(Alpha2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText10 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT10, _("An"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
     FlexGridSizer6->Add(StaticText10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -346,6 +350,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_CHECKBOX5,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUseBSplineClick);
     Connect(ID_CHECKBOX6,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowCtrlPointsClick);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnConstraintsVisualSelect);
+    Connect(ID_CHECKBOX7,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnAutoOptClick);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -402,8 +407,9 @@ void PointContourGUIFrame::resetFrame()
 	FilterRadius->SetValue(mystring);
 
 	mystring = wxString::Format(wxT("%.1f"), 0.1);
-	//mystring = wxString::Format(wxT("%.1f"), 0.5);
-	Alpha1->SetValue(mystring);
+    Alpha1->SetValue(mystring);
+
+	mystring = wxString::Format(wxT("%.1f"), 0.5);
 	Alpha2->SetValue(mystring);
 
 	gridResChanged = extNumChanged = radiusChanged = alphaChanged = false;
@@ -730,8 +736,20 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 		case WXK_ESCAPE:
 			exit(0);
         case WXK_SPACE:
+            m_pcUtils->pcRenderer->optUpdate();
+            /*
             m_pcUtils->opt.init(m_pcUtils->curveNet);
             m_pcUtils->opt.run(m_pcUtils->pcRenderer->dispCurveNet);
+            numPolyLines = m_pcUtils->pcRenderer->dispCurveNet->polyLines.size();
+            l = m_pcUtils->pcRenderer->dispCurveNet->polyLines[numPolyLines - 1].size();
+            stPos = m_pcUtils->pcRenderer->dispCurveNet->polyLines[numPolyLines - 1][0];
+            m_pcUtils->addPointToGraph(stPos);
+            sti = m_pcUtils->point2Index[point2double(stPos)];
+            if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+				m_pcUtils->dijkstra(m_pcUtils->pointGraph , sti , m_pcUtils->pointGraphInfo);
+
+            m_pcUtils->pcRenderer->lastDispPoint = stPos;
+            */
             //m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
             break;
         case WXK_UP:
@@ -852,4 +870,13 @@ void PointContourGUIFrame::OnConstraintsVisualSelect(wxCommandEvent& event)
         curveIndex = 0;
     }
     m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnAutoOptClick(wxCommandEvent& event)
+{
+    m_pcUtils->pcRenderer->isAutoOpt = (!m_pcUtils->pcRenderer->isAutoOpt);
+    if (m_pcUtils->pcRenderer->isAutoOpt)
+    {
+        m_pcUtils->pcRenderer->optUpdate();
+    }
 }

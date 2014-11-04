@@ -35,6 +35,7 @@ public:
     
 	bool isCtrlPress;
     bool isAltPress;
+    bool isAutoOpt;
 
 	double discRenderBaseRadius , discRenderRadiusScale;
 	double hessianRenderBaseLength , hessianRenderLengthScale;
@@ -92,6 +93,8 @@ public:
 	int selectionByColorMap(int mouseX , int mouseY);
 	void pickPoint(int mouseX , int mouseY , bool isStore);
     void pickCurve(int mouseX , int mouseY , bool isDelete);
+
+    void optUpdate();
 public:
 	static const int LIST_SURFEL_DISC = 2;
 	static const int LIST_POINTS = LIST_SURFEL_DISC + 1;

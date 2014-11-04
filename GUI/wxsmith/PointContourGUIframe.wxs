@@ -215,6 +215,16 @@
 															<border>5</border>
 															<option>1</option>
 														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="ID_CHECKBOX7" variable="AutoOpt" member="yes">
+																<label>Auto Optimization</label>
+																<checked>1</checked>
+																<handler function="OnAutoOptClick" entry="EVT_CHECKBOX" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -477,7 +487,7 @@
 																</object>
 																<object class="sizeritem">
 																	<object class="wxTextCtrl" name="ID_TEXTCTRL6" variable="Alpha2" member="yes">
-																		<value>0.4</value>
+																		<value>0.1</value>
 																		<size>50,30</size>
 																		<handler function="OnAlpha2Text" entry="EVT_TEXT" />
 																	</object>

@@ -2,6 +2,7 @@
 #define OPTIMIZATION_H
 
 #include "curveNet.h"
+#include "TimeManager.h"
 
 struct OptVariable
 {
@@ -85,6 +86,8 @@ private:
     std::vector<OptConstraints> cons;
 	std::vector<Plane> coplanes;
 	std::vector<std::vector<int> > coplanarPoints;
+
+    TimeManager timer;
 };
 
 #endif //OPTIMIZATION_H
