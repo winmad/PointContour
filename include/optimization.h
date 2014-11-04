@@ -2,6 +2,7 @@
 #define OPTIMIZATION_H
 
 #include "curveNet.h"
+#include "TimeManager.h"
 
 struct OptVariable
 {
@@ -81,6 +82,8 @@ private:
 
     int numCons;
     std::vector<OptConstraints> cons;
+
+    TimeManager timer;
 };
 
 #endif //OPTIMIZATION_H

@@ -58,7 +58,9 @@ void PointCloudRenderer::init()
     pickedCurve = -1;
     
 	isCtrlPress = false;
-
+    isAltPress = false;
+    isAutoOpt = true;
+    
 	if (pcUtils == NULL)
 		return;
     
@@ -902,6 +904,12 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
                     newNode , bsp , pathForComp[0]);
 
+                if (isAutoOpt)
+                {
+                    pcUtils->opt.init(dispCurveNet);
+                    pcUtils->opt.run(dispCurveNet);
+                    dispPos = dispCurveNet->polyLines[dispCurveNet->numPolyLines - 1][0];
+                }
                 // dispCurveNet->orthoSet.printLog();
                 // dispCurveNet->collinearSet.printLog();
                 // dispCurveNet->collinearSet.test();
@@ -934,6 +942,20 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 		// pickedPoint = NULL;
         setNull(pickedDispPoint);
 	}
+}
+
+void PointCloudRenderer::optUpdate()
+{
+    pcUtils->opt.init(dispCurveNet);
+    pcUtils->opt.run(dispCurveNet);
+    vec3d stPos = dispCurveNet->polyLines[dispCurveNet->numPolyLines - 1][0];
+    pcUtils->addPointToGraph(stPos);
+    int sti = pcUtils->point2Index[point2double(stPos)];
+    if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+    {
+        pcUtils->dijkstra(pcUtils->pointGraph , sti , pcUtils->pointGraphInfo);
+    }
+    lastDispPoint = stPos;
 }
 
 std::vector<vec3d> getRay(int mouseX,int mouseY)

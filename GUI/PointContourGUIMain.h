@@ -78,6 +78,7 @@ class PointContourGUIFrame: public wxFrame
         void OnMetricChoiceSelect(wxCommandEvent& event);
         void OnCollinearButtonClick(wxCommandEvent& event);
         void OnConstraintsVisualSelect(wxCommandEvent& event);
+        void OnAutoOptClick(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -101,6 +102,7 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_CHECKBOX5;
         static const long ID_CHECKBOX6;
         static const long ID_CHOICE3;
+        static const long ID_CHECKBOX7;
         static const long ID_STATICTEXT7;
         static const long ID_TEXTCTRL7;
         static const long ID_STATICTEXT8;
@@ -154,6 +156,7 @@ class PointContourGUIFrame: public wxFrame
         wxScrolledWindow* ScrolledWindow3;
         wxScrolledWindow* ScrolledWindow1;
         wxTextCtrl* Alpha2;
+        wxCheckBox* AutoOpt;
         wxStaticText* StaticText6;
         wxMenu* MenuItem3;
         wxCheckBox* ShowPoint;

@@ -83,18 +83,19 @@ void Optimization::init(CurveNet *_net)
                     int u2 = getOptVarIndex(u.second);
                     int v1 = getOptVarIndex(v.first);
                     int v2 = getOptVarIndex(v.second);
+                    if (u1 == v1 || u1 == v2 || u2 == v1 || u2 == v2) continue;
                     cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
                 }
             }
         }
     }
-
+    /*
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == 2 || net->curveType[i] == -1) continue;
         for (int j = i + 1; j < net->numPolyLines; j++)
         {
-            if (net->curveType[j] == 2 || net->curveType[i] == -1) continue;
+            if (net->curveType[j] == 2 || net->curveType[j] == -1) continue;
             if (net->coplanarSet.getMark(i , 0 , j , 0) == 1)
             {
                 for (int x = 0; x < (int)net->bsplines[i].ctrlNodes.size() - 1; x++)
@@ -109,20 +110,21 @@ void Optimization::init(CurveNet *_net)
                         int u2 = getOptVarIndex(u.second);
                         int v1 = getOptVarIndex(v.first);
                         int v2 = getOptVarIndex(v.second);
+                        if (u1 == v1 || u1 == v2 || u2 == v1 || u2 == v2) continue;
                         cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
                     }
                 }
             }
         }
     }
-
+    */
     // ortho & tangent
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == -1) continue;
         for (int j = i; j < net->numPolyLines; j++)
         {
-            if (net->curveType[i] == -1) continue;
+            if (net->curveType[j] == -1) continue;
             for (int x = 0; x < (int)net->bsplines[i].ctrlNodes.size() - 1; x++)
             {
                 for (int y = (i != j ? 0 : x + 1); y < (int)net->bsplines[j].ctrlNodes.size() - 1; y++)
@@ -217,41 +219,13 @@ void Optimization::generateDAT(string file)
 void Optimization::generateMOD(string file)
 {
 	ofstream fout(file.data());
-	/*vector<OptConstraints> consCollinear;
-	vector<OptConstraints> consCoplanar;
-	vector<OptConstraints> consParallel;
-	vector<OptConstraints> consOrtho;
-	vector<OptConstraints> consTangent;
-	for (int i = 0; i < cons.size(); ++ i)
-	{
-		switch(cons[i].type)
-		{
-		case ConstraintsType::st_collinear:
-			consCollinear.push_back(cons[i]);
-			break;
-		case ConstraintsType::st_coplanar:
-			consCoplanar.push_back(cons[i]);
-			break;
-		case ConstraintsType::st_ortho:
-			consOrtho.push_back(cons[i]);
-			break;
-		case ConstraintsType::st_parallel:
-			consParallel.push_back(cons[i]);
-			break;
-		case ConstraintsType::st_tangent:
-			consTangent.push_back(cons[i]);
-			break;
-		default:
-			break;
-		}
-	}*/
 	fout << "# parameters\n";
 	fout << "set Dim3 = 1..3;\n";
 	fout << "param N;\n";
 	fout << "param init_p {i in 0..N, Dim3};\n";
 	
 	fout << "\n# variables\n";
-	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - 0.1, <= init_p[i, t] + 0.1, := init_p[i, t] - 0.1;\n";
+	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - 0.01, <= init_p[i, t] + 0.01, := init_p[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
 
@@ -342,7 +316,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=20 par_numthreads=8\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.1\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -378,11 +352,13 @@ void Optimization::run(CurveNet *net)
 	system("test.bat");
 	ifstream fin("result.out");
 #elif defined(__APPLE__)
+    timer.PushCurrentTime();
     string fileroot = "/Users/Winmad/Projects/PointContour/ampl/";
     generateDAT(fileroot + "test.dat");
 	generateMOD(fileroot + "test.mod");
 	generateRUN(fileroot + "test.run");
 	generateBAT(fileroot + "test.sh");
+    timer.PopAndDisplayTime("\n\n***** file i/o time = %.6fs *****\n\n");
     string cmd = "chmod u+x " + fileroot + "test.sh";
     system(cmd.c_str());
     cmd = fileroot + "test.sh";
@@ -390,6 +366,7 @@ void Optimization::run(CurveNet *net)
 	ifstream fin(fileroot + "result.out");
 #endif
 
+    timer.PushCurrentTime();
     std::vector<vec3d> varbuff;
     for (int i = 0; i < vars.size(); i++)
     {
@@ -424,9 +401,16 @@ void Optimization::run(CurveNet *net)
 
     for (int i = 0; i < net->numPolyLines; i++)
     {
+        if (net->curveType[i] == -1) continue;
+        if (net->bsplines[i].ctrlNodes.size() > 2 && net->bsplines[i].knots.size() == 0)
+        {
+            printf("!!!!! (%lu , %lu) !!!!!\n" , net->bsplines[i].ctrlNodes.size() ,
+            net->bsplines[i].knots.size());
+        }
         resampleBsp(net->bsplines[i] , net->polyLines[i]);
     }
 	fin.close();
+    timer.PopAndDisplayTime("\n\n***** post processing time = %.6f *****\n\n");
 }
 
 string Optimization::generateSamePoint(int u, int v)
