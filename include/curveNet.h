@@ -5,6 +5,7 @@
 #include "splineUtils.h"
 #include "disjointSet.h"
 #include "adjMatrix.h"
+#include "Plane.h"
 
 struct PolyLineIndex
 {
@@ -26,6 +27,8 @@ public:
     int link;
     int pli;
 };
+
+
 
 class CurveNet
 {
@@ -57,13 +60,15 @@ public:
         const vec3d& x2 , const double& threshold);
     bool checkTangent(const vec3d& x0 , const vec3d& x1 ,
         const vec3d& x2 , const double& threshold);
+	bool checkSymmetry(const vec3d& x, const vec3d& nx,
+		const vec3d& y, const vec3d& ny, const double& threshold);
 
     void addCurveType(int bspIndex);
     void addCollinearConstraint(int bspIndex);
     void addParallelConstraint(int bspIndex);
     void addCoplanarConstraint(int bspIndex);
     void addJunctionConstraint(int bspIndex);
-    
+    void addSymmetryConstraint(int bspIndex);
     void test();
     void debugPrint();
     void debugLog();
@@ -86,6 +91,9 @@ public:
     double parallelThr;
     double orthoThr;
     double tangentThr;
+	double symmetryThr;
+
+	std::vector<Plane> reflactPlanes;
     
     DisjointSet collinearSet;
     DisjointSet parallelSet;

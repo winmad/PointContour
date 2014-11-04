@@ -197,6 +197,7 @@
     <ClInclude Include="include\pointCloudRenderer.h" />
     <ClInclude Include="include\pointCloudUtils.h" />
     <ClInclude Include="include\PointKDTree.h" />
+    <ClInclude Include="include\plane.h" />
     <ClInclude Include="include\smallUtils.h" />
     <ClInclude Include="include\TimeManager.h" />
   </ItemGroup>

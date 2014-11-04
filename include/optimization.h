@@ -64,6 +64,8 @@ private:
 	std::string generateLineCollinear(int, int, int, int);
 	std::string generateLineTangent(int, int, int, int);
 	std::string generateSamePoint(int, int);
+	std::string generateCoplanar(int, int);
+	void addCoplanar(int, int, int, int);
 
 	bool isLinked(int, int, int, int);
 
@@ -81,6 +83,8 @@ private:
 
     int numCons;
     std::vector<OptConstraints> cons;
+	std::vector<Plane> coplanes;
+	std::vector<std::vector<int> > coplanarPoints;
 };
 
 #endif //OPTIMIZATION_H
