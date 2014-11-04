@@ -8,7 +8,6 @@
 #include <cstdarg>
 #include <algorithm>
 #include "engine.h"
-                                               
 #define PI 3.14159265358979
 #define EPS 1e-8
 #define SQR(x) ((x) * (x))
@@ -17,24 +16,11 @@ struct Edge;
 typedef std::vector<vec3d> Path;
 typedef std::vector<std::vector<Edge> > Graph;
 
-struct BSpline
-{
-    std::vector<double> knots;
-    std::vector<vec3d> ctrlNodes;
-
-    void clear()
-    {
-        knots.clear();
-        ctrlNodes.clear();
-    }
-};
-
 const double pow2[3] = {1.0 , 1024.0 , 1024.0 * 1024.0};
 
 static char logFileName[128];
 
 extern Engine *ep;
-void convert2Spline(Path& path , BSpline& bsp);
 
 bool restartLog(std::string fileName);
 bool writeLog(const char* msg , ...);

@@ -2,67 +2,6 @@
 
 Engine *ep;
 
-void convert2Spline(Path& path , BSpline& bsp)
-{
-    int N = path.size();
-    if (N <= 2) return;
-    mxArray *pts = NULL;
-    pts = mxCreateDoubleMatrix(3 , N , mxREAL);
-    double *coors = NULL;
-    coors = new double[N * 3];
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            coors[3 * i + j] = path[i][j];
-        }
-    }
-
-    memcpy((double*)mxGetPr(pts) , coors , sizeof(double) * N * 3);
-    engPutVariable(ep , "pts" , pts);
-    engEvalString(ep , "[bsp , p] = convert2Spline(pts);");
-    mxArray *ctrlNodes = NULL;
-    engEvalString(ep , "ctrlNodes = bsp.coefs;");
-    ctrlNodes = engGetVariable(ep , "ctrlNodes");
-    int numCtrlNodes;
-    numCtrlNodes = mxGetN(ctrlNodes);
-    mxArray *res = NULL;
-    res = engGetVariable(ep , "p");
-    
-    memcpy(coors , (double*)mxGetPr(res) , sizeof(double) * N * 3);
-    for (int i = 1; i < N - 1; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            path[i][j] = coors[3 * i + j];
-        }
-    }
-
-    bsp.clear();
-    memcpy(coors , (double*)mxGetPr(ctrlNodes) , sizeof(double) * numCtrlNodes * 3);
-    for (int i = 0; i < numCtrlNodes; i++)
-    {
-        vec3d p(coors[3 * i] , coors[3 * i + 1] , coors[3 * i + 2]);
-        bsp.ctrlNodes.push_back(p);
-    }
-
-    mxArray *knots = NULL;
-    engEvalString(ep , "knots = bsp.knots;");
-    knots = engGetVariable(ep , "knots");
-    int numKnots = mxGetN(knots);
-    memcpy(coors , (double*)mxGetPr(knots) , sizeof(double) * numKnots);
-    for (int i = 0; i < numKnots; i++)
-    {
-        bsp.knots.push_back(coors[i]);
-    }
-
-    delete[] coors;
-    mxDestroyArray(pts);
-    mxDestroyArray(res);
-    mxDestroyArray(ctrlNodes);
-    mxDestroyArray(knots);
-}
-
 bool restartLog(std::string fileName)
 {
     strcpy(logFileName , fileName.c_str());

@@ -900,7 +900,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 
                 // curveNet->extendPath(lastp , pos , pathForComp[0] , newNode);
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
-                    newNode , bsp);
+                    newNode , bsp , pathForComp[0]);
 
                 // dispCurveNet->orthoSet.printLog();
                 // dispCurveNet->collinearSet.printLog();

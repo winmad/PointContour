@@ -257,7 +257,7 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "(sum {i in 0..N, t in Dim3} "
+	fout << "100 * (sum {i in 0..N, t in Dim3} "
 		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
 	for (int i = 0; i < numCons; ++ i)
 	{
@@ -319,140 +319,9 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " = 0;\n";
+		fout << " <= 0.005;\n";
 	}
-	////same point
-	//num = 0;
-	//for (int i = 0; i < net->bsplines.size(); ++ i)
-	//{
-	//	if (net->bsplines[i].ctrlNodes.size() < 2) continue;
-	//	vec3d &si = net->bsplines[i].ctrlNodes[0];
-	//	vec3d &ei = net->bsplines[i].ctrlNodes[net->bsplines[i].ctrlNodes.size() - 1];
-	//	for (int j = i + 1; j < net->bsplines.size(); ++ j)
-	//	{
-	//		if (net->bsplines[j].ctrlNodes.size() < 2) continue;
-	//		vec3d &sj = net->bsplines[j].ctrlNodes[0];
-	//		vec3d &ej = net->bsplines[j].ctrlNodes[net->bsplines[j].ctrlNodes.size() - 1];
-	//		if (samepoint(si, sj))
-	//		{
-	//			++ num;
-	//			fout << "subject to samePoint" << num << ": "
-	//				 << generateSamePoint(i, 0, j, 0)
-	//				 << " = 0;\n";
-	//			continue;
-	//		}
-	//		if (samepoint(si, ej))
-	//		{
-	//			++ num;
-	//			fout << "subject to samePoint" << num << ": "
-	//				 << generateSamePoint(i, 0, j, net->bsplines[j].ctrlNodes.size() - 1)
-	//				 << " = 0;\n";
-	//			continue;
-	//		}
-	//		if (samepoint(ei, sj))
-	//		{
-	//			++ num;
-	//			fout << "subject to samePoint" << num << ": "
-	//				 << generateSamePoint(i, net->bsplines[i].ctrlNodes.size() - 1, j, 0)
-	//				 << " = 0;\n";
-	//			continue;
-	//		}
-	//		if (samepoint(ei, ej))
-	//		{
-	//			++ num;
-	//			fout << "subject to samePoint" << num << ": "
-	//				 << generateSamePoint(i, net->bsplines[i].ctrlNodes.size() - 1, j, net->bsplines[j].ctrlNodes.size() - 1)
-	//				 << " = 0;\n";
-	//			continue;
-	//		}
-	//	}
-	//}
-	////ortho
-	//num = 0;
-	//for (int i = 0; i < net->bsplines.size(); ++ i)
-	//{
-	//	if (net->bsplines[i].ctrlNodes.size() != 2) continue;
-	//	for (int j = i + 1; j < net->bsplines.size(); ++ j)
-	//	{
-	//		if (net->bsplines[j].ctrlNodes.size() != 2) continue;
-	//		if (net->orthoSet.getMark(i, 0, j, 0) == 1)
-	//		{
-	//			++ num;
-	//			fout << "subject to lineOrtho" << num << ": "
-	//				 << generateLineOrtho(i, 0, j, 0)
-	//				 << " = 0;\n";
-	//		}
-	//	}
-	//}
-	////coplanar
-	//num = 0;
-	//for (int i = 0; i < net->bsplines.size(); ++ i)
-	//{
-	//	for (int j = 0; j < (int)net->bsplines[i].ctrlNodes.size() - 1; ++ j)
-	//	{
-	//		for (int q = j + 1; q < (int)net->bsplines[i].ctrlNodes.size() - 1; ++ q)
-	//		{
-	//			if (isLinked(i, j, i, q))continue;
-	//			if (net->coplanarSet.getMark(i, j, i, q) == 1)
-	//			{
-	//				++ num;
-	//				fout << "subject to lineCoplanar" << num << ": "
-	//					 << generateLineCoplanar(i, j, i, q)
-	//					 << " = 0;\n";
-	//			}
-	//		}
-	//		for (int p = i + 1; p < net->bsplines.size(); ++ p)
-	//		{
-	//			for (int q = 0; q < (int)net->bsplines[p].ctrlNodes.size() - 1; ++ q)
-	//			{
-	//				if (isLinked(i, j, p, q))continue;
-	//				if (net->coplanarSet.getMark(i, j, p, q) == 1)
-	//				{
-	//					++ num;
-	//					fout << "subject to lineCoplanar" << num << ": "
-	//						 << generateLineCoplanar(i, j, p, q)
-	//						 << " = 0;\n";
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-	////parallel
-	//num = 0;
-	//for (int i = 0; i < net->bsplines.size(); ++ i)
-	//{
-	//	if (net->bsplines[i].ctrlNodes.size() != 2) continue;
-	//	for (int j = i + 1; j < net->bsplines.size(); ++ j)
-	//	{
-	//		if (net->bsplines[j].ctrlNodes.size() != 2) continue;
-	//		if (net->parallelSet.sameRoot(i, 0, j, 0))
-	//		{
-	//			++ num;
-	//			fout << "subject to lineParallel" << num << ": "
-	//				 << generateLineParallel(i, 0, j, 0)
-	//				 << " = 0;\n";
-	//		}
-	//	}
-	//}
-	////colinear
-	//num = 0;
-	//for (int i = 0; i < net->bsplines.size(); ++ i)
-	//{
-	//	if (net->bsplines[i].ctrlNodes.size() != 2) continue;
-	//	for (int j = i + 1; j < net->bsplines.size(); ++ j)
-	//	{
-	//		if (net->bsplines[j].ctrlNodes.size() != 2) continue;
-	//		if (isLinked(i, 0, j, 0))continue;
-	//		if (net->collinearSet.sameRoot(i, 0, j, 0))
-	//		{
-	//			++ num;
-	//			fout << "subject to lineColinear" << num << ": "
-	//				 << generateLineColinear(i, 0, j, 0)
-	//				 << " = 0;\n";
-	//		}
-	//	}
-	//}
-	fout.close();
+    fout.close();
 }
 
 void Optimization::generateRUN(string file)
@@ -473,7 +342,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=1 bar_feasible=1 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=20 par_numthreads=8\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -520,36 +389,7 @@ void Optimization::run(CurveNet *net)
 	system(cmd.c_str());
 	ifstream fin(fileroot + "result.out");
 #endif
-    // change ctrl nodes and resample
-	/*for (int i = 0; i < net->bsplines.size(); ++ i)
-	{
-		for (int j = 0; j < net->bsplines[i].ctrlNodes.size(); ++ j)
-		{
-            vec3d pos;
-            fin >> pos.x >> pos.y >> pos.z;
-            if ((net->bsplines[i].ctrlNodes[j] - pos).length() < 0.1)
-            {
-                net->bsplines[i].ctrlNodes[j] = pos;
-            }
-		}
 
-        if (net->bsplines[i].ctrlNodes.size() == 2)
-        {
-            vec3d x1 = net->bsplines[i].ctrlNodes[0];
-            vec3d x2 = net->bsplines[i].ctrlNodes[1];
-            vec3d v = x2 - x1;
-            v.normalize();
-            net->polyLines[i][0] = x1;
-            net->polyLines[i][(int)net->polyLines[i].size() - 1] = x2;
-            for (int j = 1; j < (int)net->polyLines[i].size() - 1; j++)
-            {
-                vec3d u = net->polyLines[i][j] - x1;
-                double proj = u.dot(v);
-                net->polyLines[i][j] = x1 + v * proj;
-            }
-        }
-	}
-    */
     std::vector<vec3d> varbuff;
     for (int i = 0; i < vars.size(); i++)
     {
@@ -581,6 +421,11 @@ void Optimization::run(CurveNet *net)
 			net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci] = varbuff[i];
 		}
 	}
+
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        resampleBsp(net->bsplines[i] , net->polyLines[i]);
+    }
 	fin.close();
 }
 

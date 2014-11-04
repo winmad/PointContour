@@ -3,6 +3,7 @@
 
 #include "nvVector.h"
 #include "smallUtils.h"
+#include "splineUtils.h"
 #include "curveNet.h"
 #include "optimization.h"
 #include <vector>

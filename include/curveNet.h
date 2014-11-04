@@ -2,6 +2,7 @@
 #define CURVE_NET_H
 
 #include "smallUtils.h"
+#include "splineUtils.h"
 #include "disjointSet.h"
 #include "adjMatrix.h"
 
@@ -34,9 +35,7 @@ public:
     void clear();
     void startPath(const vec3d& st);
     void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
-        bool newNode , const BSpline& bsp);
-    void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
-        bool newNode);
+        bool newNode , const BSpline& bsp , const Path& originPath);
     void breakPath(const int& breakLine , const int& breakPoint);
     void deletePath(const int& deleteLine);
     
@@ -74,6 +73,7 @@ public:
     std::vector<vec3d> nodes;
     std::vector<bool> nodesStat;
     std::vector<std::vector<CurveEdge> > edges;
+    std::vector<Path> originPolyLines;
     std::vector<Path> polyLines;
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;

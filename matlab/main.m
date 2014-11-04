@@ -1,7 +1,7 @@
 curveNet = readCurves('curves.txt');
 figure;
 hold on;
-N = curveNet.numLines;
+N = 1;
 tot = 0;
 numPoints = 0;
 for i = 1 : N
@@ -16,7 +16,7 @@ for i = 1 : N
     %plot3(x , y , z , 'b' , 'LineStyle' , '-' , 'LineWidth' , 2);
     %pts = [x(2:len-1); y(2:len-1); z(2:len-1)];
     pts = [x(1:len); y(1:len); z(1:len)];
-    [bs , val] = calcBspline(pts , 0.05);
+    [bs , val] = convert2Spline(pts);
     fnplt(bs , 'r');
     polyBs = bs.coefs;
     plot3(polyBs(1,:) , polyBs(2,:) , polyBs(3,:) , 'b');

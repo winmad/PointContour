@@ -38,14 +38,7 @@ void CurveNet::startPath(const vec3d& st)
 }
 
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
-    const Path& path , bool newNode)
-{
-    BSpline bsp;
-    extendPath(st , ed , path , newNode , bsp);
-}
-
-void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
-    const Path& path , bool newNode , const BSpline& bsp)
+    const Path& path , bool newNode , const BSpline& bsp , const Path& originPath)
 {
     if (path.size() < 2)
     {
@@ -74,6 +67,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     // if (ed_ni == -1) printf("ed index error\n");
     // polyLines
     polyLines.push_back(path);
+    originPolyLines.push_back(originPath);
     polyLinesIndex.push_back(PolyLineIndex(st_ni , edges[st_ni].size() ,
             ed_ni , edges[ed_ni].size()));
     // bsplines
@@ -118,10 +112,12 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     }
     
     Path path = polyLines[breakLine];
-    
+    Path originPath = originPolyLines[breakLine];
     // "left" part
     polyLines[breakLine].erase(polyLines[breakLine].begin() + breakPoint + 1 ,
-                               polyLines[breakLine].end());
+        polyLines[breakLine].end());
+    originPolyLines[breakLine].erase(originPolyLines[breakLine].begin() + breakPoint + 1 ,
+        originPolyLines[breakLine].end());
     edges[st_ni][st_ei] = CurveEdge(mid_ni , breakLine);
     edges[mid_ni].push_back(CurveEdge(st_ni , breakLine));
     polyLinesIndex[breakLine].ni[0] = st_ni;
@@ -131,7 +127,9 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     
     // "right" part
     path.erase(path.begin() , path.begin() + breakPoint);
+    originPath.erase(originPath.begin() , originPath.begin() + breakPoint);
     polyLines.push_back(path);
+    originPolyLines.push_back(originPath);
     edges[mid_ni].push_back(CurveEdge(ed_ni , numPolyLines));
     edges[ed_ni][ed_ei] = CurveEdge(mid_ni , numPolyLines);
     polyLinesIndex.push_back(PolyLineIndex(mid_ni , edges[mid_ni].size() - 1 ,
@@ -586,12 +584,13 @@ void CurveNet::test()
 {
     clear();
     startPath(vec3d(0 , 0 , 0));
-    Path path;
+    Path path , originPath;
+    BSpline bsp;
     for (int i = 0; i <= 10; i++)
     {
         path.push_back(vec3d(i , 0 , 0));
     }
-    extendPath(vec3d(0 , 0 , 0) , vec3d(10 , 0 , 0) , path , true);
+    extendPath(vec3d(0 , 0 , 0) , vec3d(10 , 0 , 0) , path , true , bsp , originPath);
     
     startPath(vec3d(5 , 2 , 0));
     path.clear();
@@ -599,7 +598,7 @@ void CurveNet::test()
     {
         path.push_back(vec3d(5 , i , 0));
     }
-    extendPath(vec3d(5 , 2 , 0) , vec3d(5 , 0 , 0) , path , true);
+    extendPath(vec3d(5 , 2 , 0) , vec3d(5 , 0 , 0) , path , true , bsp , originPath);
     breakPath(0 , 5);
     
     debugLog();
