@@ -53,12 +53,39 @@ void convert2Spline(Path& path , BSpline& bsp)
     {
         bsp.knots.push_back(coors[i]);
     }
-
+    
+    bsp.N = path.size();
+    bsp.K = numCtrlNodes;
+    bsp.newCoefs();
+    mxArray *coefs = NULL;
+    engEvalString(ep , "coefs = calcCoefs(bsp);");
+    coefs = engGetVariable(ep , "coefs");
+    double *tmp = new double[bsp.N * bsp.K];
+    memcpy(tmp , (double*)mxGetPr(coefs) , sizeof(double) * bsp.N * bsp.K);
+    for (int i = 0; i < bsp.N; i++)
+    {
+        for (int j = 0; j < bsp.K; j++)
+        {
+            bsp.coefs[i][j] = tmp[bsp.K * i + j];
+        }
+    }
+    /*
+    for (int i = 0; i < bsp.N; i++)
+    {
+        for (int j = 0; j < bsp.K; j++)
+        {
+            writeLog("%.6f " , bsp.coefs[i][j]);
+        }
+        writeLog("\n");
+    }
+    */
     delete[] coors;
+    delete[] tmp;
     mxDestroyArray(pts);
     mxDestroyArray(res);
     mxDestroyArray(ctrlNodes);
     mxDestroyArray(knots);
+    mxDestroyArray(coefs);
 }
 
 void resampleBsp(BSpline& bsp , Path& path)
