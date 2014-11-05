@@ -501,7 +501,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.2\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.1\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"

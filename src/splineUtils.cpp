@@ -27,7 +27,7 @@ void BSpline::calcCoefs()
             coefs[i][j] = tmp[K * i + j];
         }
     }
-
+    /*
     for (int i = 0; i < N; i++)
     {
         for (int j = 0; j < K; j++)
@@ -36,7 +36,7 @@ void BSpline::calcCoefs()
         }
         writeLog("\n");
     }
-
+    */
     delete[] tmp;
     mxDestroyArray(m_knots);
     mxDestroyArray(m_coefs);
