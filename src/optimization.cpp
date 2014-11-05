@@ -18,6 +18,11 @@ void Optimization::init(CurveNet *_net)
     vars.clear();
     double2vi.clear();
 
+	straightlines.clear();
+	bsplines.clear();
+	straightlinesIdx.clear();
+	bsplinesIdx.clear();
+
     numCons = 0;
     cons.clear();
 
@@ -34,9 +39,41 @@ void Optimization::init(CurveNet *_net)
         if (net->bsplines[i].ctrlNodes.size() <= 2) continue;
         for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; j++)
         {
-            addOptVariable(OptVariable(1 , i  , j));
+            addOptVariable(OptVariable(1 , i , j));
         }
     }
+
+	//find var index for lines
+	for (int i = 0; i < net->numPolyLines; ++ i)
+	{
+		vector<int> tmpvec;
+		if (net->curveType[i] == -1) continue;
+		if (net->curveType[i] == 1)
+		{
+			int tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[0]));
+			tmpvec.push_back(tmpidx);
+			tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[1]));
+			tmpvec.push_back(tmpidx);
+			straightlines.push_back(tmpvec);
+			straightlinesIdx.push_back(i);
+		}
+		else
+		{
+			int tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[0]));
+			tmpvec.push_back(tmpidx);
+			for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; ++ j)
+			{
+				tmpidx = getOptVarIndex(OptVariable(1, i, j));
+				tmpvec.push_back(tmpidx);
+			}
+			tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[1]));
+			tmpvec.push_back(tmpidx);
+			bsplines.push_back(tmpvec);
+			bsplinesIdx.push_back(i);
+		}
+	}
+
+	//constraint
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] != 1) continue;
@@ -92,7 +129,7 @@ void Optimization::init(CurveNet *_net)
             }
         }
     }
-    /*
+    
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == 2 || net->curveType[i] == -1) continue;
@@ -132,7 +169,7 @@ void Optimization::init(CurveNet *_net)
 			coplanes.pop_back();
 		}
 	}
-    */
+
     // ortho & tangent
     for (int i = 0; i < net->numPolyLines; i++)
     {
@@ -243,6 +280,80 @@ void Optimization::generateDAT(string file)
 	}
 	fout << ";\n";
 
+	fout << "param SN := " << (int)straightlines.size() - 1 << ";\n";
+	fout << "param sidx :=\n";
+	for (int i = 0; i < straightlines.size(); ++ i)
+	{
+		fout << "\t[" << i << ", *]";
+		fout << " 1 " << straightlines[i][0]
+			 << " 2 " << straightlines[i][1]
+			 << "\n";
+	}
+	fout << ";\n";
+
+	fout << "param BN := " << (int)bsplines.size() - 1 << ";\n";
+	fout << "param CN :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		fout << "\t" << i << " " << (int)bsplines[i].size() - 1 << "\n";
+	}
+	fout << ";\n";
+	fout << "param bidx :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		fout << "\t[" << i << ", *]";
+		for (int j = 0; j < bsplines[i].size(); ++ j)
+		{
+			fout << " " << j << " " << bsplines[i][j];
+		}
+		fout << "\n";
+	}
+	fout << ";\n";
+
+	fout << "param SPN :=\n";
+	for (int i = 0; i < straightlines.size(); ++ i)
+	{
+		fout << "\t" << i << " " 
+			 << (int)net->originPolyLines[straightlinesIdx[i]].size() - 1 << "\n";
+	}
+	fout << ";\n";
+	fout << "param sp :=\n";
+	for (int i = 0; i < straightlines.size(); ++ i)
+	{
+		Path &tmpline = net->originPolyLines[straightlinesIdx[i]];
+		for (int j = 0; j < tmpline.size(); ++ j)
+		{
+			fout << "\t[" << i << ", " << j << ", *]";
+			fout << " 1 " << tmpline[j].x
+				 << " 2 " << tmpline[j].y
+				 << " 3 " << tmpline[j].z
+				 << "\n";
+		}
+	}
+	fout << ";\n";
+
+	fout << "param BPN :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		fout << "\t" << i << " " 
+			 << (int)net->originPolyLines[bsplinesIdx[i]].size() - 1 << "\n";
+	}
+	fout << ";\n";
+	fout << "param bp :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		Path &tmpline = net->originPolyLines[bsplinesIdx[i]];
+		for (int j = 0; j < tmpline.size(); ++ j)
+		{
+			fout << "\t[" << i << ", " << j << ", *]";
+			fout << " 1 " << tmpline[j].x
+				 << " 2 " << tmpline[j].y
+				 << " 3 " << tmpline[j].z
+				 << "\n";
+		}
+	}
+	fout << ";\n";
+
 	fout.close();
 }
 
@@ -250,23 +361,41 @@ void Optimization::generateMOD(string file)
 {
 	ofstream fout(file.data());
 	fout << "# parameters\n";
+	fout << "set Dim2 = 1..2;\n";
 	fout << "set Dim3 = 1..3;\n";
 	fout << "set Dim4 = 1..4;\n";
 	fout << "param N;\n";
-	fout << "param init_p {i in 0..N, Dim3};\n";
+	fout << "param init_p {0..N, Dim3};\n";
 	fout << "param PN;\n";
-	fout << "param init_plane {i in 0..PN, Dim4};\n";
+	fout << "param init_plane {0..PN, Dim4};\n";
+	fout << "param SN;\n";
+	fout << "param sidx {0..SN, Dim2};\n";
+	fout << "param BN;\n";
+	fout << "param CN {0..BN};\n";
+	fout << "param bidx {i in 0..BN, 0..CN[i]};\n";
+	fout << "param SPN {0..SN};\n";
+	fout << "param sp {i in 0..SN, 0..SPN[i], Dim3};\n";
+	fout << "param BPN {0..BN};\n";
+	fout << "param bp {i in 0..BN, 0..BPN[i], Dim3};\n";
 	
 	fout << "\n# variables\n";
 	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - 0.05, <= init_p[i, t] + 0.05, := init_p[i, t];\n";
 	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - 0.05, <= init_plane[i, t] + 0.05, := init_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
+	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 1], t] - p[sidx[i, 2], t])"
+		 << " / sqrt(sum{j in Dim3} (p[sidx[i, 1], j] - p[sidx[i, 2], j]) ^ 2);\n";
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
 	fout << "(sum {i in 0..N, t in Dim3} "
 		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
+	fout << "+(sum{i in 0..SN}(sum{j in 0..SPN[i]}"
+		 << "sum{t in Dim3}("
+		 << "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
+		 << "-(sp[i,j,t]-p[sidx[i,2],t])"
+		 << ")^2"
+		 << ")/SPN[i])\n";
 	for (int i = 0; i < numCons; ++ i)
 	{
 		fout << "+";
@@ -302,7 +431,7 @@ void Optimization::generateMOD(string file)
 		for (int j = 0; j < coplanarPoints[i].size(); ++ j)
 		{
 			fout << "+"
-				 << generateCoplanar(i, coplanarPoints[i][j]);
+				 << generateCoplanar(i, coplanarPoints[i][j])
 				 << "\n";
 		}
 	}
