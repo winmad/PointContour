@@ -44,7 +44,7 @@ void Optimization::init(CurveNet *_net)
     }
 
 	//find var index for lines
-	for (int i = 0; i < net->numPolyLines; ++ i)
+	for (int i = net->numPolyLines - 1; i < net->numPolyLines; ++ i)
 	{
 		vector<int> tmpvec;
 		if (net->curveType[i] == -1) continue;
@@ -390,9 +390,9 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "(sum {i in 0..N, t in Dim3} "
+	fout << "100 * (sum {i in 0..N, t in Dim3} "
 		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
-	fout << "+(sum{i in 0..SN}(sum{j in 0..SPN[i]}"
+	fout << "+100 * (sum{i in 0..SN}(sum{j in 0..SPN[i]}"
 		 << "sum{t in Dim3}("
 		 << "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
 		 << "-(sp[i,j,t]-p[sidx[i,2],t])"
@@ -501,7 +501,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_cpu=0.2\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.2\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -744,7 +744,8 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 	else pos[2] = net->bsplines[vars[r].ni].ctrlNodes[vars[r].ci];
 	if (vars[p].type == 0) pos[3] = net->nodes[vars[s].ni];
 	else pos[3] = net->bsplines[vars[s].ni].ctrlNodes[vars[s].ci];
-	Plane plane(pos[0], (pos[0]-pos[1]).cross(pos[0]-pos[2]));
+    vec3d n = (pos[0]-pos[1]).cross(pos[0]-pos[2]);
+	Plane plane(pos[0], n);
 	bool exist = false;
 	double coplanarThr = 0.1;
 	for (int i = 0; i < coplanes.size(); ++ i)
