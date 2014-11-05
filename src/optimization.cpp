@@ -18,8 +18,16 @@ void Optimization::init(CurveNet *_net)
     vars.clear();
     double2vi.clear();
 
+	straightlines.clear();
+	bsplines.clear();
+	straightlinesIdx.clear();
+	bsplinesIdx.clear();
+
     numCons = 0;
     cons.clear();
+
+	coplanes.clear();
+	coplanarPoints.clear();
 
     for (int i = 0; i < net->numNodes; i++)
     {
@@ -31,9 +39,41 @@ void Optimization::init(CurveNet *_net)
         if (net->bsplines[i].ctrlNodes.size() <= 2) continue;
         for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; j++)
         {
-            addOptVariable(OptVariable(1 , i  , j));
+            addOptVariable(OptVariable(1 , i , j));
         }
     }
+
+	//find var index for lines
+	for (int i = 0; i < net->numPolyLines; ++ i)
+	{
+		vector<int> tmpvec;
+		if (net->curveType[i] == -1) continue;
+		if (net->curveType[i] == 1)
+		{
+			int tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[0]));
+			tmpvec.push_back(tmpidx);
+			tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[1]));
+			tmpvec.push_back(tmpidx);
+			straightlines.push_back(tmpvec);
+			straightlinesIdx.push_back(i);
+		}
+		else
+		{
+			int tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[0]));
+			tmpvec.push_back(tmpidx);
+			for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; ++ j)
+			{
+				tmpidx = getOptVarIndex(OptVariable(1, i, j));
+				tmpvec.push_back(tmpidx);
+			}
+			tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[1]));
+			tmpvec.push_back(tmpidx);
+			bsplines.push_back(tmpvec);
+			bsplinesIdx.push_back(i);
+		}
+	}
+
+	//constraint
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] != 1) continue;
@@ -84,12 +124,12 @@ void Optimization::init(CurveNet *_net)
                     int v1 = getOptVarIndex(v.first);
                     int v2 = getOptVarIndex(v.second);
                     if (u1 == v1 || u1 == v2 || u2 == v1 || u2 == v2) continue;
-                    cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
+                    addCoplanar(u1, u2, v1, v2);
                 }
             }
         }
     }
-    /*
+    
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == 2 || net->curveType[i] == -1) continue;
@@ -111,13 +151,25 @@ void Optimization::init(CurveNet *_net)
                         int v1 = getOptVarIndex(v.first);
                         int v2 = getOptVarIndex(v.second);
                         if (u1 == v1 || u1 == v2 || u2 == v1 || u2 == v2) continue;
-                        cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
+						addCoplanar(u1, u2, v1, v2);
+                        //cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
                     }
                 }
             }
         }
     }
-    */
+
+	for (int i = 0; i < coplanes.size(); ++ i)
+	{
+		if (coplanarPoints[i].size() <= 3)
+		{
+			swap(coplanarPoints[i], coplanarPoints[coplanes.size() - 1]);
+			swap(coplanes[i], coplanes[coplanes.size() - 1]);
+			coplanarPoints.pop_back();
+			coplanes.pop_back();
+		}
+	}
+
     // ortho & tangent
     for (int i = 0; i < net->numPolyLines; i++)
     {
@@ -215,6 +267,95 @@ void Optimization::generateDAT(string file)
 		}
 	}
 	fout << ";\n";
+
+	fout << "param PN := " << (int)coplanes.size() - 1 << ";\n";
+	
+	fout << "param init_plane :=\n";
+	for (int i = 0; i < coplanes.size(); ++ i)
+	{
+		fout << "\t[" << i << ", *]";
+		fout << " 1 " << coplanes[i].n.x
+			 << " 2 " << coplanes[i].n.y
+			 << " 3 " << coplanes[i].n.z
+			 << " 4 " << coplanes[i].d
+			 << "\n";
+	}
+	fout << ";\n";
+
+	fout << "param SN := " << (int)straightlines.size() - 1 << ";\n";
+	fout << "param sidx :=\n";
+	for (int i = 0; i < straightlines.size(); ++ i)
+	{
+		fout << "\t[" << i << ", *]";
+		fout << " 1 " << straightlines[i][0]
+			 << " 2 " << straightlines[i][1]
+			 << "\n";
+	}
+	fout << ";\n";
+
+	fout << "param BN := " << (int)bsplines.size() - 1 << ";\n";
+	fout << "param CN :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		fout << "\t" << i << " " << (int)bsplines[i].size() - 1 << "\n";
+	}
+	fout << ";\n";
+	fout << "param bidx :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		fout << "\t[" << i << ", *]";
+		for (int j = 0; j < bsplines[i].size(); ++ j)
+		{
+			fout << " " << j << " " << bsplines[i][j];
+		}
+		fout << "\n";
+	}
+	fout << ";\n";
+
+	fout << "param SPN :=\n";
+	for (int i = 0; i < straightlines.size(); ++ i)
+	{
+		fout << "\t" << i << " " 
+			 << (int)net->originPolyLines[straightlinesIdx[i]].size() - 1 << "\n";
+	}
+	fout << ";\n";
+	fout << "param sp :=\n";
+	for (int i = 0; i < straightlines.size(); ++ i)
+	{
+		Path &tmpline = net->originPolyLines[straightlinesIdx[i]];
+		for (int j = 0; j < tmpline.size(); ++ j)
+		{
+			fout << "\t[" << i << ", " << j << ", *]";
+			fout << " 1 " << tmpline[j].x
+				 << " 2 " << tmpline[j].y
+				 << " 3 " << tmpline[j].z
+				 << "\n";
+		}
+	}
+	fout << ";\n";
+
+	fout << "param BPN :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		fout << "\t" << i << " " 
+			 << (int)net->originPolyLines[bsplinesIdx[i]].size() - 1 << "\n";
+	}
+	fout << ";\n";
+	fout << "param bp :=\n";
+	for (int i = 0; i < bsplines.size(); ++ i)
+	{
+		Path &tmpline = net->originPolyLines[bsplinesIdx[i]];
+		for (int j = 0; j < tmpline.size(); ++ j)
+		{
+			fout << "\t[" << i << ", " << j << ", *]";
+			fout << " 1 " << tmpline[j].x
+				 << " 2 " << tmpline[j].y
+				 << " 3 " << tmpline[j].z
+				 << "\n";
+		}
+	}
+	fout << ";\n";
+
 	fout.close();
 }
 
@@ -222,19 +363,41 @@ void Optimization::generateMOD(string file)
 {
 	ofstream fout(file.data());
 	fout << "# parameters\n";
+	fout << "set Dim2 = 1..2;\n";
 	fout << "set Dim3 = 1..3;\n";
+	fout << "set Dim4 = 1..4;\n";
 	fout << "param N;\n";
-	fout << "param init_p {i in 0..N, Dim3};\n";
+	fout << "param init_p {0..N, Dim3};\n";
+	fout << "param PN;\n";
+	fout << "param init_plane {0..PN, Dim4};\n";
+	fout << "param SN;\n";
+	fout << "param sidx {0..SN, Dim2};\n";
+	fout << "param BN;\n";
+	fout << "param CN {0..BN};\n";
+	fout << "param bidx {i in 0..BN, 0..CN[i]};\n";
+	fout << "param SPN {0..SN};\n";
+	fout << "param sp {i in 0..SN, 0..SPN[i], Dim3};\n";
+	fout << "param BPN {0..BN};\n";
+	fout << "param bp {i in 0..BN, 0..BPN[i], Dim3};\n";
 	
 	fout << "\n# variables\n";
-	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - 0.01, <= init_p[i, t] + 0.01, := init_p[i, t];\n";
+	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - 0.05, <= init_p[i, t] + 0.05, := init_p[i, t];\n";
+	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - 0.05, <= init_plane[i, t] + 0.05, := init_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
+	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 1], t] - p[sidx[i, 2], t])"
+		 << " / sqrt(sum{j in Dim3} (p[sidx[i, 1], j] - p[sidx[i, 2], j]) ^ 2);\n";
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "100 * (sum {i in 0..N, t in Dim3} "
+	fout << "(sum {i in 0..N, t in Dim3} "
 		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
+	fout << "+(sum{i in 0..SN}(sum{j in 0..SPN[i]}"
+		 << "sum{t in Dim3}("
+		 << "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
+		 << "-(sp[i,j,t]-p[sidx[i,2],t])"
+		 << ")^2"
+		 << ")/SPN[i])\n";
 	for (int i = 0; i < numCons; ++ i)
 	{
 		fout << "+";
@@ -265,8 +428,19 @@ void Optimization::generateMOD(string file)
 		}
 		fout << "\n";
 	}
+	for (int i = 0; i < coplanes.size(); ++ i)
+	{
+		for (int j = 0; j < coplanarPoints[i].size(); ++ j)
+		{
+			fout << "+"
+				 << generateCoplanar(i, coplanarPoints[i][j])
+				 << "\n";
+		}
+	}
 	fout << ";\n\n";
 
+
+	//constraints
 	for (int i = 0; i < numCons; ++ i)
 	{
 		fout << "subject to constraint" << i << ": ";
@@ -295,7 +469,16 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= 0.005;\n";
+		fout << " <= 0.05;\n";
+	}
+	for (int i = 0; i < coplanes.size(); ++ i)
+	{
+		for (int j = 0; j < coplanarPoints[i].size(); ++ j)
+		{
+			fout << "subject to coplanar" << i << j << ": "
+				 << generateCoplanar(i, coplanarPoints[i][j])
+				 << " <= 0.05;\n";
+		}
 	}
     fout.close();
 }
@@ -346,6 +529,7 @@ void Optimization::generateBAT(string file)
 
 void Optimization::run(CurveNet *net)
 {
+
 #if defined(_WIN32)
 	generateDAT("test.dat");
 	generateMOD("test.mod");
@@ -537,6 +721,73 @@ string Optimization::generateLineTangent(int u1, int u2, int v1, int v2)
 	   << " + "
 	   << generateLineParallel(u1, u2, u1, v1);
 	return ss.str();
+}
+
+string Optimization::generateCoplanar(int plane, int point)
+{
+	stringstream ss;
+	ss << "abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
+	   << " + plane[" << plane << ", 4]) / "
+	   << "sqrt(sum{i in Dim3} (plane[" << plane << ", i] ^ 2))";
+	return ss.str();
+}
+
+void Optimization::addCoplanar(int p, int q, int r, int s)
+{
+	vec3d pos[4];
+	int varNum[4] = {p, q, r, s};
+	if (vars[p].type == 0) pos[0] = net->nodes[vars[p].ni];
+	else pos[0] = net->bsplines[vars[p].ni].ctrlNodes[vars[p].ci];
+	if (vars[q].type == 0) pos[1] = net->nodes[vars[q].ni];
+	else pos[1] = net->bsplines[vars[q].ni].ctrlNodes[vars[q].ci];
+	if (vars[r].type == 0) pos[2] = net->nodes[vars[r].ni];
+	else pos[2] = net->bsplines[vars[r].ni].ctrlNodes[vars[r].ci];
+	if (vars[p].type == 0) pos[3] = net->nodes[vars[s].ni];
+	else pos[3] = net->bsplines[vars[s].ni].ctrlNodes[vars[s].ci];
+	Plane plane(pos[0], (pos[0]-pos[1]).cross(pos[0]-pos[2]));
+	bool exist = false;
+	double coplanarThr = 0.1;
+	for (int i = 0; i < coplanes.size(); ++ i)
+	{
+		if (coplanes[i].dist(plane) < coplanarThr)
+		{
+			exist = true;
+			coplanes[i].add(plane);
+			for (int k = 0; k < 4; ++ k)
+			{
+				bool existP = false;
+				for (int j = 0; j < coplanarPoints[i].size(); ++ j)
+				{
+					if (coplanarPoints[i][j] == varNum[k])
+					{
+						existP = true;
+						break;
+					}
+				}
+				if (!existP) coplanarPoints[i].push_back(varNum[k]);
+			}
+			break;
+		}
+	}
+	if (!exist)
+	{
+		coplanes.push_back(plane);
+		vector<int> tmpPoints;
+		for (int i = 0; i < 4; ++ i)
+		{
+			bool existP = false;
+			for (int j = 0; j < tmpPoints.size(); ++ j)
+			{
+				if (tmpPoints[j] == varNum[i])
+				{
+					existP = true;
+					break;
+				}
+			}
+			if (!existP) tmpPoints.push_back(varNum[i]);
+		}
+		coplanarPoints.push_back(tmpPoints);
+	}
 }
 
 void Optimization::addOptVariable(OptVariable optVar)

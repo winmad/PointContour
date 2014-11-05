@@ -66,6 +66,12 @@
     <ClInclude Include="include\optimization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\plane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\splineUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\curveNet.cpp">
@@ -105,6 +111,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\optimization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\splineUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

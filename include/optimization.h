@@ -65,6 +65,8 @@ private:
 	std::string generateLineCollinear(int, int, int, int);
 	std::string generateLineTangent(int, int, int, int);
 	std::string generateSamePoint(int, int);
+	std::string generateCoplanar(int, int);
+	void addCoplanar(int, int, int, int);
 
 	bool isLinked(int, int, int, int);
 
@@ -80,8 +82,15 @@ private:
     std::vector<OptVariable> vars;
     std::map<double , int> double2vi;
 
+	std::vector<std::vector<int> > straightlines;
+	std::vector<std::vector<int> > bsplines;
+	std::vector<int> straightlinesIdx;
+	std::vector<int> bsplinesIdx;
+
     int numCons;
     std::vector<OptConstraints> cons;
+	std::vector<Plane> coplanes;
+	std::vector<std::vector<int> > coplanarPoints;
 
     TimeManager timer;
 };

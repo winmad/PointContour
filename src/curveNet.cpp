@@ -9,6 +9,7 @@ CurveNet::CurveNet()
     coplanarThr = 0.05;
     orthoThr = 0.1;
     tangentThr = 0.1;
+	symmetryThr = 0.1;
 }
 
 void CurveNet::clear()
@@ -387,6 +388,20 @@ bool CurveNet::checkTangent(const vec3d& x0 , const vec3d& x1 ,
     return false;
 }
 
+bool CurveNet::checkSymmetry(const vec3d& x , const vec3d& nx ,
+    const vec3d& y , const vec3d& ny , const double& threshold)
+{
+	vec3d v0 = x - y;
+	v0.normalize();
+	vec3d v1 = nx - ny;
+	v1.normalize();
+	vec3d v2 = nx + ny;
+	v2.normalize();
+	if (abs(v0.dot(v1)) < threshold) return true;
+	if (abs(v0.dot(v2)) < threshold) return true;
+	return false;
+}
+
 void CurveNet::addCurveType(int bspIndex)
 {
     BSpline& bsp = bsplines[bspIndex];
@@ -578,6 +593,11 @@ void CurveNet::addJunctionConstraint(int bspIndex)
             }
         }
     }
+}
+
+void CurveNet::addSymmetryConstraint(int bspIndex)
+{
+
 }
 
 void CurveNet::test()
