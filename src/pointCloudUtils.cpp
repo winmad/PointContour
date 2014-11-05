@@ -5,6 +5,7 @@
 #include <omp.h>
 #include <queue>
 #include <algorithm>
+#include <wx/filename.h>
 
 PointCloudUtils::PointCloudUtils()
 {
@@ -1452,4 +1453,28 @@ void PointCloudUtils::optimizeJunction(CurveNet* cn , const vec3d& pos)
         printf("adj pt = (%.6f,%.6f,%.6f)\n" , pts[i].x , pts[i].y , pts[i].z);
     }
     */
+}
+
+void PointCloudUtils::loadCurveNet()
+{
+}
+
+void PointCloudUtils::saveCurveNet()
+{
+    char* fileName = new char[strlen(m_fileName) + 20];
+	strcpy(fileName , m_fileName);
+	for (int i = strlen(fileName) - 1; i >= 0; i--)
+    {
+		if (fileName[i] == '.')
+		{
+			fileName[i]='\0';
+			break;
+		}
+	}
+	wxFileName dirname;
+	if(!dirname.DirExists(wxString(fileName)))
+		dirname.Mkdir(wxString(fileName));
+
+	strcat(fileName,"/curve.txt");
+	printf("save curve file name = %s\n" , fileName);
 }

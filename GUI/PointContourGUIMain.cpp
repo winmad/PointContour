@@ -111,7 +111,9 @@ const long PointContourGUIFrame::ID_NOTEBOOK1 = wxNewId();
 const long PointContourGUIFrame::ID_SCROLLEDWINDOW1 = wxNewId();
 const long PointContourGUIFrame::ID_SPLITTERWINDOW1 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM2 = wxNewId();
+const long PointContourGUIFrame::ID_MENUITEM4 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM1 = wxNewId();
+const long PointContourGUIFrame::ID_MENUITEM3 = wxNewId();
 const long PointContourGUIFrame::idMenuQuit = wxNewId();
 const long PointContourGUIFrame::idMenuAbout = wxNewId();
 const long PointContourGUIFrame::ID_STATUSBAR1 = wxNewId();
@@ -319,7 +321,11 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     MenuItem3 = new wxMenu();
     OpenPointCloud = new wxMenuItem(MenuItem3, ID_MENUITEM2, _("Point Cloud\tCtrl-F"), wxEmptyString, wxITEM_NORMAL);
     MenuItem3->Append(OpenPointCloud);
+    OpenCurveNetwork = new wxMenuItem(MenuItem3, ID_MENUITEM4, _("Curve Network\tCtrl-C"), wxEmptyString, wxITEM_NORMAL);
+    MenuItem3->Append(OpenCurveNetwork);
     Menu1->Append(ID_MENUITEM1, _("Open"), MenuItem3, wxEmptyString);
+    SaveCurveNetwork = new wxMenuItem(Menu1, ID_MENUITEM3, _("Save curve network\tCtrl-S"), wxEmptyString, wxITEM_NORMAL);
+    Menu1->Append(SaveCurveNetwork);
     MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);
     Menu1->Append(MenuItem1);
     MenuBar1->Append(Menu1, _("&File"));
@@ -366,6 +372,8 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnMetricChoiceSelect);
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUpdateParametersButtonClick);
     Connect(ID_MENUITEM2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenPointCloudSelected);
+    Connect(ID_MENUITEM4,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenCurveNetworkSelected);
+    Connect(ID_MENUITEM3,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSaveCurveNetworkSelected);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnAbout);
     Connect(wxEVT_KEY_DOWN,(wxObjectEventFunction)&PointContourGUIFrame::OnKeyDown);
@@ -737,19 +745,6 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 			exit(0);
         case WXK_SPACE:
             m_pcUtils->pcRenderer->optUpdate();
-            /*
-            m_pcUtils->opt.init(m_pcUtils->curveNet);
-            m_pcUtils->opt.run(m_pcUtils->pcRenderer->dispCurveNet);
-            numPolyLines = m_pcUtils->pcRenderer->dispCurveNet->polyLines.size();
-            l = m_pcUtils->pcRenderer->dispCurveNet->polyLines[numPolyLines - 1].size();
-            stPos = m_pcUtils->pcRenderer->dispCurveNet->polyLines[numPolyLines - 1][0];
-            m_pcUtils->addPointToGraph(stPos);
-            sti = m_pcUtils->point2Index[point2double(stPos)];
-            if (m_pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
-				m_pcUtils->dijkstra(m_pcUtils->pointGraph , sti , m_pcUtils->pointGraphInfo);
-
-            m_pcUtils->pcRenderer->lastDispPoint = stPos;
-            */
             //m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
             break;
         case WXK_UP:
@@ -783,7 +778,6 @@ void PointContourGUIFrame::OnPosZText(wxCommandEvent& event)
 {
     debugPosChanged = true;
 }
-
 
 void PointContourGUIFrame::OnSmoothingChoiceSelect(wxCommandEvent& event)
 {
@@ -879,4 +873,12 @@ void PointContourGUIFrame::OnAutoOptClick(wxCommandEvent& event)
     {
         m_pcUtils->pcRenderer->optUpdate();
     }
+}
+
+void PointContourGUIFrame::OnOpenCurveNetworkSelected(wxCommandEvent& event)
+{
+}
+
+void PointContourGUIFrame::OnSaveCurveNetworkSelected(wxCommandEvent& event)
+{
 }

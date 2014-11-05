@@ -73,6 +73,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
             ed_ni , edges[ed_ni].size()));
     // bsplines
     bsplines.push_back(bsp);
+    bsplines[numPolyLines].calcCoefs();
     // edges
     edges[st_ni].push_back(CurveEdge(ed_ni , numPolyLines));
     edges[ed_ni].push_back(CurveEdge(st_ni , numPolyLines));
@@ -143,6 +144,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     if (curveType[breakLine] != 1 || !collinearTest(polyLines[breakLine] , bsplines[breakLine]))
     {
         convert2Spline(polyLines[breakLine] , bsplines[breakLine]);
+        bsplines[breakLine].calcCoefs();
     }
     BSpline bsp;
     if (curveType[breakLine] != 1 || !collinearTest(polyLines[numPolyLines - 1] , bsp))
@@ -150,6 +152,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
         convert2Spline(polyLines[numPolyLines - 1] , bsp);
     }
     bsplines.push_back(bsp);
+    bsplines[numPolyLines - 1].calcCoefs();
     curveType.push_back(2);
     /*
     printf("mid: (%.6f,%.6f,%.6f)\n" , breakPos.x , breakPos.y , breakPos.z);

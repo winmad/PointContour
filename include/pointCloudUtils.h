@@ -267,6 +267,9 @@ public:
     void laplacianSmooth(Path& path);
     void gradientDescentSmooth(Path& path);
     void optimizeJunction(CurveNet* cn , const vec3d& pos);
+
+    void loadCurveNet();
+    void saveCurveNet();
 };
 
 #endif

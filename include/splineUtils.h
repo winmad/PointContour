@@ -3,8 +3,9 @@
 
 #include "smallUtils.h"
 
-struct BSpline
+class BSpline
 {
+public:
     int K , N;
     std::vector<double> knots;
     std::vector<vec3d> ctrlNodes;
@@ -29,9 +30,17 @@ struct BSpline
 
     void newCoefs()
     {
+        if (coefs != NULL)
+        {
+            for (int i = 0; i < N; i++) delete[] coefs[i];
+            delete[] coefs;
+            coefs = NULL;
+        }
         coefs = new double*[N];
         for (int i = 0; i < N; i++) coefs[i] = new double[K];
     }
+
+    void calcCoefs();
 };
 
 void convert2Spline(Path& path , BSpline& bsp);

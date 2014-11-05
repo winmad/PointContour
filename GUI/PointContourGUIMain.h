@@ -79,6 +79,8 @@ class PointContourGUIFrame: public wxFrame
         void OnCollinearButtonClick(wxCommandEvent& event);
         void OnConstraintsVisualSelect(wxCommandEvent& event);
         void OnAutoOptClick(wxCommandEvent& event);
+        void OnOpenCurveNetworkSelected(wxCommandEvent& event);
+        void OnSaveCurveNetworkSelected(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -134,7 +136,9 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_SCROLLEDWINDOW1;
         static const long ID_SPLITTERWINDOW1;
         static const long ID_MENUITEM2;
+        static const long ID_MENUITEM4;
         static const long ID_MENUITEM1;
+        static const long ID_MENUITEM3;
         static const long idMenuQuit;
         static const long idMenuAbout;
         static const long ID_STATUSBAR1;
@@ -160,6 +164,7 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText6;
         wxMenu* MenuItem3;
         wxCheckBox* ShowPoint;
+        wxMenuItem* SaveCurveNetwork;
         wxStaticText* StaticText8;
         wxStaticText* StaticText11;
         wxTextCtrl* ExtNum;
@@ -169,6 +174,7 @@ class PointContourGUIFrame: public wxFrame
         wxSlider* HessianLength;
         wxStaticText* StaticText3;
         wxTextCtrl* AlphaN;
+        wxMenuItem* OpenCurveNetwork;
         wxTextCtrl* Alpha1;
         wxTextCtrl* PosX;
         wxTextCtrl* PosZ;

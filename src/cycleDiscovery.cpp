@@ -29,7 +29,6 @@ typedef graph_traits < graph_t >::vertex_descriptor vertex_descriptor;
 typedef graph_traits < graph_t >::edge_descriptor edge_descriptor;
 typedef std::pair<int, int> Edge;
 
-
 #define USEBOOST 1
 
 void cycleDiscovery(std::vector<std::vector<Point> > &curveNet, std::vector<std::vector<int> > &cycles, std::vector<Point>& pointCloud)
