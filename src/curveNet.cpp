@@ -8,7 +8,7 @@ CurveNet::CurveNet()
     parallelThr = 0.05;
     coplanarThr = 0.05;
     orthoThr = 0.1;
-    tangentThr = 0.1;
+    tangentThr = 0.05;
 	symmetryThr = 0.1;
 }
 

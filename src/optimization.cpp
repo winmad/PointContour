@@ -46,16 +46,17 @@ void Optimization::init(CurveNet *_net)
 
 	//find var index for lines
 	for (int i = 0; i < numVars; ++ i) lastDraw.push_back(false);
-	for (int i = net->numPolyLines - 1; i < net->numPolyLines; ++ i)
+	for (int i = 0; i < net->numPolyLines; ++ i)
 	{
 		vector<int> tmpvec;
 		if (net->curveType[i] == -1) continue;
 		if (net->curveType[i] == 1)
 		{
-			int tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[0]));
+            std::pair<OptVariable , OptVariable> vars = bsp2var(i , 0 , 1);
+			int tmpidx = getOptVarIndex(vars.first);
 			tmpvec.push_back(tmpidx);
 			lastDraw[tmpidx] = true;
-			tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[1]));
+			tmpidx = getOptVarIndex(vars.second);
 			tmpvec.push_back(tmpidx);
 			lastDraw[tmpidx] = true;
 			straightlines.push_back(tmpvec);
@@ -63,7 +64,9 @@ void Optimization::init(CurveNet *_net)
 		}
 		else
 		{
-			int tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[0]));
+            int numCtrlCurves = (int)net->bsplines[i].ctrlNodes.size() - 1;
+            std::pair<OptVariable , OptVariable> vars = bsp2var(i , 0 , numCtrlCurves);
+			int tmpidx = getOptVarIndex(vars.first);
 			tmpvec.push_back(tmpidx);
 			lastDraw[tmpidx] = true;
 			for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; ++ j)
@@ -72,7 +75,8 @@ void Optimization::init(CurveNet *_net)
 				tmpvec.push_back(tmpidx);
 				lastDraw[tmpidx] = true;
 			}
-			tmpidx = getOptVarIndex(OptVariable(0 , net->polyLinesIndex[i].ni[1]));
+            vars = bsp2var(i , numCtrlCurves - 1 , numCtrlCurves);
+			tmpidx = getOptVarIndex(vars.second);
 			tmpvec.push_back(tmpidx);
 			lastDraw[tmpidx] = true;
 			bsplines.push_back(tmpvec);
@@ -279,7 +283,7 @@ void Optimization::generateDAT(string file)
 	{
 		fout << " " << i << " ";
 		if (lastDraw[i]) fout << 0.05 << "\n";
-		else fout << 0.001 << "\n";
+		else fout << 0.01 << "\n";
 	}
 	fout << ";\n";
 
@@ -538,7 +542,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.1\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=50 par_numthreads=6 ma_maxtime_real=20\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
