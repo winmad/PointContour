@@ -2,11 +2,11 @@
 #define CYCLE_DISCOVERY_H
 
 #include <vector>
-//#include "amlVec.h"
 #include "nvVector.h"
 
-namespace cycle{
-//typedef AML::double3 Point;
+namespace cycle
+{
+    
 typedef vec3d Point;
 typedef std::vector<Point> Curve;
 typedef std::vector<Curve> LinearCurveNet;
@@ -248,6 +248,9 @@ public:
 };
 
 //main class for cycle discovery;
+struct cycleDisConfig{
+
+};
 class cycleUtils{
 public:
 	cycleUtils();
@@ -255,15 +258,9 @@ public:
 
 private:
 
-	double m_pointCloseness;
-	double m_pointSnapThreshold;
-	double m_curveCloseness;
-	bool m_isComputeIntersection;
 	bool m_isSmothing;
-	bool m_isDeleteDuplicateArc;
-	bool m_isDeleteBranch;
 
-	LinearCurveNet m_curveNetworkOriginal;
+	LinearCurveNet m_curves;
 	std::vector<int> m_curveCapacitys;
 	Point m_boundingBoxMin;
 	Point m_boundingBoxMax;
@@ -290,14 +287,8 @@ private:
 	std::vector<std::vector<std::vector<double> > > m_twistTablesConfidence;
 	std::vector<std::vector<std::vector<int> > > m_twistTablesIndex;
 
-	std::vector<std::vector<int> > m_selectArcList;
 	std::vector<std::vector<std::pair<int,int> > > m_userDefinedPairsInNode;
 	std::vector<std::vector<std::pair<int,int> > > m_userDefinedPairsInArc;
-	std::vector<int> m_latestUpdateNodes;
-	std::vector<int> m_latestUpdateArcs;
-	std::vector<int> m_latestUpdateArcsCapacity;
-	std::vector<int> m_errorNode;
-	std::vector<int> m_suggestCapacity;
 	PoleGraphNodes m_poleGraphNodes;
 	PoleGraphNodeWeight m_poleGraphNodeWeight;
 	PoleGraphArcs m_poleGraphArcsWeight;
@@ -319,17 +310,10 @@ private:
 
 	std::vector<std::vector<std::vector<Point> > > m_cycleNormal;
 	std::vector<std::vector<std::vector<std::vector<Point> > > > m_normalsTable;
-    TriangleSurface m_triangleSurface;
-    TriangleSurface m_triangleSurfaceNormal;
 
-	/*
-		sub-algorithm;
-	*/
-	void chopCurves();
-	void fairCurves();
-	void deleteNodeWithTwoDegree();
+	//void deleteNodeWithTwoDegree();
 
-	bool updateConstraintList();
+	//bool updateConstraintList();
 
 	void computeCurveNormal(const std::vector<Point> &org, Point &tar);
 	void computeTransportMatrix(const std::vector<Point> &org,std::vector<double> &tar);
@@ -354,23 +338,27 @@ private:
 
 	void computeArcCost();
 	void computeCycleCost();
+
 	GraphSearch *m_graphSearch;
 
 public:
 
 	void dataCleanUp();
-	/* void updateCurveNetRaw(OperationType oT); */
-	void constructNetwork(std::vector<std::vector<Point> > &curveNet);
+	std::vector<unsigned> constructNetwork(std::vector<std::vector<Point> > &curveNet);
 	void constructRandomRotationGraph();
 	void constructRotationGraphbyAngleMetric();
 	void constructRotationGraphbyAngleDihedralMetric();
+
+	void addCycleConstraint(std::vector<std::vector<unsigned> >&cycles);
+
 	void constructRotationGraphbyPoleGraph();
-	void constructRotationGraphbyPoleGraphEx();
 	void constructCycles();
 	void cycleBreaking();
     void surfaceBuilding();
 
 	CycleSet m_cycleSetBreaked;
+	TriangleSurface m_triangleSurface;
+	TriangleSurface m_triangleSurfaceNormal;
 
 	std::vector<double*> m_newPoints;
 	std::vector<float*> m_newNormals;
@@ -378,12 +366,15 @@ public:
 };
 
 
-void cycleDiscovery(std::vector<std::vector<Point> > &curveNet,  std::vector<std::vector<int> > &cycles,std::vector<Point>& pointCloud);
+void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
+	std::vector<std::vector<unsigned> > &inCycleConstraint, 
+	std::vector<std::vector<unsigned> > &outCycles, 
+	std::vector<std::vector<std::vector<Point> > >&outMeshes);
 
 void cycleTest();
 
-
 };
+
 
 #endif
 

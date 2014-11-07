@@ -984,6 +984,27 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 
             // lastPoint = &curveNet->nodes[curveNet->getNodeIndex(pos)];
             lastDispPoint = dispPos;
+
+            // find cycle
+            std::vector<std::vector<unsigned> > inCycleCons;
+            std::vector<std::vector<unsigned> > outCycles;
+            std::vector<std::vector<std::vector<cycle::Point> > > outMeshes;
+            if (dispCurveNet->numPolyLines > 0)
+            {
+                cycle::cycleDiscovery(dispCurveNet->polyLines , inCycleCons , outCycles ,
+                    outMeshes);
+
+                writeLog("!!!!!!!!!!! find %lu cycles !!!!!!!!!!\n" , outCycles.size());
+                for (int i = 0; i < outCycles.size(); i++)
+                {
+                    writeLog("===== cycle %d =====\n" , i);
+                    for (int j = 0; j < outCycles[i].size(); j++)
+                    {
+                        writeLog("%lu " , outCycles[i][j]);
+                    }
+                    writeLog("\n");
+                }
+            }
 		}
 	}
 	else

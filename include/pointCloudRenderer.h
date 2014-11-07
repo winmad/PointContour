@@ -6,6 +6,7 @@
 #include "splineUtils.h"
 #include "curveNet.h"
 #include "optimization.h"
+#include "cycleDiscovery.h"
 #include <vector>
 
 class PointCloudUtils;

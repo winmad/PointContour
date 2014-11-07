@@ -1,4 +1,3 @@
-// #include <math.h> 
 #include <cmath>
 #define _USE_MATH_DEFINES
 
@@ -7,11 +6,8 @@
 #include <cstdlib>
 #include <algorithm>
 #include <float.h>
-// #include "DrT.h"
 #include <iostream>
-#include <fstream>
 #include <map>
-#include <algorithm>
 
 #include "cycleDiscovery.h"
 
@@ -21,7 +17,9 @@
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 using namespace boost;
 
-namespace cycle{
+namespace cycle
+{
+
 //boost graph
 typedef adjacency_list < vecS, vecS, undirectedS,
 	no_property, property < edge_weight_t, int > > graph_t;
@@ -29,27 +27,39 @@ typedef graph_traits < graph_t >::vertex_descriptor vertex_descriptor;
 typedef graph_traits < graph_t >::edge_descriptor edge_descriptor;
 typedef std::pair<int, int> Edge;
 
-#define USEBOOST 1
-
-void cycleDiscovery(std::vector<std::vector<Point> > &curveNet, std::vector<std::vector<int> > &cycles, std::vector<Point>& pointCloud)
+void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
+					std::vector<std::vector<unsigned> > &inCycleConstraint, 
+					std::vector<std::vector<unsigned> > &outCycles, 
+					std::vector<std::vector<std::vector<Point> > >&outMeshes)
 {
 	cycleUtils* m_cycleUtil = new cycleUtils;
-	m_cycleUtil->constructNetwork(curveNet);
-	m_cycleUtil->constructRotationGraphbyPoleGraphEx();
+    std::cout<<"making graph...\n";
+	std::vector<unsigned> cycleMap = m_cycleUtil->constructNetwork(inCurves);
+    std::cout<<"adding constraint cycles...\n";
+	m_cycleUtil->addCycleConstraint(inCycleConstraint);
+	m_cycleUtil->constructRotationGraphbyPoleGraph();
+    std::cout<<"tracing cycles from rotation graph...\n";
 	m_cycleUtil->constructCycles();
 	m_cycleUtil->cycleBreaking();
-	cycles.resize(m_cycleUtil->m_cycleSetBreaked.size());
-	for(unsigned i=0;i<cycles.size();i++){
+    //std::cout<<"making surface from cycles...\n";
+	//m_cycleUtil->surfaceBuilding();
+
+	//result;
+	outCycles.clear();	outCycles.resize(m_cycleUtil->m_cycleSetBreaked.size());
+	for(unsigned i=0;i<outCycles.size();i++){
 		for(unsigned j=0;j<m_cycleUtil->m_cycleSetBreaked[i].size();j++){
-			cycles[i].push_back(m_cycleUtil->m_cycleSetBreaked[i][j].arcID);
+			outCycles[i].push_back(cycleMap[m_cycleUtil->m_cycleSetBreaked[i][j].arcID]);
 		}
 	}
+	//outMeshes.swap(m_cycleUtil->m_triangleSurface);
 }
 
 void cycleTest()
 {
     std::vector<std::vector<vec3d> > curves;
-    std::vector<std::vector<int> > cycles;
+    std::vector<std::vector<unsigned> > inCycleCons;
+    std::vector<std::vector<unsigned> > cycles;
+    std::vector<std::vector<std::vector<vec3d> > > outMeshes;
     std::vector<vec3d> curve;
     curve.resize(2);
     curve[0] = vec3d(0 , 0 , 0); curve[1] = vec3d(0 , 0 , 1);
@@ -64,7 +74,7 @@ void cycleTest()
     curves.push_back(curve);
     curve[0] = vec3d(0 , 1 , 0);
     curves.push_back(curve);
-    cycle::cycleDiscovery(curves , cycles , curve);
+    cycle::cycleDiscovery(curves , inCycleCons , cycles , outMeshes);
     for (int i = 0; i < cycles.size(); i++)
     {
         printf("===== cycle %d =====\n" , i);
@@ -681,15 +691,9 @@ void GraphSearch::stableMatching(const std::vector<std::vector<int> > &firstGrou
 
 cycleUtils::cycleUtils()
 {
-	m_pointCloseness=0.001;
-	m_pointSnapThreshold=0.003;
-	m_curveCloseness=0.003;
-	m_isComputeIntersection=true;
-	m_isSmothing=true;
-	m_isDeleteDuplicateArc=true;
-	m_isDeleteBranch=true;
+	m_isSmothing=false;
 
-	m_curveNetworkOriginal.clear();
+	m_curves.clear();
 	m_curveCapacitys.clear();
 	m_boundingBoxMin.x=m_boundingBoxMin.y=m_boundingBoxMin.z=0;
 	m_boundingBoxMax.x=m_boundingBoxMax.y=m_boundingBoxMax.z=0;
@@ -718,15 +722,8 @@ cycleUtils::cycleUtils()
 	m_twistTables.clear();
 	m_twistTablesConfidence.clear();
 	m_twistTablesIndex.clear();
-	m_selectArcList.clear();
-	m_selectArcList.resize(1);
 	m_userDefinedPairsInNode.clear();
 	m_userDefinedPairsInArc.clear();
-	m_latestUpdateNodes.clear();
-	m_latestUpdateArcs.clear();
-	m_latestUpdateArcsCapacity.clear();
-	m_suggestCapacity.clear();
-	m_errorNode.clear();
 	m_poleGraphNodes.clear();
 	m_poleGraphNodeWeight.clear();
 	m_poleGraphArcsWeight.clear();
@@ -775,35 +772,80 @@ std::vector<int> ordering(const std::vector<double> &data)
 	return rank;
 }
 
-void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet)
+std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet)
 {
-	m_curveNetworkOriginal=curveNet;
-	m_curveCapacitys.resize(m_curveNetworkOriginal.size(),2);
+	//delete branch;
+	m_curves=curveNet;
+	unsigned curveSize = m_curves.size();
+	std::vector<unsigned> cycleMap;
+	do{
+		std::vector<std::pair<int ,int> > capacity(m_curves.size(),std::pair<int,int>(1,1));
+		for(int i=0;i<(int)m_curves.size()-1;i++){
+			if(!m_curves[i].empty()) continue;
+			for(int j=i+1;j<m_curves.size();j++){
+				if(!m_curves[j].empty()) continue;
+				if(m_curves[i].front()==m_curves[j].front()){
+					capacity[i].first++;capacity[j].first++;
+				}
+				if(m_curves[i].front()==m_curves[j].back()){
+					capacity[i].first++;capacity[j].second++;
+				}
+				if(m_curves[i].back()==m_curves[j].front()){
+					capacity[i].second++;capacity[j].first++;
+				}
+				if(m_curves[i].back()==m_curves[j].back()){
+					capacity[i].second++;capacity[j].second++;
+				}
+			}
+		}
+		unsigned newCurveSize=0;
+		for(int i=0;i<capacity.size();i++){
+			if(capacity[i].first<=1||capacity[i].second<=1)
+				m_curves.clear();
+			else
+				newCurveSize++;
+		}
+		if(newCurveSize == curveSize){
+			unsigned i=0;
+			for(LinearCurveNet::iterator itc =m_curves.begin();itc!=m_curves.end();){
+				if(itc->empty()){
+					m_curves.erase(itc);
+				}
+				else{
+					cycleMap.push_back(i);
+					itc++;
+				}
+				i++;
+			}			
+			break;
+		}
+		else{
+			curveSize = newCurveSize;
+		}
+	}while(true);
 
-	LinearCurveNet curves = m_curveNetworkOriginal;
+	m_curveCapacitys.resize(m_curves.size(),2); //default capacity. probably need changes;
+
 	if(m_isSmothing){
-		std::vector<std::vector<Point> > fairCurve = curves;
+		std::vector<std::vector<Point> > fairCurve = m_curves;
 		for(int times=0;times<3;times++){
-			for(int i=0;i<curves.size();i++){
-				if(curves[i].size()<3)continue;
-				for(int j=1;j<curves[i].size()-1;j++){
-					Point point = curves[i][j];
-					Point leftPoint = curves[i][j-1];
-                    Point rightPoint= curves[i][j+1];
-					Point centrePoint = (leftPoint+rightPoint)/2.0;
-					point = (point+centrePoint)/2.0;
+			for(int i=0;i<m_curves.size();i++){
+				if(m_curves[i].size()<3)continue;
+				for(int j=1;j<(int)m_curves[i].size()-1;j++){
+					Point point = m_curves[i][j];
+					Point leftPoint = m_curves[i][j-1];
+					Point rightPoint= m_curves[i][j+1];
+					Point centrePoint = (leftPoint+rightPoint)/double(2);
+					point = (point+centrePoint)/double(2);
 					fairCurve[i][j]=point;
 				}
 			}
-			curves=fairCurve;
+			m_curves=fairCurve;
 		}
-		fairCurve.clear();
 	}
 
-	m_curveNet.nodes.clear();
-	m_curveNet.arcs.clear();
 	Graph& net = m_curveNet;
-
+	LinearCurveNet& curves = m_curves;
 	std::vector<int>& capacity = m_curveCapacitys;
 
 	std::map< std::vector<double>,int> mapPointToIndex;
@@ -852,13 +894,15 @@ void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet)
 		arc.posInNode.second = net.nodes[currentIndex[1]].arcID.size()-1;
 		net.arcs.push_back(arc);
 	}
+	return cycleMap;
 }
+/*
 void cycleUtils::deleteNodeWithTwoDegree()
 {
-	if(m_curveNetworkOriginal.empty()||m_curveNet.arcs.empty())
+	if(m_curves.empty()||m_curveNet.arcs.empty())
 		return;
 
-	LinearCurveNet curves = m_curveNetworkOriginal;
+	LinearCurveNet curves = m_curves;
 	Graph net = m_curveNet;
 
 	for(int i=0;i<net.nodes.size();i++){
@@ -916,9 +960,10 @@ void cycleUtils::deleteNodeWithTwoDegree()
 			continue;
 		tempCurves.push_back(curves[i]);
 	}
-	m_curveNetworkOriginal = tempCurves;
+	m_curves = tempCurves;
 	m_curveNet = net;
 }
+*/
 void cycleUtils::computeCurveNormal(const std::vector<Point> &org, Point &tar)
 {
 	std::vector<double> weights(org.size()-1);
@@ -1339,7 +1384,7 @@ void cycleUtils::computeTwistTables()
 {
 	if(m_curveNet.arcs.empty())
 		return;
-#ifdef USEBOOST
+
 	int num_nodes = m_curveNet.nodes.size();
 	int num_arcs = m_curveNet.arcs.size();
 	graph_t g(num_nodes);
@@ -1350,55 +1395,6 @@ void cycleUtils::computeTwistTables()
 		boost::tie(e, inserted) = add_edge(nodeID[0], nodeID[1], g);
 		weightmap[e] = 0;
 	}
-
-/*
-	std::vector<bool> isDoubleArc(m_curveNet.arcs.size());
-	std::vector<std::vector<int> > tnodes(m_curveNet.arcs.size());
-	for(int i=0;i<m_curveNet.arcs.size();i++){
-		tnodes[i].push_back(m_curveNet.arcs[i].endNodesID.first);
-		tnodes[i].push_back(m_curveNet.arcs[i].endNodesID.second);
-		for(int j=0;j<i;j++){
-			if((tnodes[i][0] == tnodes[j][0]&& tnodes[i][1] == tnodes[j][1])
-				|| (tnodes[i][0] == tnodes[j][1] && tnodes[i][1] == tnodes[j][0])){
-					isDoubleArc[i]=isDoubleArc[j]=true;
-			}
-		}
-	}
-*/
-#endif
-
-#ifndef USEBOOST
-#define USEKSHORTESTPATH
-		std::vector<int> nodes;
-		std::vector<std::pair<int,int> > arcs;
-		std::vector<double> arcWeights;
-		std::vector<int> sources;
-		std::vector<int> targets;
-		std::vector<std::vector<int> > paths;
-		nodes.resize(m_curveNet.nodes.size());
-		for(int i=0;i<m_curveNet.arcs.size();i++){
-			int nodeID[] = {m_curveNet.arcs[i].endNodesID.first,m_curveNet.arcs[i].endNodesID.second};
-			arcs.push_back(std::pair<int,int>(nodeID[0],nodeID[1]));
-			arcWeights.push_back(0);
-			arcs.push_back(std::pair<int,int>(nodeID[1],nodeID[0]));
-			arcWeights.push_back(0);
-		}
-
-/*
-		std::vector<bool> isDoubleArc(m_curveNet.arcs.size());
-		std::vector<std::vector<int> > tnodes(m_curveNet.arcs.size());
-		for(int i=0;i<m_curveNet.arcs.size();i++){
-			tnodes[i].push_back(m_curveNet.arcs[i].endNodesID.first);
-			tnodes[i].push_back(m_curveNet.arcs[i].endNodesID.second);
-			for(int j=0;j<i;j++){
-				if((tnodes[i][0] == tnodes[j][0]&& tnodes[i][1] == tnodes[j][1])
-					|| (tnodes[i][0] == tnodes[j][1] && tnodes[i][1] == tnodes[j][0])){
-						isDoubleArc[i]=isDoubleArc[j]=true;
-				}
-			}
-		}
-*/
-#endif
 
 	bool connectRequired=true;
 
@@ -1588,7 +1584,6 @@ void cycleUtils::computeTwistTables()
 			}
 		}
 
-#ifdef USEBOOST
 		if(/*isDoubleArc[i]==false&&*/connectRequired==true){
 			std::vector<int> sources;
 			std::vector<int> targets;
@@ -1676,80 +1671,7 @@ void cycleUtils::computeTwistTables()
 				}
 			}
 		}//end of shortest path.
-#endif
 
-#ifdef USEKSHORTESTPATH
-			if(/*isDoubleArc[i]==false&&*/connectRequired==true){
-				sources.clear();
-				targets.clear();
-				paths.clear();
-				std::vector<std::pair<int,int> > tind((adjArcs[0].size())*(adjArcs[1].size()));
-				for(int j=0;j<adjArcs[0].size();j++){
-					int snd;
-					if(adjArcsDirection[0][j]==1)
-						snd=m_curveNet.arcs[adjArcs[0][j]].endNodesID.second;
-					else
-						snd=m_curveNet.arcs[adjArcs[0][j]].endNodesID.first;
-/*
-					if(adjArcs[0][j]==i)
-						snd=nodeID[0];
-*/
-
-					for(int k=0;k<adjArcs[1].size();k++){
-						int tnd;
-						if(adjArcsDirection[1][k]==1)
-							tnd=m_curveNet.arcs[adjArcs[1][k]].endNodesID.second;
-						else
-							tnd=m_curveNet.arcs[adjArcs[1][k]].endNodesID.first;
-/*
-						if(adjArcs[1][k]==i)
-							tnd=nodeID[1];
-*/
-
-						bool isExisted = false;
-						for(int s=0;s<sources.size();s++){
-							if(sources[s]==snd && targets[s]==tnd){
-								isExisted=true; break;
-							}
-						}
-						if(!isExisted){
-							sources.push_back(snd);
-							targets.push_back(tnd);
-							tind[sources.size()-1]=std::pair<int,int>(j,k);
-						}
-					}
-				}
-				for(int j=0;j<2;j++){
-					for(int k=0;k<adjArcs[j].size();k++){
-						arcWeights[adjArcs[j][k]*2]=1;
-						arcWeights[adjArcs[j][k]*2+1]=1;
-					}
-				}
-				std::vector<double> cst;
-				KShortestPaths(nodes,arcs,arcWeights,sources,targets,cst,paths);
-				for(int j=0;j<2;j++){
-					for(int k=0;k<adjArcs[j].size();k++){
-						arcWeights[adjArcs[j][k]*2]=0;
-						arcWeights[adjArcs[j][k]*2+1]=0;
-					}
-				}
-
-				for(int j=0;j<paths.size();j++){
-					if(sources[j]==targets[j] || (sources[j]==nodeID[1]&& targets[j]==nodeID[0]))
-						continue;
-					if(cst[j]!=0)
-						twistTable[tind[j].first][tind[j].second] = FLT_MAX;
-/*
-					else{
-						if(paths[j].size()==4){
-							if((paths[j][1]==nodeID[0] && paths[j][2]==nodeID[1]) ||(paths[j][1]==nodeID[1] && paths[j][2]==nodeID[0]))
-								twistTable[tind[j].first][tind[j].second] = FLT_MAX;
-						}
-					}
-*/
-				}
-			}
-#endif
 		m_twistTables.push_back(twistTable);
 		m_twistTablesConfidence.push_back(twistTableConfidence );
 		m_twistTablesIndex.push_back(twistTableIndex);
@@ -1768,10 +1690,6 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 	bool isConnect = m_isRoGraphConnect;
 
 	for(int i=0;i<net.nodes.size();i++){
-		if(!m_latestUpdateNodes.empty ()){
-			if(std::find(m_latestUpdateNodes.begin(),m_latestUpdateNodes.end(),i) == m_latestUpdateNodes.end())
-				continue;
-		} 
 
 		Point pt = net.nodes[i].pos;
 		std::vector<int> arcs = net.nodes[i].arcID;
@@ -1868,8 +1786,6 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 			m_poleGraphNodeWeight.clear();
 			m_poleGraphArcsWeight.clear();
 			m_poleGraphArcsMatch.clear();
-			m_selectArcList.clear();
-			m_selectArcList.resize(1);
 			m_userDefinedPairsInArc.clear();
 			m_userDefinedPairsInNode.clear();
 		}
@@ -1885,8 +1801,6 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 			m_poleGraphNodeWeight.clear();
 			m_poleGraphArcsWeight.clear();
 			m_poleGraphArcsMatch.clear();
-			m_selectArcList.clear();
-			m_selectArcList.resize(1);
 			m_userDefinedPairsInArc.clear();
 			m_userDefinedPairsInNode.clear();
 			return;
@@ -2033,16 +1947,7 @@ void cycleUtils::constructSegmentRotationGraphbyPoleGraph()
 
 
 	//minimize twist
-	sort(m_latestUpdateArcs.begin(),m_latestUpdateArcs.end());
-	for(int i=1;i<m_latestUpdateArcs.size();i++){
-		if(m_latestUpdateArcs[i]==m_latestUpdateArcs[i-1]){
-			m_latestUpdateArcs.erase(m_latestUpdateArcs.begin()+i);
-			i--;
-		}
-	}
 	for(int i=0;i<net.arcs.size();i++){
-		if(!m_latestUpdateArcs.empty() && std::find(m_latestUpdateArcs.begin(),m_latestUpdateArcs.end(),i) == m_latestUpdateArcs.end())
-			continue;
 
 		int nodeID[]={net.arcs[i].endNodesID.first,net.arcs[i].endNodesID.second};
 		int arcID[]={net.arcs[i].posInNode.first,net.arcs[i].posInNode.second};
@@ -2065,8 +1970,6 @@ void cycleUtils::constructSegmentRotationGraphbyPoleGraph()
 					m_poleGraphNodeWeight.clear();
 					m_poleGraphArcsWeight.clear();
 					m_poleGraphArcsMatch.clear();
-					m_selectArcList.clear();
-					m_selectArcList.resize(1);
 					m_userDefinedPairsInArc.clear();
 					m_userDefinedPairsInNode.clear();
 					return;
@@ -2189,8 +2092,6 @@ void cycleUtils::constructSegmentRotationGraphbyPoleGraph()
 			m_poleGraphNodeWeight.clear();
 			m_poleGraphArcsWeight.clear();
 			m_poleGraphArcsMatch.clear();
-			m_selectArcList.clear();
-			m_selectArcList.resize(1);
 			m_userDefinedPairsInArc.clear();
 			m_userDefinedPairsInNode.clear();
 			return;
@@ -2759,6 +2660,7 @@ void cycleUtils::constructRotationGraphbyPoleGraph()
 	std::vector<std::vector<double> > transportMatrices;
 	computeTransportMatrixAll(tempPts,transportMatrices);
 */
+
 	m_twistTables.clear();
 	m_twistTablesConfidence.clear();
 	m_twistTablesIndex.clear();
@@ -2770,70 +2672,19 @@ void cycleUtils::constructRotationGraphbyPoleGraph()
 	m_expandPoleSequence.clear();
 	m_selectedNodeInPole.clear();
 
-	if(m_userDefinedPairsInNode.empty())
-		m_userDefinedPairsInNode.resize(m_curveNet.nodes.size());
-	if(m_userDefinedPairsInArc.empty())
-		m_userDefinedPairsInArc.resize(m_curveNet.arcs.size());
-
+	std::cout<<"precomputing for pole graph properties...\n";
 	computeTwistTables();
+	std::cout<<"pole graph, local mapping of nodes\n";
 	constructJointRotationGraphbyPoleGraph();
+	std::cout<<"pole graph, matching between nodes' local\n";
 	constructSegmentRotationGraphbyPoleGraph();
+	std::cout<<"dynamic programming, for approximate lowest cost routing system\n";
 	constructExpandSequence();
 	searchMinPoleGraph();
+	std::cout<<"write to rotation graph\n";
 	updateRotationGraphbyPoleGraph();
 	clock_t  time_end = clock();
 	m_stateUnLimited = true;
-}
-void cycleUtils::constructRotationGraphbyPoleGraphEx()
-{
-	if(m_curveNet.arcs.empty())
-		return;
-
-		m_twistTables.clear();
-		m_twistTablesConfidence.clear();
-		m_twistTablesIndex.clear();
-
-		m_latestUpdateNodes.clear();
-		m_latestUpdateArcs.clear();
-
-		m_poleGraphNodes.clear();
-		m_poleGraphNodeWeight.clear();
-		m_poleGraphArcsWeight.clear();
-		m_poleGraphArcsMatch.clear();
-		m_expandPoleSequence.clear();
-		m_selectedNodeInPole.clear();
-
-	if(m_userDefinedPairsInNode.empty())
-		m_userDefinedPairsInNode.resize(m_curveNet.nodes.size());
-	if(m_userDefinedPairsInArc.empty())
-		m_userDefinedPairsInArc.resize(m_curveNet.arcs.size());
-	
-
-	if(m_twistTables.empty()){
-		clock_t  time_str = clock();
-		computeTwistTables();
-	}
-	if(m_poleGraphNodeWeight.empty() || !m_latestUpdateNodes.empty()){
-		constructJointRotationGraphbyPoleGraph();
-		constructSegmentRotationGraphbyPoleGraph();
-		constructExpandSequence();
-		searchAlmostMinPoleGraph();
-		updateRotationGraphbyPoleGraph();
-		m_triangleSurface.clear();
-	}
-	else if(m_poleGraphArcsWeight.empty()|| !m_latestUpdateArcs.empty()){
-		constructSegmentRotationGraphbyPoleGraph();
-		constructExpandSequence();
-		searchAlmostMinPoleGraph();
-		updateRotationGraphbyPoleGraph();
-		m_triangleSurface.clear();
-	}
-	else if(m_selectedNodeInPole.empty()){
-		searchAlmostMinPoleGraph();
-		updateRotationGraphbyPoleGraph();
-		m_triangleSurface.clear();
-	}
-	m_stateUnLimited = false;
 }
 void cycleUtils::constructRandomRotationGraph()
 {
@@ -3085,7 +2936,7 @@ void cycleUtils::computeArcCost()
 	double possiWorse = maxN - minN;
 	for(int i=0;i<m_arcsCost.size();i++){
 		if(m_arcsCost[i]<FLT_MAX)
-            m_arcsCost[i] = std::min(1.0,(m_arcsCost[i]-minN)/possiWorse);
+			m_arcsCost[i] = std::min(1.0,(m_arcsCost[i]-minN)/possiWorse);
 		else
 			m_arcsCost[i] = 1;
 //		m_arcsCost[i] = 1-m_arcsCost[i];
@@ -3175,8 +3026,7 @@ void cycleUtils::computeCycleCost()
 
 void cycleUtils::surfaceBuilding()
 {
-	if(m_curveNet.arcs.empty()/* || m_twistTables.empty() || m_poleGraphNodes.empty()|| m_poleGraphArcsWeight.empty()
-		|| m_expandPoleSequence.empty() || m_selectedNodeInPole.empty() || m_rotationGraph.empty() || m_cycleSet.empty() */||m_cycleSetBreaked.empty())
+	if(m_cycleSetBreaked.empty())
 		return;
 
 	m_cycleNormal.clear();
@@ -3184,14 +3034,13 @@ void cycleUtils::surfaceBuilding()
 	m_newNormals.clear();
 	m_newPointNum.clear();
 
-	Graph net = m_curveNet;
-	CycleSet cycles = m_cycleSetBreaked;
+	Graph& net = m_curveNet;
+	CycleSet& cycles = m_cycleSetBreaked;
 	TriangleSurface surface;
 	TriangleSurface norms;
 
 	for(int c=0;c<cycles.size();c++){
-		Cycle cycle = cycles[c];
-		std::vector<int> arcs;
+		Cycle& cycle = cycles[c];
 		LinearCurveNet curves;
 		for(int i=0;i<cycle.size();i++){
 			int arcID = cycle[i].arcID;			
@@ -3228,11 +3077,8 @@ void cycleUtils::surfaceBuilding()
 		int newPointNum;
 
 		if(m_normalsTable.empty())
-/*
-			res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
-			&tile_list,&tileNum,weights,dosmooth,subs,laps);
-*/
-
+			//res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
+			//&tile_list,&tileNum,weights,dosmooth,subs,laps);
 
 //////////////////////////////////////
 		if(!m_normalsTable.empty()){
@@ -3384,10 +3230,8 @@ void cycleUtils::surfaceBuilding()
 				normals[i*3+2]=normalList[i].z;
 			}
 
-/*
-			res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
-				dosmooth,subs,laps);
-*/
+			//res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
+			//	dosmooth,subs,laps);
 		
 			LinearCurveNet cycleNormalForVis = cycleNormal;
 			for(int j=0;j<cycleNormalForVis.size();j++){
@@ -3398,9 +3242,6 @@ void cycleUtils::surfaceBuilding()
 			}
 			m_cycleNormal.push_back(cycleNormalForVis);
 	
-			m_newPoints.push_back(newPoints);
-			m_newNormals.push_back(newNormals);
-			m_newPointNum.push_back(newPointNum);
 		}
 		///////////////////////////////////////
 
@@ -3559,410 +3400,54 @@ void cycleUtils::surfaceBuilding()
 	m_triangleSurfaceNormal=norms;
 }
 
-bool cycleUtils::updateConstraintList()
+void cycleUtils::addCycleConstraint(std::vector<std::vector<unsigned> >&cycles)
 {
-	if(m_curveNet.arcs.empty())
-		return false;
-	if(m_userDefinedPairsInNode.empty())
-		m_userDefinedPairsInNode.resize(m_curveNet.nodes.size());
-	if(m_userDefinedPairsInArc.empty())
-		m_userDefinedPairsInArc.resize(m_curveNet.arcs.size());
+	m_userDefinedPairsInNode.resize(m_curveNet.nodes.size());
+	m_userDefinedPairsInArc.resize(m_curveNet.arcs.size());
 
-	for(int i=0;i<m_selectArcList.back().size()-1;i++){
-		for(int j=i+1;j<m_selectArcList.back().size();j++){
-			if(m_selectArcList.back()[i]==m_selectArcList.back()[j]){
-				m_selectArcList.back().erase(m_selectArcList.back().begin()+j);
-				j--;
-			}
-		}
-	}
-	std::vector<std::vector<int> > jointArcs(m_curveNet.nodes.size());
-	std::vector<std::vector<std::vector<int> > > adjArcs(m_curveNet.arcs.size(),std::vector<std::vector<int> >(2));
-	std::vector<bool> usedArcs(adjArcs.size(),false);
-	for(int i=0;i<m_selectArcList.back().size();i++){
-		int a1 = m_selectArcList.back()[i];
-		int n[] = {m_curveNet.arcs[a1].endNodesID.first,m_curveNet.arcs[a1].endNodesID.second};
-		jointArcs[n[0]].push_back(a1);
-		jointArcs[n[1]].push_back(a1);
+	for(unsigned c=0;c<cycles.size();c++){
+		if(cycles[c].size()<3) continue;
+		cycles[c].push_back(cycles[c][0]);
+		std::vector<std::pair<int,int> > tvpairs;
+		for(int i=1;i<cycles[c].size();i++){
+			int a1 = cycles[c][i-1];
+			int a2 = cycles[c][i];
+			int na1[] = {m_curveNet.arcs[a1].endNodesID.first,m_curveNet.arcs[a1].endNodesID.second};
+			int na2[] = {m_curveNet.arcs[a2].endNodesID.first,m_curveNet.arcs[a2].endNodesID.second};
 
-		usedArcs[a1]=true;
-		std::vector<int> leftAdj = m_curveNet.nodes[n[0]].arcID;
-		std::vector<int> rightAdj = m_curveNet.nodes[n[1]].arcID;
-		std::vector<int> leftAdjDir = m_curveNet.nodes[n[0]].arcDirection;
-		std::vector<int> rightAdjDir = m_curveNet.nodes[n[1]].arcDirection;
-		for(int j=0;j<leftAdj.size();j++){
-			if(leftAdj[j]!=a1){
-				adjArcs[leftAdj[j]][leftAdjDir[j]-1].push_back(a1);
-			}
-		}
-		for(int j=0;j<rightAdj.size();j++){
-			if(rightAdj[j]!=a1)
-				adjArcs[rightAdj[j]][rightAdjDir[j]-1].push_back(a1);
-		}
-	}
-
-	bool isRightCycle = true;
-	// data check;
-	for(int i=0;i<jointArcs.size();i++){
-		if(jointArcs[i].size()>2){
-			isRightCycle = false; break;
-		}
-	}
-	if(!isRightCycle)
-		return isRightCycle;
-
-	isRightCycle = false;
-	for(int i=0;i<jointArcs.size();i++){
-		if(jointArcs[i].empty()||jointArcs[i].size()==1)
-			continue;
-		isRightCycle=true;
-		int a1 = jointArcs[i][0];
-		int a2 = jointArcs[i][1];
-		int order1,order2;
-		if(m_curveNet.arcs[a1].endNodesID.first==i)
-			order1 = m_curveNet.arcs[a1].posInNode.first;
-		else
-			order1 = m_curveNet.arcs[a1].posInNode.second;
-		if(m_curveNet.arcs[a2].endNodesID.first==i)
-			order2 = m_curveNet.arcs[a2].posInNode.first;
-		else
-			order2 = m_curveNet.arcs[a2].posInNode.second;
-		if(order1<order2){
-			std::pair<int,int> temp; temp.first=order1; temp.second=order2;
-			m_userDefinedPairsInNode[i].push_back(temp);
-		}
-		else{
-			std::pair<int,int> temp; temp.first=order2; temp.second=order1;
-			m_userDefinedPairsInNode[i].push_back(temp);
-		}
-		m_latestUpdateNodes.push_back(i);
-	}
-	for(int i=0;i<adjArcs.size();i++){
-		if(adjArcs[i][0].size()!=1 || adjArcs[i][1].size()!=1)
-			continue;
-		if(!usedArcs[i])
-			continue;
-		int a1 = adjArcs[i][0][0];
-		int a2 = adjArcs[i][1][0];
-		int n[] = {m_curveNet.arcs[i].endNodesID.first,m_curveNet.arcs[i].endNodesID.second};
-		int order1,order2;
-		if(m_curveNet.arcs[a1].endNodesID.first==n[0])
-			order1 = m_curveNet.arcs[a1].posInNode.first;
-		else
-			order1 = m_curveNet.arcs[a1].posInNode.second;
-		if(m_curveNet.arcs[a2].endNodesID.first==n[1])
-			order2 = m_curveNet.arcs[a2].posInNode.first;
-		else
-			order2 = m_curveNet.arcs[a2].posInNode.second;
-
-		std::pair<int,int> temp; temp.first=order1; temp.second=order2;
-		bool isExist=false;
-		for(int j=0;j<m_userDefinedPairsInArc[i].size();j++){
-			std::pair<int,int> pairArc = m_userDefinedPairsInArc[i][j];
-			if(pairArc.first==temp.first && pairArc.second==temp.second)
-				isExist=true;
-		}
-		if(!isExist){
-			m_userDefinedPairsInArc[i].push_back(temp);
-			m_latestUpdateArcs.push_back(i);
-		}
-	}
-	return isRightCycle;
-}
-
-bool mySort2(std::pair<double,int> i,std::pair<double,int>  j) 
-{ 
-	return (i.first<j.first); 
-}
-void cycleUtils::chopCurves()
-{
-	double pointClosenessThreshold=m_pointCloseness;
-	std::vector<std::vector<Point> > Curves=m_curveNetworkOriginal;
-
-	std::vector<std::vector<std::pair<std::pair<int,int>,std::pair<int,int> > > > intersectionPoint(Curves.size());
-	for(int i=0;i<Curves.size();i++){
-		for(int j=0;j<Curves.size();j++){
-			if(i==j)
-				continue;
-			for(int c1=0;c1<Curves[i].size();c1++){
-				for(int c2 =0;c2<Curves[j].size();c2++){
-					Point p1 = Curves[i][c1];
-					Point p2 = Curves[j][c2];
-					Point p = p1-p2;
-					if(p.length()<=pointClosenessThreshold)
-						intersectionPoint[i].push_back(std::pair<std::pair<int,int>,
-							std::pair<int,int> >(std::pair<int,int>(i,c1),std::pair<int,int>(j,c2)));
+			unsigned jointID,order1,order2;
+			if(na1[0]==na2[0] || na1[0]==na2[1]){
+				jointID = na1[0];
+				if(na1[0]==na2[0]){
+					order1 = m_curveNet.arcs[a1].posInNode.first; order2 = m_curveNet.arcs[a2].posInNode.first;
+				}
+				else{
+					order1 = m_curveNet.arcs[a1].posInNode.first; order2 = m_curveNet.arcs[a2].posInNode.second;
 				}
 			}
-			if(Curves[i].front()==Curves[i].back()){
-				intersectionPoint[i].push_back(std::pair<std::pair<int,int>,
-					std::pair<int,int> >(std::pair<int,int>(i,Curves[i].size()-1),std::pair<int,int>(0,0)));
-				intersectionPoint[i].insert(intersectionPoint[i].begin(),std::pair<std::pair<int,int>,
-					std::pair<int,int> >(std::pair<int,int>(i,0),std::pair<int,int>(0,0)));
-			}
-		}
-	}
-	std::vector<std::vector<int> > segInCurve(Curves.size());
-	for(int i=0;i<intersectionPoint.size();i++){
-		for(int j=0;j<intersectionPoint[i].size();j++){
-			segInCurve[i].push_back(intersectionPoint[i][j].first.second);
-		}
-	}
-	for(int i=0;i<segInCurve.size();i++){
-		sort(segInCurve[i].begin(),segInCurve[i].end());
-		std::vector<int>::iterator ip = segInCurve[i].begin();
-		while(ip!=segInCurve[i].end()){
-			int seg = *ip;
-			ip++;
-			if(ip==segInCurve[i].end())
-				break;
-			if(seg==*ip){
-				ip--;
-				segInCurve[i].erase(ip);
-			}
-		}
-		ip = segInCurve[i].begin();
-		while(ip!=segInCurve[i].end()){
-			int seg = *ip;
-			ip++;
-			if(ip==segInCurve[i].end())
-				break;
-			Point p = Curves[i][seg] - Curves[i][*ip];
-			double len=p.length();
-			if(len<=(pointClosenessThreshold*2)){
-				ip--;
-				segInCurve[i].erase(ip);
-			}
-		}
-		if(segInCurve[i][0]!=0)
-			segInCurve[i][0]=0;
-		if(segInCurve[i].back()!=(Curves[i].size()-1))
-			segInCurve[i].back()=(Curves[i].size()-1);
-
-	}
-
-	std::vector< std::vector<Point> > myCurves;
-	for(int i=0;i<segInCurve.size();i++){
-		for(int j=0;j<segInCurve[i].size()-1;j++){
-			std::vector<Point> temp(Curves[i].begin()+segInCurve[i][j],Curves[i].begin()+segInCurve[i][j+1]+1);
-			if(temp.size()<=1)
-				continue;
-			myCurves.push_back(temp);
-		}
-	}
-	m_curveNetworkOriginal = myCurves;	
-}
-void cycleUtils::fairCurves()
-{
-	bool isSmoothing=m_isSmothing;
-	bool isDeleteDuplicateArc=m_isDeleteBranch;
-	bool isDeleteBranch=m_isDeleteDuplicateArc;
-	double pointClosenessThreshold=m_pointCloseness;
-	double pointSnapThreshold=m_pointSnapThreshold;
-	double curveClosenessThreshold=m_curveCloseness;
-	std::vector<std::vector<Point> > Curves=m_curveNetworkOriginal;
-	/*
-		we have four steps to clean up the data, they are:
-		1)fairing
-		2)deleting duplicate curves
-		3)deleting branch
-		4)deleting intersection points only with two degrees
-	*/
-
-if(isSmoothing){
-	//1.fairing the curve network; after this, the curves are smooth and every points in curves are distinguish.
-	std::vector<std::vector<Point> > fairCurve = Curves;
-	for(int times=0;times<3;times++){
-		for(int i=0;i<Curves.size();i++){
-			if(Curves[i].size()<3)continue;
-			for(int j=1;j<Curves[i].size()-1;j++){
-				Point point = Curves[i][j];
-				Point leftPoint = Curves[i][j-1];
-				Point rightPoint= Curves[i][j+1];
-				Point centrePoint = (leftPoint+rightPoint)/2.0;
-				point = (point+centrePoint)/2.0;
-				fairCurve[i][j]=point;
-			}
-		}
-		Curves=fairCurve;
-	}
-	fairCurve.clear();
-
-	std::vector<std::vector<Point> > myCurve;
-	for(int i=0;i<Curves.size();i++){
-		Point p1 = Curves[i].front();
-		Point p2 = Curves[i].back();
-		if(p1==p2){
-			Point leftPoint = p1-Curves[i][1];
-			Point rightPoint= p2-Curves[i][Curves[i].size()-2];
-			if(leftPoint!=rightPoint){
-				continue;
-			}
-		}
-		myCurve.push_back(Curves[i]);
-	}
-	Curves=myCurve;
-}
-
-#if 1
-	//if the end nodes of two arcs are close w.r.t a predefined threshold, then set them equally.
-	//2.if there are duplicate curves, then delete one;
-	std::vector<std::pair<int ,int> > loop;
-	for(int i=0;i<Curves.size()-1;i++){
-		for(int j=i+1;j<Curves.size();j++){
-			int isloop=0;//"=2" is true;
-			Point pt1 =Curves[i].front(),pt2 =Curves[j].front();
-			if((pt1-pt2).length()<=pointSnapThreshold){
-				Curves[j].front()=Curves[i].front();
-				isloop++;
-			}
-			pt1 = Curves[i].front();pt2=Curves[j].back();
-			if((pt1-pt2).length()<=pointSnapThreshold){
-				Curves[j].back()=Curves[i].front();
-				isloop++;
-			}
-			pt1 = Curves[i].back();pt2=Curves[j].front();
-			if((pt1-pt2).length()<=pointSnapThreshold){
-				Curves[j].front()=Curves[i].back();
-				isloop++;
-			}
-			pt1 = Curves[i].back();pt2=Curves[j].back();
-			if((pt1-pt2).length()<=pointSnapThreshold){
-				Curves[j].back()=Curves[i].back();
-				isloop++;
-			}
-			if(isloop==2)
-				loop.push_back(std::pair<int,int>(i,j));
-		}
-	}
-#endif
-
-if(isDeleteDuplicateArc){
-	std::vector<std::vector<Point> > nonduplicateCurve = Curves;
-	for(int i=0;i<loop.size();i++){
-		int c1 = loop[i].first, c2 = loop[i].second;
-		if(Curves[c1].front()==Curves[c1].back() || Curves[c2].front()==Curves[c2].back())
-			continue; //means at least one of the curve is self-loop;
-		//compute the largest distance of the shortest distance between two points within two curves;
-		double maxmindistance = 0;
-		for(int j=0;j<Curves[c1].size();j++){
-			Point p1 = Curves[c1][j];
-			double mindistance = FLT_MAX;
-			for(int k=0;k<Curves[c2].size();k++){
-				Point p2 = Curves[c2][k];
-				mindistance = std::min(mindistance,(p1-p2).length());
-			}
-			maxmindistance = std::max(maxmindistance,mindistance);
-		}
-		if(maxmindistance<curveClosenessThreshold){
-			if(nonduplicateCurve[c1].empty())
-				nonduplicateCurve[c2].clear();
-			else
-				nonduplicateCurve[c1].clear();
-		}
-	}
-	Curves.clear();
-	for(int i=0;i<nonduplicateCurve.size();i++){
-		if(!nonduplicateCurve[i].empty())
-			Curves.push_back(nonduplicateCurve[i]);
-	}
-	nonduplicateCurve.clear();
-}
-
-if(isDeleteBranch){
-	//3.if there is a branch, then delete it;
-	int sizeCurve;
-	do{
-		sizeCurve =Curves.size();
-		std::vector<std::pair<int ,int> > capacity;
-		capacity.assign(Curves.size(),std::pair<int,int>(1,1));
-		for(int i=0;i<Curves.size()-1;i++){
-			for(int j=i+1;j<Curves.size();j++){
-				if(Curves[i].front()==Curves[j].front()){
-					capacity[i].first++;capacity[j].first++;
+			else{
+				jointID = na1[1];
+				if(na1[1]==na2[0]){
+					order1 = m_curveNet.arcs[a1].posInNode.second; order2 = m_curveNet.arcs[a2].posInNode.first;
 				}
-				if(Curves[i].front()==Curves[j].back()){
-					capacity[i].first++;capacity[j].second++;
-				}
-				if(Curves[i].back()==Curves[j].front()){
-					capacity[i].second++;capacity[j].first++;
-				}
-				if(Curves[i].back()==Curves[j].back()){
-					capacity[i].second++;capacity[j].second++;
+				else{
+					order1 = m_curveNet.arcs[a1].posInNode.second; order2 = m_curveNet.arcs[a2].posInNode.second;
 				}
 			}
-		}
-		std::vector<std::vector<Point> > nonBranchCurve;
-		for(int i=0;i<capacity.size();i++){
-			if(capacity[i].first<=1||capacity[i].second<=1)
-				continue;
-			nonBranchCurve.push_back(Curves[i]);
-		}
-		Curves = nonBranchCurve;
-	}while(sizeCurve!=Curves.size());
-}
-
-if(isSmoothing){	
-	std::vector<std::vector<Point> > fairCurve = Curves;
-	for(int times=0;times<8;times++){
-		for(int i=0;i<Curves.size();i++){
-			if(Curves[i].size()<3)continue;
-			for(int j=1;j<Curves[i].size()-1;j++){
-				Point point = Curves[i][j];
-				Point leftPoint = Curves[i][j-1];
-				Point rightPoint= Curves[i][j+1];
-				Point centrePoint = (leftPoint+rightPoint)/2.0;
-				point = (point+centrePoint)/2.0;
-				fairCurve[i][j]=point;
+			tvpairs.push_back(std::pair<int,int>(order1,order2)); 
+			if(order1<order2){
+				m_userDefinedPairsInNode[i].push_back(tvpairs.back());
+			}
+			else{
+				m_userDefinedPairsInNode[i].push_back(std::pair<int,int>(order2,order1));
 			}
 		}
-		Curves=fairCurve;
+		tvpairs.push_back(tvpairs.front());
+		for(int i=1;i<cycles[c].size();i++){
+			m_userDefinedPairsInArc[cycles[c][i]].push_back(std::pair<int,int>(tvpairs[i-1].first,tvpairs[i].second));
+		}
+		cycles[c].pop_back();
 	}
-	fairCurve.clear();
 }
 
-	std::vector<std::vector<Point> > myCurves;
-	for(int i=0;i<Curves.size();i++){
-		if(Curves[i].size()<=2){
-			Point p= Curves[i].front()-Curves[i].back();
-			if(p.length()<pointClosenessThreshold)
-				continue;
-		}
-		if(Curves[i].front()==Curves[i].back()){
-			double maxmindistance = 0;
-			for(int j=0;j<Curves[i].size()-1;j++){
-				Point p1 = Curves[i][j];
-				double mindistance = FLT_MAX;
-				for(int k=j+1;k<Curves[i].size();k++){
-					Point p2 = Curves[i][k];
-					mindistance = std::min(mindistance,(p1-p2).length());
-				}
-				maxmindistance = std::max(maxmindistance,mindistance);
-			}
-			if(maxmindistance<curveClosenessThreshold){
-				continue;
-			}
-		}
-		myCurves.push_back(Curves[i]);
-	}
-	m_curveNetworkOriginal = myCurves;
 }
-void cycleUtils::dataCleanUp()
-{
-	if(m_curveNetworkOriginal.empty())
-		return;
-
-	LinearCurveNet Curves = m_curveNetworkOriginal;
-
-	if(m_isComputeIntersection)
-		chopCurves();
-	if(m_isSmothing||m_isDeleteBranch||m_isDeleteDuplicateArc)
-		fairCurves();
-/*
-	constructNetwork();
-	deleteNodeWithTwoDegree();
-	constructNetwork();
-*/
-}
-    
-};

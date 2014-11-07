@@ -39,6 +39,8 @@ PointCloudUtils::PointCloudUtils()
 #else
     engEvalString(ep , "addpath ~/Projects/PointContour/matlab/");
 #endif
+
+    cycle::cycleTest();
     /*
     if (!mclInitializeApplication(NULL,0))
     {
