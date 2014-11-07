@@ -94,6 +94,8 @@ private:
 	std::vector<std::vector<int> > coplanarPoints;
 
     TimeManager timer;
+
+    double largeBound , smallBound;
 };
 
 #endif //OPTIMIZATION_H

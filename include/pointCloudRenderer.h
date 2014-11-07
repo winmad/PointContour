@@ -91,6 +91,7 @@ public:
 	void initSelectionBuffer();
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
+    int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
 	void pickPoint(int mouseX , int mouseY , bool isStore);
     void pickCurve(int mouseX , int mouseY , bool isDelete);
 
@@ -119,8 +120,10 @@ public:
 	/* vec3d *lastPoint; */
     vec3d lastDispPoint;
     int pickedCurve;
+    bool snapToCurve;
+    bool snapToNode;
 
-	std::vector<vec3uc> glObjColors;
+    std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;
 
 	int windowSizeX , windowSizeY;

@@ -8,6 +8,9 @@ using namespace std;
 Optimization::Optimization()
 {
     net = NULL;
+
+    largeBound = 0.003;
+    smallBound = 0.001;
 }
 
 void Optimization::init(CurveNet *_net)
@@ -235,30 +238,14 @@ void Optimization::init(CurveNet *_net)
     */
 }
 
-bool samepoint(vec3d &a, vec3d &b)
-{
-	return abs(a.x - b.x) < EPS && abs(a.y - b.y) < EPS && abs(a.z - b.z) < EPS;
-}
-
-bool Optimization::isLinked(int i, int j, int p, int q)
-{
-	if (samepoint(net->bsplines[i].ctrlNodes[j], net->bsplines[p].ctrlNodes[q]))
-		return true;
-	if (samepoint(net->bsplines[i].ctrlNodes[j], net->bsplines[p].ctrlNodes[q+1]))
-		return true;
-	if (samepoint(net->bsplines[i].ctrlNodes[j+1], net->bsplines[p].ctrlNodes[q]))
-		return true;
-	if (samepoint(net->bsplines[i].ctrlNodes[j+1], net->bsplines[p].ctrlNodes[q+1]))
-		return true;
-	return false;
-}
-
 void Optimization::generateDAT(string file)
 {
 	ofstream fout(file.data());
 	fout << "param N := " << numVars - 1 << ";\n";
-	
-	fout << "param init_p :=\n";
+    fout << "param largeBound := " << largeBound << ";\n";
+    fout << "param smallBound := " << smallBound << ";\n";
+
+    fout << "param init_p :=\n";
 	for (int i = 0; i < numVars; ++ i)
 	{
 		fout << "\t[" << i << ", *]";
@@ -282,8 +269,8 @@ void Optimization::generateDAT(string file)
 	for (int i = 0; i < numVars; ++ i)
 	{
 		fout << " " << i << " ";
-		if (lastDraw[i]) fout << 0.05 << "\n";
-		else fout << 0.01 << "\n";
+		if (lastDraw[i]) fout << largeBound << "\n";
+		else fout << smallBound << "\n";
 	}
 	fout << ";\n";
 
@@ -399,6 +386,10 @@ void Optimization::generateMOD(string file)
 	fout << "set Dim2 = 1..2;\n";
 	fout << "set Dim3 = 1..3;\n";
 	fout << "set Dim4 = 1..4;\n";
+
+    fout << "param largeBound;\n";
+    fout << "param smallBound;\n";
+
 	fout << "param N;\n";
 	fout << "param init_p {0..N, Dim3};\n";
 	fout << "param p_bound {0..N};\n";
@@ -416,8 +407,8 @@ void Optimization::generateMOD(string file)
 	fout << "param coef {i in 0..BN, 0..BPN[i], 0..CN[i]};\n";
 	
 	fout << "\n# variables\n";
-	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - 0.05, <= init_p[i, t] + 0.05, := init_p[i, t];\n";
-	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - 0.05, <= init_plane[i, t] + 0.05, := init_plane[i, t];\n";
+	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - p_bound[i], <= init_p[i, t] + p_bound[i], := init_p[i, t];\n";
+	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - largeBound, <= init_plane[i, t] + largeBound, := init_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
 	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 1], t] - p[sidx[i, 2], t])"
@@ -425,7 +416,7 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "100 * (sum {i in 0..N, t in Dim3} "
+	fout << "500 * (sum {i in 0..N, t in Dim3} "
 		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
 	fout << "+100 * (sum{i in 0..SN}(sum{j in 0..SPN[i]}"
 		 << "sum{t in Dim3}("
@@ -510,7 +501,7 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= 0.05;\n";
+		fout << " <= smallBound;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -518,7 +509,7 @@ void Optimization::generateMOD(string file)
 		{
 			fout << "subject to coplanar" << i << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
-				 << " <= 0.05;\n";
+				 << " <= smallBound;\n";
 		}
 	}
     fout.close();
@@ -542,7 +533,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=50 par_numthreads=6 ma_maxtime_real=20\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.2\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -638,14 +629,6 @@ void Optimization::run(CurveNet *net)
     }
 	fin.close();
     timer.PopAndDisplayTime("\n\n***** post processing time = %.6f *****\n\n");
-}
-
-string Optimization::generateSamePoint(int u, int v)
-{
-	stringstream ss;
-	ss << "sum {t in Dim3} "
-	   << "abs(p[" << u << ",t] - p[" << v << ",t])";
-	return ss.str();
 }
 
 string Optimization::generateLineOrtho(int u1, int u2, int v1, int v2)

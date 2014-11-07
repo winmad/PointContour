@@ -412,7 +412,18 @@ void PointCloudRenderer::renderSelectedPoints()
 
 	if (isValid(pickedDispPoint))
 	{
-		glColor3f(0.f , 1.f , 0.f);
+        if (snapToNode)
+        {
+            glColor3f(1.f , 1.f , 0.f);
+        }
+        else if (snapToCurve)
+        {
+            glColor3f(0.8f , 0.f , 0.8f);
+        }
+        else
+        {
+            glColor3f(0.f , 1.f , 0.f);
+        }
         drawPoint(pickedDispPoint);
 	}
 
@@ -776,17 +787,56 @@ int PointCloudRenderer::selectionByColorMap(int mouseX , int mouseY)
 
 void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 {
-	int selectedObj = selectionByColorMap(mouseX , mouseY);
+    int ni = -1;
+    int selectedCurve = curveSelectionByRay(mouseX , mouseY , ni);
+    bool isSnap = false;
+    if (selectedCurve != -1 && ni != -1) isSnap = true;
+    
+	int selectedObj = -1;
+    if (!isSnap) selectedObj = selectionByColorMap(mouseX , mouseY);
     /*
 	printf("%d, (%.6f,%.6f,%.6f)\n" , selectedObj ,
         pcUtils->pcData[selectedObj].pos.x ,
         pcUtils->pcData[selectedObj].pos.y ,
         pcUtils->pcData[selectedObj].pos.z);
     */
-	if (selectedObj != -1)
+	if (isSnap || selectedObj != -1)
 	{
-		// pickedPoint = &pcUtils->pcData[selectedObj].pos;
-        // pickedDispPoint = pickedPoint;
+        vec3d pos , dispPos;
+        int edi , breakLine = -1 , breakPoint = -1;
+		if (isSnap)
+        {
+            breakLine = selectedCurve;
+            breakPoint = ni;
+            dispPos = dispCurveNet->polyLines[breakLine][breakPoint];
+            if (pcUtils->point2Index.find(point2double(dispPos)) !=
+                pcUtils->point2Index.end())
+            {
+                pos = dispPos;
+            }
+            else
+            {
+                pos = dispCurveNet->originPolyLines[breakLine][breakPoint];
+            }
+            pickedDispPoint = dispCurveNet->polyLines[breakLine][breakPoint];
+            
+            if (breakPoint == 0 || breakPoint == dispCurveNet->polyLines[breakLine].size() - 1)
+            {
+                snapToNode = true;
+                snapToCurve = false;
+            }
+            else
+            {
+                snapToNode = false;
+                snapToCurve = true;
+            }
+        }
+        else
+        {
+            pos = dispPos = pickedDispPoint = pcUtils->pcData[selectedObj].pos;
+            snapToNode = snapToCurve = false;
+        }
+        /*
         pickedDispPoint = pcUtils->pcData[selectedObj].pos;
 		vec3d pos = pcUtils->pcData[selectedObj].pos;
         vec3d dispPos;
@@ -816,7 +866,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
         double snapOffset = selectionOffset * 1.5;
         if (breakLine != -1 && (breakPoint == 0 || breakPoint == (int)dispCurveNet->polyLines[breakLine].size() - 1))
         {
-            snapOffset *= 2.0;
+            snapOffset *= 3.0;
         }
         
         if (min_dist < snapOffset)
@@ -833,7 +883,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             isSnap = true;
             // printf("snap!\n");
         }
-
+        */
 		edi = pcUtils->point2Index[point2double(pos)];
         if (!(edi >= 0 && edi < pcUtils->nodes))
         {
@@ -913,7 +963,6 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 // dispCurveNet->orthoSet.printLog();
                 // dispCurveNet->collinearSet.printLog();
                 // dispCurveNet->collinearSet.test();
-
                 // pcUtils->optimizeJunction(dispCurveNet , lastDisp);
             }
 
@@ -986,15 +1035,17 @@ std::vector<vec3d> getRay(int mouseX,int mouseY)
 	return ray;
 }
 
-void PointCloudRenderer::pickCurve(int mouseX , int mouseY , bool isDelete)
+int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex)
 {
     std::vector<vec3d> rays = getRay(mouseX , mouseY);
     vec3d& rayStr = rays.front();
     vec3d& rayEnd = rays.back();
     
     double minDistance = 1e20;
-	pickedCurve = -1;
-	double p0p1LenSquared = (rayEnd - rayStr).dot(rayEnd - rayStr);
+    int res = -1;
+    nodeIndex = -1;
+
+    double p0p1LenSquared = (rayEnd - rayStr).dot(rayEnd - rayStr);
 
 	for (int i = 0; i < dispCurveNet->polyLines.size(); i++)
     {
@@ -1012,12 +1063,25 @@ void PointCloudRenderer::pickCurve(int mouseX , int mouseY , bool isDelete)
 			if (minDistance > distance)
             {
 				minDistance = distance;
-				pickedCurve = i;
+				res = i;
+                nodeIndex = j;
 			}
 		}
 	}
-    if (minDistance > selectionOffset) pickedCurve = -1;
-	if (minDistance <= selectionOffset && isDelete)
+    double snapOffset = selectionOffset;
+    // printf("%d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    if (res == -1) return res;
+    if (nodeIndex == 0 || nodeIndex == dispCurveNet->polyLines[res].size() - 1)
+        snapOffset *= 2;
+    if (minDistance > snapOffset) res = -1;
+    return res;
+}
+
+void PointCloudRenderer::pickCurve(int mouseX , int mouseY , bool isDelete)
+{
+    int ni;
+	pickedCurve = curveSelectionByRay(mouseX , mouseY , ni);
+	if (pickedCurve != -1 && isDelete)
     {
         // curveNet->deletePath(pickedCurve);
         dispCurveNet->deletePath(pickedCurve);
