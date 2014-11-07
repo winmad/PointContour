@@ -58,10 +58,10 @@ void Optimization::init(CurveNet *_net)
             std::pair<OptVariable , OptVariable> vars = bsp2var(i , 0 , 1);
 			int tmpidx = getOptVarIndex(vars.first);
 			tmpvec.push_back(tmpidx);
-			lastDraw[tmpidx] = true;
+			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			tmpidx = getOptVarIndex(vars.second);
 			tmpvec.push_back(tmpidx);
-			lastDraw[tmpidx] = true;
+			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			straightlines.push_back(tmpvec);
 			straightlinesIdx.push_back(i);
 		}
@@ -71,17 +71,17 @@ void Optimization::init(CurveNet *_net)
             std::pair<OptVariable , OptVariable> vars = bsp2var(i , 0 , numCtrlCurves);
 			int tmpidx = getOptVarIndex(vars.first);
 			tmpvec.push_back(tmpidx);
-			lastDraw[tmpidx] = true;
+			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; ++ j)
 			{
 				tmpidx = getOptVarIndex(OptVariable(1, i, j));
 				tmpvec.push_back(tmpidx);
-				lastDraw[tmpidx] = true;
+				if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			}
             vars = bsp2var(i , numCtrlCurves - 1 , numCtrlCurves);
 			tmpidx = getOptVarIndex(vars.second);
 			tmpvec.push_back(tmpidx);
-			lastDraw[tmpidx] = true;
+			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			bsplines.push_back(tmpvec);
 			bsplinesIdx.push_back(i);
 		}
@@ -507,7 +507,7 @@ void Optimization::generateMOD(string file)
 	{
 		for (int j = 0; j < coplanarPoints[i].size(); ++ j)
 		{
-			fout << "subject to coplanar" << i << j << ": "
+			fout << "subject to coplanar" << i << "_" << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
 				 << " <= smallBound;\n";
 		}
