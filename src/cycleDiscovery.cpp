@@ -1,5 +1,7 @@
 #include <cmath>
-#define M_PI  3.14159265358979323846
+#if defined(_WIN32)
+    #define M_PI 3.14159265358979323846
+#endif
 
 #include <time.h>
 
@@ -7,9 +9,11 @@
 #include <algorithm>
 #include <float.h>
 #include <iostream>
+#include <fstream>
 #include <map>
 
 #include "cycleDiscovery.h"
+//#include "DrT.h"
 
 #include <boost/config.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -60,7 +64,17 @@ void cycleTest()
     std::vector<std::vector<unsigned> > inCycleCons;
     std::vector<std::vector<unsigned> > cycles;
     std::vector<std::vector<std::vector<vec3d> > > outMeshes;
-    std::vector<vec3d> curve;
+
+/*
+	std::vector<unsigned> inc(4); 
+	inc[0]=3;inc[1]=6;inc[2]=5;inc[3]=4;
+	inCycleCons.push_back(inc);
+	inc[0]=0;inc[1]=3;inc[2]=2;inc[3]=1;
+	inCycleCons.push_back(inc);
+	inc[0]=0;inc[1]=4;inc[2]=5;inc[3]=6;inc.push_back(2);inc.push_back(1);
+	inCycleCons.push_back(inc);
+*/
+/*
     curve.resize(2);
     curve[0] = vec3d(0 , 0 , 0); curve[1] = vec3d(0 , 0 , 1);
     curves.push_back(curve);
@@ -74,6 +88,31 @@ void cycleTest()
     curves.push_back(curve);
     curve[0] = vec3d(0 , 1 , 0);
     curves.push_back(curve);
+*/
+	std::ifstream reader("c1.txt");
+	if (!reader.good())
+		return ;
+
+	int numCurves;
+	reader >> numCurves;
+
+	int numPoints,j,k;
+	double* tp = new double[3];
+	for(unsigned i=0;i<numCurves;i++){
+		vec3d tpv;
+		std::vector<vec3d> curve;
+		reader >> numPoints;
+		while(numPoints<1){
+			reader >> numPoints;
+		}
+		for(unsigned j=0;j<numPoints;j++){
+			reader>>tp[0]>>tp[1]>>tp[2];
+			tpv.set_value(tp);
+			curve.push_back(tpv);
+		}
+		curves.push_back(curve);
+	}
+
     cycle::cycleDiscovery(curves , inCycleCons , cycles , outMeshes);
     for (int i = 0; i < cycles.size(); i++)
     {
@@ -801,21 +840,19 @@ std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point
 		unsigned newCurveSize=0;
 		for(int i=0;i<capacity.size();i++){
 			if(capacity[i].first<=1||capacity[i].second<=1)
-				m_curves.clear();
+				m_curves[i].clear();
 			else
 				newCurveSize++;
 		}
 		if(newCurveSize == curveSize){
-			unsigned i=0;
-			for(LinearCurveNet::iterator itc =m_curves.begin();itc!=m_curves.end();){
-				if(itc->empty()){
-					m_curves.erase(itc);
+			
+			for(unsigned i=0;i<m_curves.size();i++){
+				if(m_curves[i].empty()){
+					m_curves.erase(m_curves.begin()+i); i--;
 				}
 				else{
 					cycleMap.push_back(i);
-					itc++;
 				}
-				i++;
 			}			
 			break;
 		}
@@ -3036,8 +3073,8 @@ void cycleUtils::surfaceBuilding()
 
 	Graph& net = m_curveNet;
 	CycleSet& cycles = m_cycleSetBreaked;
-	TriangleSurface surface;
-	TriangleSurface norms;
+	TriangleSurface& surface=m_triangleSurface;
+	TriangleSurface& norms=m_triangleSurfaceNormal;
 
 	for(int c=0;c<cycles.size();c++){
 		Cycle& cycle = cycles[c];
@@ -3077,8 +3114,10 @@ void cycleUtils::surfaceBuilding()
 		int newPointNum;
 
 		if(m_normalsTable.empty())
-			//res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
-			//&tile_list,&tileNum,weights,dosmooth,subs,laps);
+/*
+			res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
+			&tile_list,&tileNum,weights,dosmooth,subs,laps);
+*/
 
 //////////////////////////////////////
 		if(!m_normalsTable.empty()){
@@ -3230,8 +3269,10 @@ void cycleUtils::surfaceBuilding()
 				normals[i*3+2]=normalList[i].z;
 			}
 
-			//res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
-			//	dosmooth,subs,laps);
+/*
+			res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
+				dosmooth,subs,laps);
+*/
 		
 			LinearCurveNet cycleNormalForVis = cycleNormal;
 			for(int j=0;j<cycleNormalForVis.size();j++){
@@ -3396,8 +3437,10 @@ void cycleUtils::surfaceBuilding()
 
 	cout<<"count:"<<count<<endl;
 */
+/*
 	m_triangleSurface=surface;
 	m_triangleSurfaceNormal=norms;
+*/
 }
 
 void cycleUtils::addCycleConstraint(std::vector<std::vector<unsigned> >&cycles)
@@ -3436,10 +3479,10 @@ void cycleUtils::addCycleConstraint(std::vector<std::vector<unsigned> >&cycles)
 			}
 			tvpairs.push_back(std::pair<int,int>(order1,order2)); 
 			if(order1<order2){
-				m_userDefinedPairsInNode[i].push_back(tvpairs.back());
+				m_userDefinedPairsInNode[jointID].push_back(tvpairs.back());
 			}
 			else{
-				m_userDefinedPairsInNode[i].push_back(std::pair<int,int>(order2,order1));
+				m_userDefinedPairsInNode[jointID].push_back(std::pair<int,int>(order2,order1));
 			}
 		}
 		tvpairs.push_back(tvpairs.front());

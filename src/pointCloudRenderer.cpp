@@ -993,11 +993,25 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             {
                 cycle::cycleDiscovery(dispCurveNet->polyLines , inCycleCons , outCycles ,
                     outMeshes);
-
-                writeLog("!!!!!!!!!!! find %lu cycles !!!!!!!!!!\n" , outCycles.size());
+                /*
+                writeLog("*********** Input ***********\n");
+                writeLog("%lu\n\n" , dispCurveNet->numPolyLines);
+                for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+                {
+                    writeLog("%lu\n" , dispCurveNet->polyLines[i].size());
+                    for (int j = 0; j < dispCurveNet->polyLines[i].size(); j++)
+                    {
+                        writeLog("%.6f %.6f %.6f\n" , dispCurveNet->polyLines[i][j].x ,
+                            dispCurveNet->polyLines[i][j].y , dispCurveNet->polyLines[i][j].z);
+                    }
+                    writeLog("\n");
+                }
+                */
+                writeLog("!!!!!!!!!!! Output cycles !!!!!!!!!!\n");
+                writeLog("%lu\n\n" , outCycles.size());
                 for (int i = 0; i < outCycles.size(); i++)
                 {
-                    writeLog("===== cycle %d =====\n" , i);
+                    writeLog("%lu\n" , outCycles[i].size());
                     for (int j = 0; j < outCycles[i].size(); j++)
                     {
                         writeLog("%lu " , outCycles[i][j]);

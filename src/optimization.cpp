@@ -570,13 +570,13 @@ void Optimization::run(CurveNet *net)
 	system("test.bat");
 	ifstream fin("result.out");
 #elif defined(__APPLE__)
-    timer.PushCurrentTime();
+    // timer.PushCurrentTime();
     string fileroot = "/Users/Winmad/Projects/PointContour/ampl/";
     generateDAT(fileroot + "test.dat");
 	generateMOD(fileroot + "test.mod");
 	generateRUN(fileroot + "test.run");
 	generateBAT(fileroot + "test.sh");
-    timer.PopAndDisplayTime("\n\n***** file i/o time = %.6fs *****\n\n");
+    // timer.PopAndDisplayTime("\n\n***** file i/o time = %.6fs *****\n\n");
     string cmd = "chmod u+x " + fileroot + "test.sh";
     system(cmd.c_str());
     cmd = fileroot + "test.sh";
@@ -584,7 +584,7 @@ void Optimization::run(CurveNet *net)
 	ifstream fin(fileroot + "result.out");
 #endif
 
-    timer.PushCurrentTime();
+    // timer.PushCurrentTime();
     std::vector<vec3d> varbuff;
     for (int i = 0; i < vars.size(); i++)
     {
@@ -628,7 +628,7 @@ void Optimization::run(CurveNet *net)
         resampleBsp(net->bsplines[i] , net->polyLines[i]);
     }
 	fin.close();
-    timer.PopAndDisplayTime("\n\n***** post processing time = %.6f *****\n\n");
+    // timer.PopAndDisplayTime("\n\n***** post processing time = %.6f *****\n\n");
 }
 
 string Optimization::generateLineOrtho(int u1, int u2, int v1, int v2)
