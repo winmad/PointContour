@@ -144,7 +144,7 @@
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libeng.lib;libmat.lib;libmx.lib;glew32.lib;freeglut.lib;freeglut_static.lib;wxmsw30u_gl.lib;wxmsw30u_core.lib;wxbase30u.lib;wxtiff.lib;wxjpeg.lib;wxpng.lib;wxzlib.lib;wxregexu.lib;wxexpat.lib;freetype.lib;CycleDiscovery.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libeng.lib;libmat.lib;libmx.lib;glew32.lib;freeglut.lib;freeglut_static.lib;wxmsw30u_gl.lib;wxmsw30u_core.lib;wxbase30u.lib;wxtiff.lib;wxjpeg.lib;wxpng.lib;wxzlib.lib;wxregexu.lib;wxexpat.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>external_win/freeglut/lib;external_win/glew/lib;C:\wxWidgets-3.0.2\lib\vc_lib;C:\Program Files (x86)\MATLAB\R2014a\extern\lib\win32\microsoft;external_win\cycleDiscovery;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
