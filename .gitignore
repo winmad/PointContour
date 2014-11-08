@@ -231,3 +231,11 @@ pip-log.txt
 
 SketchSurfaceMaker.vcxproj
 debug.txt
+
+*.vcxproj
+
+*.filters
+
+SketchSurfaceMaker.vcxproj
+
+SketchSurfaceMaker.vcxproj.filters

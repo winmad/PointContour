@@ -189,6 +189,7 @@
     <ClInclude Include="include\adjMatrix.h" />
     <ClInclude Include="include\colormap.h" />
     <ClInclude Include="include\curveNet.h" />
+    <ClInclude Include="include\cycleDiscovery.h" />
     <ClInclude Include="include\disjointSet.h" />
     <ClInclude Include="include\fileIOHelper.h" />
     <ClInclude Include="include\heap.h" />
@@ -209,6 +210,7 @@
     <ClCompile Include="src\adjMatrix.cpp" />
     <ClCompile Include="src\colormap.cpp" />
     <ClCompile Include="src\curveNet.cpp" />
+    <ClCompile Include="src\cycleDiscovery.cpp" />
     <ClCompile Include="src\disjointSet.cpp" />
     <ClCompile Include="src\fileIOHelper.cpp" />
     <ClCompile Include="src\optimization.cpp" />
