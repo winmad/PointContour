@@ -1,5 +1,5 @@
 #include <cmath>
-#define _USE_MATH_DEFINES
+#define M_PI  3.14159265358979323846
 
 #include <time.h>
 
@@ -781,9 +781,9 @@ std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point
 	do{
 		std::vector<std::pair<int ,int> > capacity(m_curves.size(),std::pair<int,int>(1,1));
 		for(int i=0;i<(int)m_curves.size()-1;i++){
-			if(!m_curves[i].empty()) continue;
+			if(m_curves[i].empty()) continue;
 			for(int j=i+1;j<m_curves.size();j++){
-				if(!m_curves[j].empty()) continue;
+				if(m_curves[j].empty()) continue;
 				if(m_curves[i].front()==m_curves[j].front()){
 					capacity[i].first++;capacity[j].first++;
 				}
