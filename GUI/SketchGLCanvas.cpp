@@ -429,6 +429,19 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
 		Render();
     }
+    else if (event.ShiftDown())
+    {
+        lastKeyBoard = 3;
+        m_pcUtils->pcRenderer->isShiftPress = true;
+
+        m_pcUtils->pcRenderer->pickCycle(x , y , false);
+        if (event.LeftIsDown())
+        {
+            m_pcUtils->pcRenderer->pickCycle(x , y , true);
+            m_pcUtils->pcRenderer->pickedCycle = -1;
+        }
+        Render();
+    }
 
 	if (!event.ControlDown())
 	{
@@ -438,8 +451,12 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     {
         m_pcUtils->pcRenderer->isAltPress = false;
     }
+    if (!event.ShiftDown())
+    {
+        m_pcUtils->pcRenderer->isShiftPress = false;
+    }
 
-	if(!event.ControlDown() && !event.ShiftDown() ){startDraw=false;}
+	if(!event.ControlDown()) {startDraw=false;}
 
 	m_lastx = x;
 	m_lasty = y;

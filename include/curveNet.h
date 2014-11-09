@@ -28,7 +28,7 @@ public:
     int pli;
 };
 
-
+typedef std::vector<unsigned> Cycle;
 
 class CurveNet
 {
@@ -69,6 +69,11 @@ public:
     void addCoplanarConstraint(int bspIndex);
     void addJunctionConstraint(int bspIndex);
     void addSymmetryConstraint(int bspIndex);
+
+    void calcDispCyclePoints(const Cycle& cycle ,
+        std::vector<Path>& cyclePts , vec3d& cycleCenter);
+    void addCycle(const Cycle& cycle);
+
     void test();
     void debugPrint();
     void debugLog();
@@ -99,6 +104,9 @@ public:
     DisjointSet parallelSet;
     AdjMatrix coplanarSet;
     AdjMatrix orthoSet;
+
+    std::vector<Cycle> cycles;
+    std::vector<std::vector<Path> > cyclePoints;
 };
 
 #endif

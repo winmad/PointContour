@@ -27,6 +27,9 @@ void CurveNet::clear()
     parallelSet.clear();
     coplanarSet.clear();
     orthoSet.clear();
+
+    cycles.clear();
+    cyclePoints.clear();
 }
 
 void CurveNet::startPath(const vec3d& st)
@@ -601,6 +604,45 @@ void CurveNet::addJunctionConstraint(int bspIndex)
 void CurveNet::addSymmetryConstraint(int bspIndex)
 {
 
+}
+
+void CurveNet::calcDispCyclePoints(const Cycle& cycle ,
+    std::vector<Path>& cyclePts , vec3d& cycleCenter)
+{
+    vec3d center(0.0);
+    double N = 0.0;
+    for (int i = 0; i < cycle.size(); i++)
+    {
+        int ci = cycle[i];
+        N += (double)polyLines[ci].size();
+        for (int j = 0; j < polyLines[ci].size(); j++)
+        {
+            center += polyLines[ci][j];
+        }
+    }
+    center /= N;
+    cycleCenter = center;
+    cyclePts.clear();
+    for (int i = 0; i < cycle.size(); i++)
+    {
+        int ci = cycle[i];
+        Path curve;
+        for (int j = 0; j < polyLines[ci].size(); j++)
+        {
+            vec3d dir = (center - polyLines[ci][j]) * 0.1;
+            curve.push_back(polyLines[ci][j] + dir);
+        }
+        cyclePts.push_back(curve);
+    }
+}
+
+void CurveNet::addCycle(const Cycle& cycle)
+{
+    cycles.push_back(cycle);
+    std::vector<Path> cyclePts;
+    vec3d center;
+    calcDispCyclePoints(cycle , cyclePts , center);
+    cyclePoints.push_back(cyclePts);
 }
 
 void CurveNet::test()

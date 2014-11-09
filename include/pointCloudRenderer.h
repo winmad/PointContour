@@ -36,6 +36,7 @@ public:
     
 	bool isCtrlPress;
     bool isAltPress;
+    bool isShiftPress;
     bool isAutoOpt;
 
 	double discRenderBaseRadius , discRenderRadiusScale;
@@ -84,8 +85,11 @@ public:
     void renderCoplanarLines();
     void renderOrthogonalLines();
     void renderTangentLines();
+    void renderUnsavedCycles();
+    void renderPickedCycle();
+    void renderSavedCycles();
 
-	void render();
+    void render();
 
 	void clearPaths();
 
@@ -93,8 +97,10 @@ public:
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
     int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
+    int cycleSelectionByRay(int mouseX , int mouseY);
 	void pickPoint(int mouseX , int mouseY , bool isStore);
     void pickCurve(int mouseX , int mouseY , bool isDelete);
+    void pickCycle(int mouseX , int mouseY , bool isStore);
 
     void optUpdate();
 public:
@@ -121,9 +127,14 @@ public:
 	/* vec3d *lastPoint; */
     vec3d lastDispPoint;
     int pickedCurve;
+    int pickedCycle;
     bool snapToCurve;
     bool snapToNode;
 
+    std::vector<Cycle> unsavedCycles;
+    std::vector<std::vector<Path> > unsavedCyclePoints;
+    std::vector<vec3d> unsavedCycleCenters;
+    
     std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;
 
