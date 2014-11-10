@@ -79,6 +79,7 @@ const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX5 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX6 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE3 = wxNewId();
+const long PointContourGUIFrame::ID_CHECKBOX7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -151,7 +152,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     SetClientSize(wxSize(1000,650));
     Move(wxPoint(50,20));
     SplitterWindow1 = new wxSplitterWindow(this, ID_SPLITTERWINDOW1, wxPoint(0,0), wxSize(1000,630), wxSP_3D, _T("ID_SPLITTERWINDOW1"));
-    SplitterWindow1->SetMinSize(wxSize(300,300));
+    SplitterWindow1->SetMinSize(wxSize(200,200));
     SplitterWindow1->SetMinimumPaneSize(200);
     SplitterWindow1->SetSashGravity(1);
     int GLCanvasAttributes_1[] = {
@@ -219,6 +220,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     ConstraintsVisual->Append(_("orthogonal"));
     ConstraintsVisual->Append(_("tangent"));
     FlexGridSizer2->Add(ConstraintsVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    AutoOpt = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX7, _("auto optimization"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX7"));
+    AutoOpt->SetValue(false);
+    FlexGridSizer2->Add(AutoOpt, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -346,6 +350,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_CHECKBOX5,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUseBSplineClick);
     Connect(ID_CHECKBOX6,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowCtrlPointsClick);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnConstraintsVisualSelect);
+    Connect(ID_CHECKBOX7,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnAutoOptClick);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -854,4 +859,13 @@ void PointContourGUIFrame::OnConstraintsVisualSelect(wxCommandEvent& event)
         curveIndex = 0;
     }
     m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnAutoOptClick(wxCommandEvent& event)
+{
+	m_pcUtils->pcRenderer->isAutoOpt = (!m_pcUtils->pcRenderer->isAutoOpt);
+	if (m_pcUtils->pcRenderer->isAutoOpt)
+	{
+		m_pcUtils->pcRenderer->optUpdate();
+	}
 }

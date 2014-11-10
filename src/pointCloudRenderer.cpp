@@ -60,7 +60,13 @@ void PointCloudRenderer::init()
     
 	isCtrlPress = false;
     isAltPress = false;
+	isShiftPress = false;
+
+#if defined(_WIN32)
+	isAutoOpt = false;
+#else
     isAutoOpt = true;
+#endif
     
 	if (pcUtils == NULL)
 		return;
