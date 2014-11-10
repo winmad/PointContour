@@ -662,7 +662,7 @@ void PointCloudRenderer::renderTangentLines()
 
 void PointCloudRenderer::renderUnsavedCycles()
 {
-    glColor3f(1.f , 1.f , 0.f);
+    glColor3f(1.f , 0.f , 1.f);
     glLineWidth(3.f);
     glEnable(GL_LINE_STIPPLE);
 	glLineStipple(2, 0xffff);
@@ -680,7 +680,7 @@ void PointCloudRenderer::renderPickedCycle()
 {
     if (pickedCycle == -1) return;
     
-    glColor3f(1.f , 0.f , 1.f);
+    glColor3f(1.f , 1.f , 0.f);
     glLineWidth(3.f);
     glEnable(GL_LINE_STIPPLE);
 	glLineStipple(2, 0xffff);
