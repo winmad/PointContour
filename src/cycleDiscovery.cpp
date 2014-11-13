@@ -13,7 +13,10 @@
 #include <map>
 
 #include "cycleDiscovery.h"
-//#include "DrT.h"
+
+#ifdef _WIN32
+	#include "DrT.h"
+#endif
 
 #include <boost/config.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -45,8 +48,11 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
     std::cout<<"tracing cycles from rotation graph...\n";
 	m_cycleUtil->constructCycles();
 	m_cycleUtil->cycleBreaking();
-    //std::cout<<"making surface from cycles...\n";
-	//m_cycleUtil->surfaceBuilding();
+
+#ifdef _WIN32
+    std::cout<<"making surface from cycles...\n";
+	m_cycleUtil->surfaceBuilding();
+#endif
 
 	//result;
 	outCycles.clear();	outCycles.resize(m_cycleUtil->m_cycleSetBreaked.size());
@@ -55,7 +61,10 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 			outCycles[i].push_back(cycleMap[m_cycleUtil->m_cycleSetBreaked[i][j].arcID]);
 		}
 	}
-	//outMeshes.swap(m_cycleUtil->m_triangleSurface);
+
+#ifdef _WIN32
+	outMeshes.swap(m_cycleUtil->m_triangleSurface);
+#endif
 }
 
 void cycleTest()
@@ -3114,10 +3123,13 @@ void cycleUtils::surfaceBuilding()
 		int newPointNum;
 
 		if(m_normalsTable.empty())
-/*
+		{
+#ifdef _WIN32
 			res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
-			&tile_list,&tileNum,weights,dosmooth,subs,laps);
-*/
+				&tile_list,&tileNum,weights,dosmooth,subs,laps);
+#endif
+		}
+
 
 //////////////////////////////////////
 		if(!m_normalsTable.empty()){
@@ -3269,10 +3281,10 @@ void cycleUtils::surfaceBuilding()
 				normals[i*3+2]=normalList[i].z;
 			}
 
-/*
+#ifdef _WIN32
 			res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
 				dosmooth,subs,laps);
-*/
+#endif
 		
 			LinearCurveNet cycleNormalForVis = cycleNormal;
 			for(int j=0;j<cycleNormalForVis.size();j++){
