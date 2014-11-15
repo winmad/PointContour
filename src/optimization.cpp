@@ -219,6 +219,12 @@ void Optimization::init(CurveNet *_net)
             }
         }
     }
+
+	// symmetric
+	for (int i = 0; i < net->symmLines.size(); ++ i)
+	{
+		
+	}
     numCons = cons.size();
 
     /*
@@ -284,6 +290,20 @@ void Optimization::generateDAT(string file)
 			 << " 2 " << coplanes[i].n.y
 			 << " 3 " << coplanes[i].n.z
 			 << " 4 " << coplanes[i].d
+			 << "\n";
+	}
+	fout << ";\n";
+
+	fout << "param RPN := " << (int)net->reflactPlanes.size() - 1 << ";\n";
+
+	fout << "param init_reflact_plane :=\n";
+	for (int i = 0; i < net->reflactPlanes.size(); ++ i)
+	{
+		fout << "\t[" << i << ", *]";
+		fout << " 1 " << net->reflactPlanes[i].n.x
+			 << " 2 " << net->reflactPlanes[i].n.y
+			 << " 3 " << net->reflactPlanes[i].n.z
+			 << " 4 " << net->reflactPlanes[i].d
 			 << "\n";
 	}
 	fout << ";\n";
@@ -395,6 +415,8 @@ void Optimization::generateMOD(string file)
 	fout << "param p_bound {0..N};\n";
 	fout << "param PN;\n";
 	fout << "param init_plane {0..PN, Dim4};\n";
+	fout << "param RPN;\n";
+	fout << "param init_reflact_plane {0..PN, Dim4};\n";
 	fout << "param SN;\n";
 	fout << "param sidx {0..SN, Dim2};\n";
 	fout << "param BN;\n";
@@ -409,6 +431,7 @@ void Optimization::generateMOD(string file)
 	fout << "\n# variables\n";
 	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - p_bound[i], <= init_p[i, t] + p_bound[i], := init_p[i, t];\n";
 	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - largeBound, <= init_plane[i, t] + largeBound, := init_plane[i, t];\n";
+	fout << "var reflact_plane {i in 0..RPN, t in Dim4} >= init_reflact_plane[i, t] - largeBound, <= init_reflact_plane[i, t] + largeBound, := init_reflact_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
 	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 1], t] - p[sidx[i, 2], t])"
@@ -469,6 +492,17 @@ void Optimization::generateMOD(string file)
 				 << "\n";
 		}
 	}
+	/*
+	for (int i = 0; i < net->symmLines.size(); ++ i)
+	{
+		for (int j = 0; j < net->symmLines[i].size(); ++ j)
+		{
+			fout << "+"
+				 << generateSymmetryLine(i, net->symmLines[i][j])
+				 << "\n";
+		}
+	}
+	*/
 	fout << ";\n\n";
 
 
@@ -512,6 +546,15 @@ void Optimization::generateMOD(string file)
 				 << " <= smallBound;\n";
 		}
 	}
+	for (int i = 0; i < net->symmLines.size(); ++ i)
+	{
+		for (int j = 0; j < net->symmLines[i].size(); ++ j)
+		{
+			fout << "subject to symmetry" << i << "_" << j << ": "
+				 << generateSymmetryLine(i, net->symmLines[i][j])
+				 << " <= smallBound;\n";
+		}
+	}
     fout.close();
 }
 
@@ -520,7 +563,7 @@ void Optimization::generateRUN(string file)
 	ofstream fout(file.data());
 #if defined(_WIN32)
 	fout << "reset;\n"
-		 << "option ampl_include 'E:\\reconstruction\\point_cloud\\PointContour\\Release';\n"
+		 << "option ampl_include 'D:\\fz\\point_cloud\\PointContour\\Release';\n"
 		 << "option solver knitroampl;\n"
 		 << "option knitro_options \"alg=1 bar_feasible=1 honorbnds=1 ms_enable=0 par_numthreads=4\";\n\n"
 		 << "model test.mod;\n"
@@ -528,7 +571,7 @@ void Optimization::generateRUN(string file)
 		 << "solve;\n"
 		 << "printf {i in 0..N} \"%f %f %f\\n\", "
 		 << "p[i, 1], p[i, 2], p[i, 3] "
-		 << "> E:\\reconstruction\\point_cloud\\PointContour\\Release\\result.out;\n";
+		 << "> D:\\fz\\point_cloud\\PointContour\\Release\\result.out;\n";
 #elif defined(__APPLE__)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
@@ -548,9 +591,9 @@ void Optimization::generateBAT(string file)
 {
 	ofstream fout(file.data());
 #if defined(_WIN32)
-	fout << "E:\n"
-		 << "cd E:\\reconstruction\\AMPLcml\n"
-		 << "ampl.exe E:\\reconstruction\\point_cloud\\PointContour\\Release\\test.run\n";
+	fout << "D:\n"
+		 << "cd D:\\fz\\point_cloud\\AMPLcml\n"
+		 << "ampl.exe D:\\fz\\point_cloud\\PointContour\\Release\\test.run\n";
 		 //<< "pause\n";
 #elif defined(__APPLE__)
     fout << "cd /Users/Winmad/AMPL_win\n"
@@ -753,6 +796,45 @@ string Optimization::generateCoplanar(int plane, int point)
 	ss << "abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
 	   << " + plane[" << plane << ", 4]) / "
 	   << "sqrt(sum{i in Dim3} (plane[" << plane << ", i] ^ 2))";
+	return ss.str();
+}
+
+string Optimization::generateSymmetryLine(int plane, std::pair<int, int> linepair)
+{
+	stringstream ss;
+	std::pair<OptVariable , OptVariable> tmp = bsp2var(linepair.first, 0, 1);
+	int x1 = getOptVarIndex(tmp.first);
+	int x2 = getOptVarIndex(tmp.second);
+	tmp = bsp2var(linepair.second, 0, 1);
+	int x3 = getOptVarIndex(tmp.first);
+	int x4 = getOptVarIndex(tmp.second);
+	vec3d v1 = net->nodes[vars[x1].ni];
+	vec3d v2 = net->nodes[vars[x2].ni];
+	vec3d v3 = net->nodes[vars[x3].ni];
+	vec3d v4 = net->nodes[vars[x4].ni];
+	Plane p = net->reflactPlanes[plane];
+	Plane tmp_p((v1 + v3) / 2, v1 - v3);
+	if (net->curveType[linepair.first] == 1)
+	{
+		if (p.dist(tmp_p) > net->symmetryThr)
+		{
+			swap(v3, v4);
+			swap(x3, x4);
+		}
+		ss << generateSymmetryPoint(plane, x1, x3)
+		   << "+"
+		   << generateSymmetryPoint(plane, x2, x4);
+	}
+	return ss.str();
+}
+
+string Optimization::generateSymmetryPoint(int plane, int u, int v)
+{
+	stringstream ss;
+	ss << "(sum{i in Dim3} (p[" << u << ", i] - "
+	   << "(p[" << v << ", i] - 2*reflact_plane[" << plane << ",4]*reflact_plane[" << plane << ",i] - "
+	   << "2*(sum{j in Dim3}reflact_plane[" << plane << ",j]*p[" << v << ",j])*reflact_plane[" << plane << ",i])"
+	   << ") ^ 2)";
 	return ss.str();
 }
 

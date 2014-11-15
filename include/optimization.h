@@ -29,7 +29,8 @@ enum ConstraintsType
     st_parallel,
     st_coplanar,
     st_ortho,
-    st_tangent
+    st_tangent,
+	st_symmetric
 };
 
 struct OptConstraints
@@ -66,6 +67,8 @@ private:
 	std::string generateLineTangent(int, int, int, int);
 	std::string generateSamePoint(int, int);
 	std::string generateCoplanar(int, int);
+	std::string generateSymmetryLine(int, std::pair<int, int>);
+	std::string generateSymmetryPoint(int, int, int);
 	void addCoplanar(int, int, int, int);
 
 	bool isLinked(int, int, int, int);

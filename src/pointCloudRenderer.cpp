@@ -1036,6 +1036,13 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 // vec3d lastDisp(lastDispPoint->x , lastDispPoint->y , lastDispPoint->z);
 
                 // curveNet->extendPath(lastp , pos , pathForComp[0] , newNode);
+				/*
+				printf("========== origin path ==========\n");
+				for (int i = 0; i < pathForComp[0].size(); i++)
+				{
+					printf("(%.6f,%.6f,%.6f)\n" , pathForComp[0][i].x , pathForComp[0][i].y , pathForComp[0][i].z);
+				}
+				*/
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
                     newNode , bsp , pathForComp[0]);
 
