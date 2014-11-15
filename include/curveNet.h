@@ -68,7 +68,8 @@ public:
     void addParallelConstraint(int bspIndex);
     void addCoplanarConstraint(int bspIndex);
     void addJunctionConstraint(int bspIndex);
-    void addSymmetryConstraint(int bspIndex);
+    void addSymmetryConstraint(int bspIndex, bool add = true);
+	int addSymmetryPlane(Plane &p, bool add, int a = -1, int b = -1);
 
     void calcDispCyclePoints(const Cycle& cycle ,
         std::vector<Path>& cyclePts , vec3d& cycleCenter);
@@ -99,6 +100,7 @@ public:
 	double symmetryThr;
 
 	std::vector<Plane> reflactPlanes;
+	std::vector<std::vector<std::pair<int, int> > > symmLines;
     
     DisjointSet collinearSet;
     DisjointSet parallelSet;

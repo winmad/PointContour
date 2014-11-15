@@ -43,6 +43,18 @@ public:
 		weight += p.weight;
 		normalize();
 	}
+	void remove(Plane &p)
+	{
+		if (n.dot(p.n) < 0)
+		{
+			p.n = -p.n;
+			p.d = -p.d;
+		}
+		n -= p.n * p.weight / weight;
+		d -= p.d * p.weight / weight;
+		weight -= p.weight;
+		normalize();
+	}
 
 	vec3d n;
 	double d;

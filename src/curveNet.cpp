@@ -27,6 +27,8 @@ void CurveNet::clear()
     parallelSet.clear();
     coplanarSet.clear();
     orthoSet.clear();
+	reflactPlanes.clear();
+	symmLines.clear();
 
     cycles.clear();
     cyclePoints.clear();
@@ -92,6 +94,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     addParallelConstraint(numPolyLines - 1);
     addCoplanarConstraint(numPolyLines - 1);
     addJunctionConstraint(numPolyLines - 1);
+	addSymmetryConstraint(numPolyLines - 1);
 }
 
 void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
@@ -176,6 +179,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
         addParallelConstraint(bspIndex[t]);
         addCoplanarConstraint(bspIndex[t]);
         addJunctionConstraint(bspIndex[t]);
+		addSymmetryConstraint(bspIndex[t]);
     }
 }
 
@@ -399,12 +403,13 @@ bool CurveNet::checkSymmetry(const vec3d& x , const vec3d& nx ,
 {
 	vec3d v0 = x - y;
 	v0.normalize();
-	vec3d v1 = nx - ny;
+	vec3d v1 = nx + ny;
 	v1.normalize();
-	vec3d v2 = nx + ny;
+
+	vec3d v2 = nx - ny;
 	v2.normalize();
 	if (abs(v0.dot(v1)) < threshold) return true;
-	if (abs(v0.dot(v2)) < threshold) return true;
+	//if (abs(v0.dot(v2)) < threshold) return true;
 	return false;
 }
 
@@ -601,9 +606,87 @@ void CurveNet::addJunctionConstraint(int bspIndex)
     }
 }
 
-void CurveNet::addSymmetryConstraint(int bspIndex)
+void CurveNet::addSymmetryConstraint(int bspIndex, bool add)
 {
+	if (curveType[bspIndex] == 1)
+	{
+		vec3d &x1 = bsplines[bspIndex].ctrlNodes[0];
+		vec3d &x2 = bsplines[bspIndex].ctrlNodes[1];
+		vec3d n1 = x1 - x2;
+		n1.normalize();
+		for (int i = 0; i < numPolyLines; ++ i)
+		{
+			if (i == bspIndex) continue;
+			if (curveType[i] == 1)
+			{
+				vec3d &x3 = bsplines[i].ctrlNodes[0];
+				vec3d &x4 = bsplines[i].ctrlNodes[1];
+				vec3d n2 = x3 - x4;
+				n2.normalize();
+				if (abs((x1 - x2).length() - (x3 - x4).length()) > 1e-6) continue;
+				if (checkSymmetry(x1, n1, x3, n2, symmetryThr))
+				{
+					Plane p1((x1 + x3) / 2, x1 - x3);
+					Plane p2((x2 + x4) / 2, x2 - x4);
+					if (p1.dist(p2) < symmetryThr)
+					{
+						p1.add(p2);
+						p1.weight = (x1 - x2).length();
+						addSymmetryPlane(p1, add, bspIndex, i);
+						printf("add symmetry : (%d, %d)\n" , bspIndex, i);
+					}
+				}
+				if (checkSymmetry(x1, n1, x4, -n2, symmetryThr))
+				{
+					Plane p1((x1 + x4) / 2, x1 - x4);
+					Plane p2((x2 + x3) / 2, x2 - x3);
+					if (p1.dist(p2) < symmetryThr)
+					{
+						p1.add(p2);
+						p1.weight = (x1 - x2).length();
+						addSymmetryPlane(p1, add, bspIndex, i);
+						printf("add symmetry : (%d, %d)\n" , bspIndex, i);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
 
+	}
+}
+
+int CurveNet::addSymmetryPlane(Plane &p, bool add, int a, int b)
+{
+	for (int i = 0; i < reflactPlanes.size(); ++ i)
+	{
+		if (reflactPlanes[i].dist(p) < symmetryThr)
+		{
+			if (add)
+			{
+				reflactPlanes[i].add(p);
+				if (a > -1 && b > -1)
+				{
+					symmLines[i].push_back(std::make_pair(a, b));
+				}
+			}
+			else
+			{
+				reflactPlanes[i].remove(p);
+			}
+			return i;
+		}
+	}
+	if (add)
+	{
+		reflactPlanes.push_back(p);
+		std::vector<std::pair<int, int> > tmp;
+		if (a > -1 && b > -1)
+			tmp.push_back(std::make_pair(a, b));
+		symmLines.push_back(tmp);
+	}
+	return (int)reflactPlanes.size() - 1;
 }
 
 void CurveNet::calcDispCyclePoints(const Cycle& cycle ,
