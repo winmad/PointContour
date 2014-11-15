@@ -719,7 +719,7 @@ void PointCloudRenderer::renderUnsavedMeshes()
 	{
 		const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
-		if(true)
+		if(false)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
