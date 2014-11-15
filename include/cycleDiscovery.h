@@ -356,6 +356,8 @@ public:
 	void cycleBreaking();
     void surfaceBuilding();
 
+	void drawPatch(int patchID);
+
 	CycleSet m_cycleSetBreaked;
 	TriangleSurface m_triangleSurface;
 	TriangleSurface m_triangleSurfaceNormal;
@@ -369,7 +371,8 @@ public:
 void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 	std::vector<std::vector<unsigned> > &inCycleConstraint, 
 	std::vector<std::vector<unsigned> > &outCycles, 
-	std::vector<std::vector<std::vector<Point> > >&outMeshes);
+	std::vector<std::vector<std::vector<Point> > >&outMeshes,
+	std::vector<std::vector<std::vector<Point> > >&outNormals);
 
 void cycleTest();
 

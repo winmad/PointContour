@@ -88,6 +88,7 @@ public:
     void renderUnsavedCycles();
     void renderPickedCycle();
     void renderSavedCycles();
+	void renderUnsavedMeshes();
 
     void render();
 
@@ -134,6 +135,9 @@ public:
     std::vector<Cycle> unsavedCycles;
     std::vector<std::vector<Path> > unsavedCyclePoints;
     std::vector<vec3d> unsavedCycleCenters;
+
+	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
+	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
     
     std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;

@@ -713,6 +713,33 @@ void PointCloudRenderer::renderSavedCycles()
     }
 }
 
+void PointCloudRenderer::renderUnsavedMeshes()
+{
+	for (int patchID = 0; patchID < unsavedMeshes.size(); patchID++)
+	{
+		const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
+		const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
+		if(true)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		glBegin(GL_TRIANGLES);
+		for(int i=0;i<triangleCycle.size();i++){
+			const std::vector<vec3d> &triangle = triangleCycle[i];
+			const std::vector<vec3d> &verticesNormal = triangleCycleNormal[i];
+
+			for(int j=0;j<triangle.size();j++){
+				const vec3d &position = triangle[j];
+				const vec3d &norm = verticesNormal[j];
+				glNormal3f(norm.x,norm.y,norm.z);
+				glVertex3f(position.x,position.y,position.z);
+			}
+		}
+		glEnd();
+	}
+}
+
 void PointCloudRenderer::render()
 {
 	renderPointCloud();
@@ -732,6 +759,7 @@ void PointCloudRenderer::render()
     renderUnsavedCycles();
     renderPickedCycle();
     renderSavedCycles();
+	renderUnsavedMeshes();
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -1043,12 +1071,11 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             lastDispPoint = dispPos;
 
             // find cycle
-            std::vector<std::vector<std::vector<cycle::Point> > > outMeshes;
             if (dispCurveNet->numPolyLines > 0)
             {
                 unsavedCycles.clear();
                 cycle::cycleDiscovery(dispCurveNet->polyLines , dispCurveNet->cycles ,
-                    unsavedCycles , outMeshes);
+                    unsavedCycles , unsavedMeshes , unsavedNormals);
 
                 unsavedCyclePoints.clear();
                 unsavedCycleCenters.clear();
