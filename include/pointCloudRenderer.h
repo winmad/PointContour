@@ -63,6 +63,8 @@ public:
 	void drawEllipsoid(const vec3d& origin , const vec3d& a , const double& la ,
 					   const vec3d& b , const double& lb ,
 					   const vec3d& c , const double& lc);
+    void drawPatch(const cycle::TriangleCycle& triangleCycle ,
+        const cycle::TriangleCycle& triangleCycleNormal);
 
 	void callListPoints();
 	void callListSurfelDisc();
@@ -89,6 +91,8 @@ public:
     void renderPickedCycle();
     void renderSavedCycles();
 	void renderUnsavedMeshes();
+    void renderPickedMesh();
+    void renderSavedMeshes();
 
     void render();
 
@@ -138,6 +142,8 @@ public:
 
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
+    std::vector<std::vector<std::vector<cycle::Point> > > meshes;
+    std::vector<std::vector<std::vector<cycle::Point> > > meshNormals;
     
     std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;
