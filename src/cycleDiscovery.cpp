@@ -1,4 +1,4 @@
-#include <cmath>
+﻿#include <cmath>
 #if defined(_WIN32)
     #define M_PI 3.14159265358979323846
 #endif
@@ -11,7 +11,6 @@
 #include <iostream>
 #include <fstream>
 #include <map>
-#include <GL/glut.h>
 
 #include "cycleDiscovery.h"
 
@@ -38,7 +37,7 @@ typedef std::pair<int, int> Edge;
 void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 					std::vector<std::vector<unsigned> > &inCycleConstraint, 
 					std::vector<std::vector<unsigned> > &outCycles, 
-					std::vector<std::vector<std::vector<Point> > >&outMeshes ,
+					std::vector<std::vector<std::vector<Point> > >&outMeshes,
 					std::vector<std::vector<std::vector<Point> > >&outNormals)
 {
 	cycleUtils* m_cycleUtil = new cycleUtils;
@@ -50,9 +49,8 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
     std::cout<<"tracing cycles from rotation graph...\n";
 	m_cycleUtil->constructCycles();
 	m_cycleUtil->cycleBreaking();
-
 #ifdef _WIN32
-    std::cout<<"making surface from cycles...\n";
+    //std::cout<<"making surface from cycles...\n";
 	m_cycleUtil->surfaceBuilding();
 #endif
 
@@ -77,6 +75,7 @@ void cycleTest()
     std::vector<std::vector<unsigned> > cycles;
     std::vector<std::vector<std::vector<vec3d> > > outMeshes;
 	std::vector<std::vector<std::vector<vec3d> > > outNormals;
+
 /*
 	std::vector<unsigned> inc(4); 
 	inc[0]=3;inc[1]=6;inc[2]=5;inc[3]=4;
@@ -86,8 +85,7 @@ void cycleTest()
 	inc[0]=0;inc[1]=4;inc[2]=5;inc[3]=6;inc.push_back(2);inc.push_back(1);
 	inCycleCons.push_back(inc);
 */
-	/*
-	std::vector<vec3d> curve;
+/*
     curve.resize(2);
     curve[0] = vec3d(0 , 0 , 0); curve[1] = vec3d(0 , 0 , 1);
     curves.push_back(curve);
@@ -101,8 +99,7 @@ void cycleTest()
     curves.push_back(curve);
     curve[0] = vec3d(0 , 1 , 0);
     curves.push_back(curve);
-	*/
-	
+*/
 	std::ifstream reader("c1.txt");
 	if (!reader.good())
 		return ;
@@ -126,7 +123,7 @@ void cycleTest()
 		}
 		curves.push_back(curve);
 	}
-	
+
     cycle::cycleDiscovery(curves , inCycleCons , cycles , outMeshes , outNormals);
     for (int i = 0; i < cycles.size(); i++)
     {
@@ -134,21 +131,6 @@ void cycleTest()
         for (int j = 0; j < cycles[i].size(); j++) printf("%d " , cycles[i][j]);
         printf("\n");
     }
-	for (int i = 0; i < outMeshes.size(); i++)
-	{
-		printf("===== patch %d, tri num = %d =====\n" , i , outMeshes[i].size());
-		/*
-		for (int j = 0; j < outMeshes[i].size(); j++)
-		{
-			printf("--- %d ---\n" , j);
-			for (int k = 0; k < outMeshes[i][j].size(); k++)
-			{
-				printf("(%.6f,%.6f,%.6f)\n" , outMeshes[i][j][k].x , 
-					outMeshes[i][j][k].y , outMeshes[i][j][k].z);
-			}
-		}
-		*/
-	}
 }
 
 GraphSearch::GraphSearch()
@@ -838,34 +820,6 @@ std::vector<int> ordering(const std::vector<double> &data)
 		tdat[minInd] = FLT_MAX;
 	}
 	return rank;
-}
-
-void cycleUtils::drawPatch(int patchID)
-{
-	if(m_triangleSurface.size()==0)
-		return;
-
-	const TriangleCycle &triangleCycle = m_triangleSurface[patchID];
-	const TriangleCycle &triangleCycleNormal = m_triangleSurfaceNormal[patchID];
-	if(true)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	glBegin(GL_TRIANGLES);
-	printf("== %d ==\n" , triangleCycle.size());
-	for(int i=0;i<triangleCycle.size();i++){
-		const std::vector<vec3d> &triangle = triangleCycle[i];
-		const std::vector<vec3d> &verticesNormal = triangleCycleNormal[i];
-
-		for(int j=0;j<triangle.size();j++){
-			const vec3d &position = triangle[j];
-			const vec3d &norm = verticesNormal[j];
-			glNormal3f(norm.x,norm.y,norm.z);
-			glVertex3f(position.x,position.y,position.z);
-		}
-	}
-	glEnd();
 }
 
 std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet)
@@ -3134,7 +3088,7 @@ void cycleUtils::surfaceBuilding()
 	TriangleSurface& norms=m_triangleSurfaceNormal;
 
 	for(int c=0;c<cycles.size();c++){
-		Cycle& cycle = cycles[c];
+		Cycle cycle = cycles[c];
 		LinearCurveNet curves;
 		for(int i=0;i<cycle.size();i++){
 			int arcID = cycle[i].arcID;			
@@ -3170,13 +3124,11 @@ void cycleUtils::surfaceBuilding()
 		float* newNormals;
 		int newPointNum;
 
-		if(m_normalsTable.empty())
-		{
 #ifdef _WIN32
+		if(m_normalsTable.empty())
 			res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
-				&tile_list,&tileNum,weights,dosmooth,subs,laps);
+			&tile_list,&tileNum,weights,dosmooth,subs,laps);
 #endif
-		}
 
 
 //////////////////////////////////////
