@@ -440,6 +440,10 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             m_pcUtils->pcRenderer->pickCycle(x , y , true);
             m_pcUtils->pcRenderer->pickedCycle = -1;
         }
+		if (event.RightIsDown())
+		{
+			m_pcUtils->pcRenderer->pickedCycle = -1;
+		}
         Render();
     }
 
@@ -454,6 +458,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     if (!event.ShiftDown())
     {
         m_pcUtils->pcRenderer->isShiftPress = false;
+		m_pcUtils->pcRenderer->pickedCycle = -1;
     }
 
 	if(!event.ControlDown()) {startDraw=false;}

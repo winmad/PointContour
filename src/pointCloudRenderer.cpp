@@ -741,7 +741,7 @@ void PointCloudRenderer::renderUnsavedMeshes()
 			glColor3f(0.f , 0.f , 1.f);
 		const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
-		if(false)
+		if(true)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -773,7 +773,7 @@ void PointCloudRenderer::renderSavedMeshes()
 	{
 		const cycle::TriangleCycle &triangleCycle = meshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = meshNormals[patchID];
-		if(false)
+		if(true)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
