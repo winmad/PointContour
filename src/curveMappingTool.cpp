@@ -7,12 +7,25 @@ void CurveMapping::init()
 	thrCosin = cos(10 / 180 * pi);
 }
 
-bool CurveMapping::map(const BSpline &bsp1, const BSpline &bsp2, double threshold)
+bool CurveMapping::map(const Path &line1, const Path &line2, double threshold)
 {
-	vec3d p0 = bsp1.ctrlNodes[0];
-	vec3d q0 = bsp2.ctrlNodes[0];
+	vec3d p0 = line1[0];
+	vec3d q0 = line2[0];
 	shiftVec = q0 - p0;
-
+	double length1 = 0;
+	double length2 = 0;
+	for (int i = 1; i < line1.size(); ++ i)
+	{
+		length1 += (line1[i] - line1[i-1]).length();
+		length2 += (line2[i] - line2[i-1]).length();
+		vec3d t1 = line1[i] - line1[0];
+		vec3d t2 = line2[i] - line2[0];
+		if (abs(t1.length() / length1 - t2.length() / length2) > threshold)
+		{
+			return false;
+		}
+	}
+	return false;
 }
 
 void CurveMapping::getRotateAxis(const vec3d &u1, const vec3d &u2, const vec3d &v1, const vec3d &v2)
@@ -96,4 +109,5 @@ vec3d CurveMapping::rotateVec(const vec3d &u)
 			v._array[i] += rotateMat[i][j] * u._array[j];
 		}
 	}
+	return v;
 }

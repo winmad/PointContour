@@ -6,6 +6,7 @@
 #include "disjointSet.h"
 #include "adjMatrix.h"
 #include "Plane.h"
+#include "curveMappingTool.h"
 
 struct PolyLineIndex
 {
@@ -71,6 +72,8 @@ public:
     void addSymmetryConstraint(int bspIndex, bool add = true);
 	int addSymmetryPlane(Plane &p, bool add, int a = -1, int b = -1);
 
+	void addTransformConstraint(int bspIndex);
+
     void calcDispCyclePoints(const Cycle& cycle ,
         std::vector<Path>& cyclePts , vec3d& cycleCenter);
     void addCycle(const Cycle& cycle);
@@ -101,7 +104,10 @@ public:
 
 	std::vector<Plane> symmetricPlanes;
 	std::vector<std::vector<std::pair<int, int> > > symmLines;
-    
+	
+	std::vector<CurveMapping> curveMaps;
+	std::vector<std::vector<std::pair<int, int> > > mapLines;
+
     DisjointSet collinearSet;
     DisjointSet parallelSet;
     AdjMatrix coplanarSet;

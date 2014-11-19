@@ -689,6 +689,11 @@ int CurveNet::addSymmetryPlane(Plane &p, bool add, int a, int b)
 	return (int)symmetricPlanes.size() - 1;
 }
 
+void CurveNet::addTransformConstraint(int bspIndex)
+{
+
+}
+
 void CurveNet::calcDispCyclePoints(const Cycle& cycle ,
     std::vector<Path>& cyclePts , vec3d& cycleCenter)
 {

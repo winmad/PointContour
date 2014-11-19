@@ -10,7 +10,7 @@ class CurveMapping
 {
 public:
 	void init();
-	bool map(const BSpline &bsp1, const BSpline &bsp2, double threshold);
+	bool map(const Path &, const Path &, double);
 	void getRotateAxis(const vec3d &u1, const vec3d &u2, const vec3d &v1, const vec3d &v2);
 	void conv2mat();
 	vec3d rotateVec(const vec3d &u);
@@ -23,6 +23,6 @@ public:
 	double theta;
 	vec3d shiftVec;
 	double rotateMat[3][3];
-}
+};
 
 #endif //CURVE_MAPPING_TOOL_H
