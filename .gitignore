@@ -2,7 +2,6 @@ data/
 build/
 xcode/
 ampl/
-external_win/boost/
 *.bmp
 *.pfm
 *.log
@@ -240,3 +239,4 @@ debug.txt
 SketchSurfaceMaker.vcxproj
 
 SketchSurfaceMaker.vcxproj.filters
+
