@@ -10,7 +10,7 @@ class Plane
 {
 public:
 	Plane(double weight = 1) {this->weight = weight;}
-	Plane(vec3d& p, vec3d& n, double weight = 1)
+	Plane(const vec3d& p, const vec3d& n, double weight = 1)
 	{
 		this->n = n;
 		d = -p.dot(n);
