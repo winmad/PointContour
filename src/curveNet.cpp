@@ -27,7 +27,7 @@ void CurveNet::clear()
     parallelSet.clear();
     coplanarSet.clear();
     orthoSet.clear();
-	reflactPlanes.clear();
+	symmetricPlanes.clear();
 	symmLines.clear();
 
     cycles.clear();
@@ -659,13 +659,13 @@ void CurveNet::addSymmetryConstraint(int bspIndex, bool add)
 
 int CurveNet::addSymmetryPlane(Plane &p, bool add, int a, int b)
 {
-	for (int i = 0; i < reflactPlanes.size(); ++ i)
+	for (int i = 0; i < symmetricPlanes.size(); ++ i)
 	{
-		if (reflactPlanes[i].dist(p) < symmetryThr)
+		if (symmetricPlanes[i].dist(p) < symmetryThr)
 		{
 			if (add)
 			{
-				reflactPlanes[i].add(p);
+				symmetricPlanes[i].add(p);
 				if (a > -1 && b > -1)
 				{
 					symmLines[i].push_back(std::make_pair(a, b));
@@ -673,20 +673,20 @@ int CurveNet::addSymmetryPlane(Plane &p, bool add, int a, int b)
 			}
 			else
 			{
-				reflactPlanes[i].remove(p);
+				symmetricPlanes[i].remove(p);
 			}
 			return i;
 		}
 	}
 	if (add)
 	{
-		reflactPlanes.push_back(p);
+		symmetricPlanes.push_back(p);
 		std::vector<std::pair<int, int> > tmp;
 		if (a > -1 && b > -1)
 			tmp.push_back(std::make_pair(a, b));
 		symmLines.push_back(tmp);
 	}
-	return (int)reflactPlanes.size() - 1;
+	return (int)symmetricPlanes.size() - 1;
 }
 
 void CurveNet::calcDispCyclePoints(const Cycle& cycle ,

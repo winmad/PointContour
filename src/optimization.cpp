@@ -294,16 +294,16 @@ void Optimization::generateDAT(string file)
 	}
 	fout << ";\n";
 
-	fout << "param RPN := " << (int)net->reflactPlanes.size() - 1 << ";\n";
+	fout << "param RPN := " << (int)net->symmetricPlanes.size() - 1 << ";\n";
 
-	fout << "param init_reflact_plane :=\n";
-	for (int i = 0; i < net->reflactPlanes.size(); ++ i)
+	fout << "param init_symmetric_plane :=\n";
+	for (int i = 0; i < net->symmetricPlanes.size(); ++ i)
 	{
 		fout << "\t[" << i << ", *]";
-		fout << " 1 " << net->reflactPlanes[i].n.x
-			 << " 2 " << net->reflactPlanes[i].n.y
-			 << " 3 " << net->reflactPlanes[i].n.z
-			 << " 4 " << net->reflactPlanes[i].d
+		fout << " 1 " << net->symmetricPlanes[i].n.x
+			 << " 2 " << net->symmetricPlanes[i].n.y
+			 << " 3 " << net->symmetricPlanes[i].n.z
+			 << " 4 " << net->symmetricPlanes[i].d
 			 << "\n";
 	}
 	fout << ";\n";
@@ -416,7 +416,7 @@ void Optimization::generateMOD(string file)
 	fout << "param PN;\n";
 	fout << "param init_plane {0..PN, Dim4};\n";
 	fout << "param RPN;\n";
-	fout << "param init_reflact_plane {0..PN, Dim4};\n";
+	fout << "param init_symmetric_plane {0..PN, Dim4};\n";
 	fout << "param SN;\n";
 	fout << "param sidx {0..SN, Dim2};\n";
 	fout << "param BN;\n";
@@ -431,7 +431,7 @@ void Optimization::generateMOD(string file)
 	fout << "\n# variables\n";
 	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - p_bound[i], <= init_p[i, t] + p_bound[i], := init_p[i, t];\n";
 	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - largeBound, <= init_plane[i, t] + largeBound, := init_plane[i, t];\n";
-	fout << "var reflact_plane {i in 0..RPN, t in Dim4} >= init_reflact_plane[i, t] - largeBound, <= init_reflact_plane[i, t] + largeBound, := init_reflact_plane[i, t];\n";
+	fout << "var symmetric_plane {i in 0..RPN, t in Dim4} >= init_symmetric_plane[i, t] - largeBound, <= init_symmetric_plane[i, t] + largeBound, := init_symmetric_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
 	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 1], t] - p[sidx[i, 2], t])"
@@ -812,7 +812,7 @@ string Optimization::generateSymmetryLine(int plane, std::pair<int, int> linepai
 	vec3d v2 = net->nodes[vars[x2].ni];
 	vec3d v3 = net->nodes[vars[x3].ni];
 	vec3d v4 = net->nodes[vars[x4].ni];
-	Plane p = net->reflactPlanes[plane];
+	Plane p = net->symmetricPlanes[plane];
 	Plane tmp_p((v1 + v3) / 2, v1 - v3);
 	if (net->curveType[linepair.first] == 1)
 	{
@@ -832,8 +832,8 @@ string Optimization::generateSymmetryPoint(int plane, int u, int v)
 {
 	stringstream ss;
 	ss << "(sum{i in Dim3} (p[" << u << ", i] - "
-	   << "(p[" << v << ", i] - 2*reflact_plane[" << plane << ",4]*reflact_plane[" << plane << ",i] - "
-	   << "2*(sum{j in Dim3}reflact_plane[" << plane << ",j]*p[" << v << ",j])*reflact_plane[" << plane << ",i])"
+	   << "(p[" << v << ", i] - 2*symmetric_plane[" << plane << ",4]*symmetric_plane[" << plane << ",i] - "
+	   << "2*(sum{j in Dim3}symmetric_plane[" << plane << ",j]*p[" << v << ",j])*symmetric_plane[" << plane << ",i])"
 	   << ") ^ 2)";
 	return ss.str();
 }
