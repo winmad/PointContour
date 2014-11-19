@@ -416,7 +416,7 @@ void Optimization::generateMOD(string file)
 	fout << "param PN;\n";
 	fout << "param init_plane {0..PN, Dim4};\n";
 	fout << "param RPN;\n";
-	fout << "param init_symmetric_plane {0..PN, Dim4};\n";
+	fout << "param init_symmetric_plane {0..RPN, Dim4};\n";
 	fout << "param SN;\n";
 	fout << "param sidx {0..SN, Dim2};\n";
 	fout << "param BN;\n";
