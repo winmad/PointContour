@@ -87,6 +87,7 @@ private:
 
 	std::vector<std::vector<int> > straightlines;
 	std::vector<std::vector<int> > bsplines;
+	std::vector<std::vector<int> > featurelines;
 	std::vector<int> straightlinesIdx;
 	std::vector<int> bsplinesIdx;
 	std::vector<bool> lastDraw;

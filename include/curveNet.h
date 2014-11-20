@@ -63,6 +63,7 @@ public:
         const vec3d& x2 , const double& threshold);
 	bool checkSymmetry(const vec3d& x, const vec3d& nx,
 		const vec3d& y, const vec3d& ny, const double& threshold);
+	bool checkCycleSpline(int i);
 
     void addCurveType(int bspIndex);
     void addCollinearConstraint(int bspIndex);
@@ -73,6 +74,7 @@ public:
 	int addSymmetryPlane(Plane &p, bool add, int a = -1, int b = -1);
 
 	void addTransformConstraint(int bspIndex);
+	void mapOrigin2polyLines(int bspIndex);
 
     void calcDispCyclePoints(const Cycle& cycle ,
         std::vector<Path>& cyclePts , vec3d& cycleCenter);
@@ -89,6 +91,7 @@ public:
     std::vector<std::vector<CurveEdge> > edges;
     std::vector<Path> originPolyLines;
     std::vector<Path> polyLines;
+	std::vector<std::vector<int> > mapOrigin;
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
 
@@ -101,6 +104,8 @@ public:
     double orthoThr;
     double tangentThr;
 	double symmetryThr;
+	double ratioThr;
+	double planeDiffThr;
 
 	std::vector<Plane> symmetricPlanes;
 	std::vector<std::vector<std::pair<int, int> > > symmLines;

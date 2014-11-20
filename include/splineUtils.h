@@ -40,6 +40,18 @@ public:
         for (int i = 0; i < N; i++) coefs[i] = new double[K];
     }
 
+	void copyBSP(BSpline &bsp)
+	{
+		K = bsp.K;
+		N = bsp.N;
+		knots = bsp.knots;
+		ctrlNodes = bsp.ctrlNodes;
+		newCoefs();
+		for (int i = 0; i < N; ++ i)
+			for (int j = 0; j < K; ++ j)
+				coefs[i][j] = bsp.coefs[i][j];
+	}
+
     void calcCoefs();
 };
 
