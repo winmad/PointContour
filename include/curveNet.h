@@ -99,7 +99,7 @@ public:
     double tangentThr;
 	double symmetryThr;
 
-	std::vector<Plane> reflactPlanes;
+	std::vector<Plane> reflectPlanes;
 	std::vector<std::vector<std::pair<int, int> > > symmLines;
     
     DisjointSet collinearSet;

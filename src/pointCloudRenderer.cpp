@@ -310,6 +310,7 @@ void PointCloudRenderer::renderSurfelDisc()
 		return;
 	glColor3f(0.5f , 0.539f , 0.527f);
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glCallList(LIST_SURFEL_DISC);
     //callListSurfelDisc();
 }
@@ -704,7 +705,7 @@ void PointCloudRenderer::renderPickedCycle()
 {
     if (pickedCycle == -1) return;
     
-    glColor3f(1.f , 1.f , 0.f);
+    glColor3f(0.f , 1.f , 0.f);
     glLineWidth(3.f);
     glEnable(GL_LINE_STIPPLE);
 	glLineStipple(2, 0xffff);
@@ -741,7 +742,7 @@ void PointCloudRenderer::renderUnsavedMeshes()
 			glColor3f(0.f , 0.f , 1.f);
 		const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
-		if(true)
+		if(false)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -926,6 +927,8 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
     
 	int selectedObj = -1;
     if (!isSnap) selectedObj = selectionByColorMap(mouseX , mouseY);
+
+    bool dispPosExists = false;
     /*
 	printf("%d, (%.6f,%.6f,%.6f)\n" , selectedObj ,
         pcUtils->pcData[selectedObj].pos.x ,
@@ -945,13 +948,14 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 pcUtils->point2Index.end())
             {
                 pos = dispPos;
+                dispPosExists = true;
             }
             else
             {
                 pos = dispCurveNet->originPolyLines[breakLine][breakPoint];
             }
             pickedDispPoint = dispCurveNet->polyLines[breakLine][breakPoint];
-            
+
             if (breakPoint == 0 || breakPoint == dispCurveNet->polyLines[breakLine].size() - 1)
             {
                 snapToNode = true;
@@ -968,55 +972,11 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
             pos = dispPos = pickedDispPoint = pcUtils->pcData[selectedObj].pos;
             snapToNode = snapToCurve = false;
         }
-        /*
-        pickedDispPoint = pcUtils->pcData[selectedObj].pos;
-		vec3d pos = pcUtils->pcData[selectedObj].pos;
-        vec3d dispPos;
-		int edi;
         
-        // pos = *pickedPoint;
-        dispPos = pickedDispPoint;
-		
-        // snapping when it is near curve
-        bool isSnap = false;
-        int breakLine = -1 , breakPoint = -1;
-        double min_dist = 1e20;
-        
-        for (int i = 0; i < dispCurveNet->numPolyLines; i++)
-        {
-            for (int j = 0; j < dispCurveNet->polyLines[i].size(); j++)
-            {
-                double tmp = (dispPos - dispCurveNet->polyLines[i][j]).length();
-                if (tmp < min_dist)
-                {
-                    min_dist = tmp;
-                    breakLine = i;
-                    breakPoint = j;
-                }
-            }
-        }
-        double snapOffset = selectionOffset * 1.5;
-        if (breakLine != -1 && (breakPoint == 0 || breakPoint == (int)dispCurveNet->polyLines[breakLine].size() - 1))
-        {
-            snapOffset *= 3.0;
-        }
-        
-        if (min_dist < snapOffset)
-        {
-            // pos = curveNet->polyLines[breakLine][breakPoint];
-            dispPos = dispCurveNet->polyLines[breakLine][breakPoint];
-            if (pcUtils->point2Index.find(point2double(dispPos)) !=
-                pcUtils->point2Index.end())
-            {
-                pos = dispPos;
-            }
-            // pickedPoint = &curveNet->polyLines[breakLine][breakPoint];
-            pickedDispPoint = dispCurveNet->polyLines[breakLine][breakPoint];
-            isSnap = true;
-            // printf("snap!\n");
-        }
-        */
 		edi = pcUtils->point2Index[point2double(pos)];
+        // printf("%d, pos = (%.6f,%.6f,%.6f), dispPos = (%.6f,%.6f,%.6f) %d , %d\n" ,
+            // edi , pos.x , pos.y , pos.z , dispPos.x , dispPos.y , dispPos.z ,
+            // snapToNode , snapToCurve);
         if (!(edi >= 0 && edi < pcUtils->nodes))
         {
             printf("ed index error\n");
@@ -1103,6 +1063,9 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 // dispCurveNet->collinearSet.printLog();
                 // dispCurveNet->collinearSet.test();
                 // pcUtils->optimizeJunction(dispCurveNet , lastDisp);
+
+                // find cycle
+                cycleDisc();
             }
 
             // dispCurveNet->debugLog();
@@ -1123,61 +1086,6 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
 
             // lastPoint = &curveNet->nodes[curveNet->getNodeIndex(pos)];
             lastDispPoint = dispPos;
-
-            std::vector<Cycle> inCycleConstraints;
-            // find cycle
-            if (dispCurveNet->numPolyLines > 0)
-            {
-                unsavedCycles.clear();
-
-				printf("====== inCycleConstraints %d ======\n" , dispCurveNet->cycles.size());
-				for (int i = 0; i < dispCurveNet->cycles.size(); i++)
-				{
-					for (int j = 0; j < dispCurveNet->cycles[i].size(); j++)
-						printf("%lu " , dispCurveNet->cycles[i][j]);
-					printf("\n");
-				}
-
-                cycle::cycleDiscovery(dispCurveNet->polyLines , dispCurveNet->cycles ,
-                    unsavedCycles , unsavedMeshes , unsavedNormals);
-
-                unsavedCyclePoints.clear();
-                unsavedCycleCenters.clear();
-                for (int i = 0; i < unsavedCycles.size(); i++)
-                {
-                    std::vector<Path> cyclePts;
-                    vec3d center;
-                    dispCurveNet->calcDispCyclePoints(unsavedCycles[i] ,
-                        cyclePts , center);
-                    unsavedCyclePoints.push_back(cyclePts);
-                    unsavedCycleCenters.push_back(center);
-                }
-                /*
-                writeLog("*********** Input ***********\n");
-                writeLog("%lu\n\n" , dispCurveNet->numPolyLines);
-                for (int i = 0; i < dispCurveNet->numPolyLines; i++)
-                {
-                    writeLog("%lu\n" , dispCurveNet->polyLines[i].size());
-                    for (int j = 0; j < dispCurveNet->polyLines[i].size(); j++)
-                    {
-                        writeLog("%.6f %.6f %.6f\n" , dispCurveNet->polyLines[i][j].x ,
-                            dispCurveNet->polyLines[i][j].y , dispCurveNet->polyLines[i][j].z);
-                    }
-                    writeLog("\n");
-                }
-                */
-                writeLog("!!!!!!!!!!! Output cycles !!!!!!!!!!\n");
-                writeLog("%lu\n\n" , unsavedCycles.size());
-                for (int i = 0; i < unsavedCycles.size(); i++)
-                {
-                    writeLog("%lu\n" , unsavedCycles[i].size());
-                    for (int j = 0; j < unsavedCycles[i].size(); j++)
-                    {
-                        writeLog("%lu " , unsavedCycles[i][j]);
-                    }
-                    writeLog("\n");
-                }
-            }
 		}
 	}
 	else
@@ -1199,6 +1107,101 @@ void PointCloudRenderer::optUpdate()
         pcUtils->dijkstra(pcUtils->pointGraph , sti , pcUtils->pointGraphInfo);
     }
     lastDispPoint = stPos;
+}
+
+void PointCloudRenderer::cycleDisc()
+{
+    std::vector<std::vector<vec3d> > inCurves;
+    std::vector<std::vector<unsigned> > inCycleConstraints;
+    if (dispCurveNet->numPolyLines > 0)
+    {
+        unsavedCycles.clear();
+        unsavedMeshes.clear();
+        unsavedNormals.clear();
+
+        writeLog("====== inCycleConstraints %lu ======\n" , dispCurveNet->cycles.size());
+        for (int i = 0; i < dispCurveNet->cycles.size(); i++)
+        {
+            for (int j = 0; j < dispCurveNet->cycles[i].size(); j++)
+            {
+                int idx = dispCurveNet->cycles[i][j];
+                vec3d st = dispCurveNet->polyLines[idx].front();
+                vec3d ed = dispCurveNet->polyLines[idx].back();
+                writeLog("curve id = %u, (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , dispCurveNet->cycles[i][j] , st.x , st.y , st.z , ed.x , ed.y , ed.z);
+            }
+            writeLog("\n");
+        }
+
+        writeLog("*********** Input ***********\n");
+        writeLog("%lu\n\n" , dispCurveNet->numPolyLines);
+        for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+        {
+            writeLog("%lu\n" , dispCurveNet->polyLines[i].size());
+            for (int j = 0; j < dispCurveNet->polyLines[i].size(); j++)
+            {
+                writeLog("%.6f %.6f %.6f\n" , dispCurveNet->polyLines[i][j].x ,
+                    dispCurveNet->polyLines[i][j].y , dispCurveNet->polyLines[i][j].z);
+            }
+            writeLog("\n");
+        }
+
+        // output to screen
+        inCurves = dispCurveNet->polyLines;
+        inCycleConstraints = dispCurveNet->cycles;
+
+        printf("====== inCycleConstraints %lu ======\n" , inCycleConstraints.size());
+        for (int i = 0; i < inCycleConstraints.size(); i++)
+        {
+            for (int j = 0; j < inCycleConstraints[i].size(); j++)
+            {
+                int idx = inCycleConstraints[i][j];
+                vec3d st = inCurves[idx].front();
+                vec3d ed = inCurves[idx].back();
+                printf("curve id = %u, (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , inCycleConstraints[i][j] , st.x , st.y , st.z , ed.x , ed.y , ed.z);
+            }
+            printf("\n");
+        }
+
+        printf("*********** Input ***********\n");
+        printf("%lu\n\n" , dispCurveNet->numPolyLines);
+        for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+        {
+            printf("%lu\n" , inCurves[i].size());
+            for (int j = 0; j < inCurves[i].size(); j++)
+            {
+                printf("%.6f %.6f %.6f\n" , inCurves[i][j].x ,
+                    inCurves[i][j].y , inCurves[i][j].z);
+            }
+            printf("\n");
+        }
+
+        cycle::cycleDiscovery(inCurves , inCycleConstraints ,
+            unsavedCycles , unsavedMeshes , unsavedNormals);
+
+        writeLog("!!!!!!!!!!! Output cycles !!!!!!!!!!\n");
+        writeLog("%lu\n\n" , unsavedCycles.size());
+        for (int i = 0; i < unsavedCycles.size(); i++)
+        {
+            writeLog("%lu\n" , unsavedCycles[i].size());
+            for (int j = 0; j < unsavedCycles[i].size(); j++)
+            {
+                writeLog("%lu " , unsavedCycles[i][j]);
+            }
+            writeLog("\n");
+        }
+
+        unsavedCyclePoints.clear();
+        unsavedCycleCenters.clear();
+        for (int i = 0; i < unsavedCycles.size(); i++)
+        {
+            std::vector<Path> cyclePts;
+            vec3d center;
+            dispCurveNet->calcDispCyclePoints(unsavedCycles[i] ,
+                cyclePts , center);
+            unsavedCyclePoints.push_back(cyclePts);
+            unsavedCycleCenters.push_back(center);
+        }
+    }
 }
 
 std::vector<vec3d> getRay(int mouseX,int mouseY)
@@ -1356,6 +1359,13 @@ void PointCloudRenderer::clearPaths()
     pickedCycle = -1;
     // curveNet->clear();
     dispCurveNet->clear();
+    unsavedCycles.clear();
+    unsavedCyclePoints.clear();
+    unsavedCycleCenters.clear();
+    unsavedMeshes.clear();
+    unsavedNormals.clear();
+    meshes.clear();
+    meshNormals.clear();
 }
 
 void PointCloudRenderer::incBspCurveIndex()

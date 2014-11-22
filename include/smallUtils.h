@@ -16,7 +16,7 @@ struct Edge;
 typedef std::vector<vec3d> Path;
 typedef std::vector<std::vector<Edge> > Graph;
 
-const double pow2[3] = {1.0 , 1024.0 , 1024.0 * 1024.0};
+const double pow2[3] = {1.0 , 1024.0 * 2.0 , 1024.0 * 1024.0 * 4.0};
 
 static char logFileName[128];
 

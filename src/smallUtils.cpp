@@ -36,7 +36,7 @@ double point2double(const vec3d& p)
 	double res = 0;
 	for (int i = 0; i < 3; i++) 
 	{
-		res += ((double)p[i] * 50.0 + 500.0) * pow2[i];
+		res += ((double)p[i] * 1023.0 + 2048.0) * pow2[i];
 	}
 	return res;
 }

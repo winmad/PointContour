@@ -108,6 +108,7 @@ public:
     void pickCycle(int mouseX , int mouseY , bool isStore);
 
     void optUpdate();
+    void cycleDisc();
 public:
 	static const int LIST_SURFEL_DISC = 2;
 	static const int LIST_POINTS = LIST_SURFEL_DISC + 1;

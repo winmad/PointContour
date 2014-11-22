@@ -294,16 +294,16 @@ void Optimization::generateDAT(string file)
 	}
 	fout << ";\n";
 
-	fout << "param RPN := " << (int)net->reflactPlanes.size() - 1 << ";\n";
+	fout << "param RPN := " << (int)net->reflectPlanes.size() - 1 << ";\n";
 
-	fout << "param init_reflact_plane :=\n";
-	for (int i = 0; i < net->reflactPlanes.size(); ++ i)
+	fout << "param init_reflect_plane :=\n";
+	for (int i = 0; i < net->reflectPlanes.size(); ++ i)
 	{
 		fout << "\t[" << i << ", *]";
-		fout << " 1 " << net->reflactPlanes[i].n.x
-			 << " 2 " << net->reflactPlanes[i].n.y
-			 << " 3 " << net->reflactPlanes[i].n.z
-			 << " 4 " << net->reflactPlanes[i].d
+		fout << " 1 " << net->reflectPlanes[i].n.x
+			 << " 2 " << net->reflectPlanes[i].n.y
+			 << " 3 " << net->reflectPlanes[i].n.z
+			 << " 4 " << net->reflectPlanes[i].d
 			 << "\n";
 	}
 	fout << ";\n";
@@ -416,7 +416,7 @@ void Optimization::generateMOD(string file)
 	fout << "param PN;\n";
 	fout << "param init_plane {0..PN, Dim4};\n";
 	fout << "param RPN;\n";
-	fout << "param init_reflact_plane {0..RPN, Dim4};\n";
+	fout << "param init_reflect_plane {0..RPN, Dim4};\n";
 	fout << "param SN;\n";
 	fout << "param sidx {0..SN, Dim2};\n";
 	fout << "param BN;\n";
@@ -431,7 +431,7 @@ void Optimization::generateMOD(string file)
 	fout << "\n# variables\n";
 	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - p_bound[i], <= init_p[i, t] + p_bound[i], := init_p[i, t];\n";
 	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - largeBound, <= init_plane[i, t] + largeBound, := init_plane[i, t];\n";
-	fout << "var reflact_plane {i in 0..RPN, t in Dim4} >= init_reflact_plane[i, t] - largeBound, <= init_reflact_plane[i, t] + largeBound, := init_reflact_plane[i, t];\n";
+	fout << "var reflect_plane {i in 0..RPN, t in Dim4} >= init_reflect_plane[i, t] - largeBound, <= init_reflect_plane[i, t] + largeBound, := init_reflect_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
 	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 1], t] - p[sidx[i, 2], t])"
@@ -576,7 +576,7 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.2\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=6 par_numthreads=6 ma_maxtime_real=0.3\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -639,7 +639,7 @@ void Optimization::run(CurveNet *net)
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == -1) continue;
-        int ci[2] = {0 , net->bsplines[i].ctrlNodes.size() - 1};
+        int ci[2] = {0 , (int)net->bsplines[i].ctrlNodes.size() - 1};
         for (int j = 0; j < 2; j++)
         {
             int ni = net->getNodeIndex(net->bsplines[i].ctrlNodes[ci[j]]);
@@ -812,7 +812,7 @@ string Optimization::generateSymmetryLine(int plane, std::pair<int, int> linepai
 	vec3d v2 = net->nodes[vars[x2].ni];
 	vec3d v3 = net->nodes[vars[x3].ni];
 	vec3d v4 = net->nodes[vars[x4].ni];
-	Plane p = net->reflactPlanes[plane];
+	Plane p = net->reflectPlanes[plane];
 	Plane tmp_p((v1 + v3) / 2, v1 - v3);
 	if (net->curveType[linepair.first] == 1)
 	{
@@ -832,8 +832,8 @@ string Optimization::generateSymmetryPoint(int plane, int u, int v)
 {
 	stringstream ss;
 	ss << "(sum{i in Dim3} (p[" << u << ", i] - "
-	   << "(p[" << v << ", i] - 2*reflact_plane[" << plane << ",4]*reflact_plane[" << plane << ",i] - "
-	   << "2*(sum{j in Dim3}reflact_plane[" << plane << ",j]*p[" << v << ",j])*reflact_plane[" << plane << ",i])"
+	   << "(p[" << v << ", i] - 2*reflect_plane[" << plane << ",4]*reflect_plane[" << plane << ",i] - "
+	   << "2*(sum{j in Dim3}reflect_plane[" << plane << ",j]*p[" << v << ",j])*reflect_plane[" << plane << ",i])"
 	   << ") ^ 2)";
 	return ss.str();
 }
