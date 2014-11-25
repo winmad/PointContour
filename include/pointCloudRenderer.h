@@ -29,6 +29,7 @@ public:
     bool isShowCtrlNodes;
     bool isShowCollinear;
     int constraintsVisual;
+    int patchesVisual;
     int bspIndex , curveIndex;
 
     void incBspCurveIndex();
@@ -89,6 +90,7 @@ public:
     void renderTangentLines();
     void renderUnsavedCycles();
     void renderPickedCycle();
+    void renderPickedSavedCycle();
     void renderSavedCycles();
 	void renderUnsavedMeshes();
     void renderPickedMesh();
@@ -97,18 +99,23 @@ public:
     void render();
 
 	void clearPaths();
+    void clearTemp();
 
 	void initSelectionBuffer();
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
     int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
-    int cycleSelectionByRay(int mouseX , int mouseY);
-	void pickPoint(int mouseX , int mouseY , bool isStore);
-    void pickCurve(int mouseX , int mouseY , bool isDelete);
-    void pickCycle(int mouseX , int mouseY , bool isStore);
+    int cycleSelectionByRay(int mouseX , int mouseY , std::vector<vec3d>& cycleCenters);
+    // op: 0 choose, 1 store, 2 delete
+	void pickPoint(int mouseX , int mouseY , int op);
+    bool pickCurve(int mouseX , int mouseY , int op);
+    void pickCycle(int mouseX , int mouseY , int op);
+    void pickSavedCycle(int mouseX , int mouseY , int op);
 
     void optUpdate();
     void cycleDisc();
+    void backup();
+    void undo();
 public:
 	static const int LIST_SURFEL_DISC = 2;
 	static const int LIST_POINTS = LIST_SURFEL_DISC + 1;
@@ -118,6 +125,7 @@ public:
 	PointCloudUtils *pcUtils;
     /* CurveNet *curveNet; */
     CurveNet *dispCurveNet;
+    CurveNet backupCurveNet;
 	std::vector<vec3d> axisU , axisV;
     
 	Path pathVertex;
@@ -134,6 +142,7 @@ public:
     vec3d lastDispPoint;
     int pickedCurve;
     int pickedCycle;
+    int pickedSavedCycle;
     bool snapToCurve;
     bool snapToNode;
 

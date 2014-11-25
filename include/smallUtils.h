@@ -15,8 +15,9 @@
 struct Edge;
 typedef std::vector<vec3d> Path;
 typedef std::vector<std::vector<Edge> > Graph;
+typedef std::vector<unsigned> Cycle;
 
-const double pow2[3] = {1.0 , 1024.0 * 2.0 , 1024.0 * 1024.0 * 4.0};
+const double pow2[3] = {1.0 , 100.0 , 100.0 * 100.0};
 
 static char logFileName[128];
 
@@ -30,6 +31,7 @@ double point2double(const vec3d& p);
 bool isEqual(const vec3d& lhs , const vec3d& rhs);
 bool isValid(const vec3d& pos);
 void setNull(vec3d& pos);
+bool isSameCycle(std::vector<unsigned>& c1 , std::vector<unsigned>& c2);
 
 template<typename T>
 bool allocate3(T*** &d , const vec3i& size)

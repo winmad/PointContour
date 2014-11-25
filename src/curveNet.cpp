@@ -34,8 +34,38 @@ void CurveNet::clear()
     cyclePoints.clear();
 }
 
+void CurveNet::copyFrom(const CurveNet& net)
+{
+    numNodes = net.numNodes;
+    numPolyLines = net.numPolyLines;
+    nodes = net.nodes;
+    nodesStat = net.nodesStat;
+    edges = net.edges;
+    originPolyLines = net.originPolyLines;
+    polyLines = net.polyLines;
+    bsplines = net.bsplines;
+    polyLinesIndex = net.polyLinesIndex;
+    cycles = net.cycles;
+    cycleCenters = net.cycleCenters;
+    cyclePoints = net.cyclePoints;
+    curveType = net.curveType;
+    collinearThr = net.collinearThr;
+    coplanarThr = net.coplanarThr;
+    parallelThr = net.parallelThr;
+    orthoThr = net.orthoThr;
+    tangentThr = net.tangentThr;
+    symmetryThr = net.symmetryThr;
+    reflectPlanes = net.reflectPlanes;
+    symmLines = net.symmLines;
+    collinearSet = net.collinearSet;
+    parallelSet = net.parallelSet;
+    coplanarSet = net.coplanarSet;
+    orthoSet = net.orthoSet;
+}
+
 void CurveNet::startPath(const vec3d& st)
 {
+    if (getNodeIndex(st) != -1) return;
     nodes.push_back(st);
     nodesStat.push_back(true);
     numNodes++;
@@ -183,12 +213,27 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     }
 }
 
-void CurveNet::deletePath(const int& deleteLine)
+void CurveNet::deleteNode(const int& deleteNodeIndex)
 {
-    polyLines[deleteLine].clear();
-    bsplines[deleteLine].clear();
+    for (int i = 0; i < edges[deleteNodeIndex].size(); i++)
+    {
+        int lineIndex = edges[deleteNodeIndex][i].pli;
+        if (lineIndex == -1 || curveType[lineIndex] == -1) continue;
+        deletePath(lineIndex);
+    }
+    if (nodesStat[deleteNodeIndex])
+    {
+        printf("delete node error\n");
+    }
+}
+
+void CurveNet::deletePath(const int& deleteLineIndex)
+{
+    polyLines[deleteLineIndex].clear();
+    originPolyLines[deleteLineIndex].clear();
+    bsplines[deleteLineIndex].clear();
     
-    PolyLineIndex& index = polyLinesIndex[deleteLine];
+    PolyLineIndex& index = polyLinesIndex[deleteLineIndex];
     int st_ni = index.ni[0] , st_ei = index.ei[0];
     int ed_ni = index.ni[1] , ed_ei = index.ei[1];
     edges[st_ni][st_ei] = CurveEdge(-1 , -1);
@@ -199,7 +244,39 @@ void CurveNet::deletePath(const int& deleteLine)
     if (linkNoEdges(st_ni)) nodesStat[st_ni] = false;
     if (linkNoEdges(ed_ni)) nodesStat[ed_ni] = false;
 
-    curveType[deleteLine] = -1;
+    bool flag = true;
+    int deleteCycleIndex;
+    while (flag)
+    {
+        flag = false;
+        deleteCycleIndex = -1;
+        for (int i = 0; i < cycles.size(); i++)
+        {
+            for (int j = 0; j < cycles[i].size(); j++)
+            {
+                if (cycles[i][j] == deleteLineIndex)
+                {
+                    deleteCycleIndex = i;
+                    break;
+                }
+            }
+            if (deleteCycleIndex != -1) break;
+        }
+        if (deleteCycleIndex != -1)
+        {
+            deleteCycle(deleteCycleIndex);
+            flag = true;
+        }
+    }
+
+    curveType[deleteLineIndex] = -1;
+}
+
+void CurveNet::deleteCycle(const int& deleteCycleIndex)
+{
+    cycles.erase(cycles.begin() + deleteCycleIndex);
+    cyclePoints.erase(cyclePoints.begin() + deleteCycleIndex);
+    cycleCenters.erase(cycleCenters.begin() + deleteCycleIndex);
 }
 
 int CurveNet::getNodeIndex(const vec3d& pos)
@@ -725,6 +802,7 @@ void CurveNet::addCycle(const Cycle& cycle)
     std::vector<Path> cyclePts;
     vec3d center;
     calcDispCyclePoints(cycle , cyclePts , center);
+    cycleCenters.push_back(center);
     cyclePoints.push_back(cyclePts);
 }
 

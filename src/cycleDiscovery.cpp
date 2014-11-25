@@ -71,6 +71,18 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 		}
 	}
 
+    for (int i = 0; i < inCycleConstraint.size(); i++)
+    {
+        for (int j = 0; j < outCycles.size(); j++)
+        {
+            if (isSameCycle(inCycleConstraint[i] , outCycles[j]))
+            {
+                outCycles.erase(outCycles.begin() + j);
+                break;
+            }
+        }
+    }
+    
 #ifdef _WIN32
 	outMeshes.swap(m_cycleUtil->m_triangleSurface);
 	outNormals.swap(m_cycleUtil->m_triangleSurfaceNormal);
@@ -841,6 +853,7 @@ void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet,
 	unsigned curveSize = m_curves.size();
     unsigned newCurveSize = 0;
 
+    /*
     printf("curveNet size = %d, m_curves size = %d, curveSize = %d\n" , curveNet.size() ,
         m_curves.size() , curveSize);
     for (int i = 0; i < m_curves.size(); i++)
@@ -849,7 +862,8 @@ void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet,
             m_curves[i].front().x , m_curves[i].front().y , m_curves[i].front().z ,
             m_curves[i].back().x , m_curves[i].back().y , m_curves[i].back().z);
     }
-
+    */
+    
     //std::vector<unsigned> cycleMap;
 	do{
 		std::vector<std::pair<int ,int> > capacity(m_curves.size(),std::pair<int,int>(1,1));
@@ -900,7 +914,7 @@ void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet,
 		}
 	}while(true);
 
-    printf("newCurveSize = %d\n" , newCurveSize);
+    // printf("newCurveSize = %d\n" , newCurveSize);
     
 	m_curveCapacitys.resize(m_curves.size(),2); //default capacity. probably need changes;
 
@@ -928,15 +942,19 @@ void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet,
 
 	std::map< double,int> mapPointToIndex;
 	std::map< double,int>::iterator itMap;
+    std::vector<std::pair<vec3d , int> > mapPoints;
 
 	int index=0;
 	int len = curves.size();
-    printf("len = %d, m_curves size = %d\n" , len , m_curves.size());
+    // printf("len = %d, m_curves size = %d\n" , len , m_curves.size());
 	Point stdPoint;
 	for(int i=0;i<len;i++)
 	{
 		Curve curve = curves[i];
 		std::vector<Point> endNodes; endNodes.push_back(curve.front()); endNodes.push_back(curve.back());
+        // printf("curve %d: (%.8f,%.8f,%.8f), (%.8f,%.8f,%.8f)\n" , i ,
+            // endNodes[0].x , endNodes[0].y , endNodes[0].z ,
+            // endNodes[1].x , endNodes[1].y , endNodes[1].z);
 		curve.erase(curve.begin());
 		int sizeCurve = curve.size();
 		curve.erase(curve.begin()+sizeCurve-1);
@@ -944,14 +962,29 @@ void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet,
 		int currentIndex[2];
 		for(int j=0;j<2;j++){
 			stdPoint = endNodes[j];
-			itMap = mapPointToIndex.find(point2double(stdPoint));
-			if (itMap != mapPointToIndex.end()){
-				currentIndex[j] = itMap->second;
+            // double hashVal = point2double(stdPoint);
+			// itMap = mapPointToIndex.find(hashVal);
+            int it = -1;
+            for (int k = 0; k < mapPoints.size(); k++)
+            {
+                if (isEqual(stdPoint , mapPoints[k].first))
+                {
+                    it = k;
+                    break;
+                }
+            }
+			//if (itMap != mapPointToIndex.end()){
+            if (it != -1) {
+                //currentIndex[j] = itMap->second;
+                currentIndex[j] = mapPoints[it].second;
 				net.nodes[currentIndex[j]].arcID.push_back(i);
 				net.nodes[currentIndex[j]].arcDirection.push_back(j+1);
 			}
 			else {
-				mapPointToIndex.insert(std::pair< double,int>(point2double(stdPoint),index));
+                // printf("node = (%.8f,%.8f,%.8f), hashVal = %.12f\n" ,
+                    // stdPoint.x , stdPoint.y , stdPoint.z , point2double(stdPoint));
+				//mapPointToIndex.insert(std::pair< double,int>(hashVal,index));
+                mapPoints.push_back(std::make_pair(stdPoint , index));
 				currentIndex[j] = index;
 				index++;
 				GraphNode node;
@@ -1778,7 +1811,7 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 				std::pair<double,std::pair<int,int> >(FLT_MAX,std::pair<int,int>(0,0))));
 		int id[2];
 		//make cost table including each arc pairs;
-		for(id[0]=0;id[0]<arcs.size()-1;id[0]++){
+		for(id[0]=0;id[0]<(int)arcs.size()-1;id[0]++){
 			for(id[1]=id[0]+1;id[1]<arcs.size();id[1]++){
 				int arcID[]={arcs[id[0]],arcs[id[1]]};
 				int dir[]={dirs[id[0]],dirs[id[1]]};
@@ -1838,7 +1871,7 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 		}
 		//set up arc pairs and weights and capacities;
 		std::vector<std::pair<double,std::pair<int,int> > > arcsWithWeights;
-		for(int j=0;j<arcs.size()-1;j++){
+		for(int j=0;j<(int)arcs.size()-1;j++){
 			for(int k=j+1;k<arcs.size();k++){
 				if( rank[j][k].second == FLT_MAX)
 					continue;
@@ -2671,7 +2704,7 @@ void cycleUtils::constructRotationGraphbyPoleGraph()
 {
 	if(m_curveNet.arcs.empty())
     {
-        std::cout<<"m_curveNet.arcs is empty!\n";
+        // std::cout<<"m_curveNet.arcs is empty!\n";
 		return;
     }
 

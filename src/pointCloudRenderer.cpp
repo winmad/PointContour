@@ -37,6 +37,7 @@ void PointCloudRenderer::init()
     isShowCtrlNodes = false;
     isShowCollinear = false;
     constraintsVisual = 0;
+    patchesVisual = 0;
     bspIndex = 0; curveIndex = 0;
 
 	pathVertex.clear();
@@ -57,6 +58,7 @@ void PointCloudRenderer::init()
     setNull(lastDispPoint);
     pickedCurve = -1;
     pickedCycle = -1;
+    pickedSavedCycle = -1;
     
 	isCtrlPress = false;
     isAltPress = false;
@@ -687,6 +689,7 @@ void PointCloudRenderer::renderTangentLines()
 
 void PointCloudRenderer::renderUnsavedCycles()
 {
+    if (patchesVisual != 0 && patchesVisual != 2) return;
     glColor3f(1.f , 0.f , 1.f);
     glLineWidth(3.f);
     glEnable(GL_LINE_STIPPLE);
@@ -694,6 +697,7 @@ void PointCloudRenderer::renderUnsavedCycles()
 
     for (int i = 0; i < unsavedCyclePoints.size(); i++)
     {
+        if (i == pickedCurve) continue;
         for (int j = 0; j < unsavedCyclePoints[i].size(); j++)
         {
             drawLines(unsavedCyclePoints[i][j]);
@@ -703,6 +707,7 @@ void PointCloudRenderer::renderUnsavedCycles()
 
 void PointCloudRenderer::renderPickedCycle()
 {
+    if (patchesVisual != 0 && patchesVisual != 2) return;
     if (pickedCycle == -1) return;
     
     glColor3f(0.f , 1.f , 0.f);
@@ -716,8 +721,25 @@ void PointCloudRenderer::renderPickedCycle()
     }
 }
 
+void PointCloudRenderer::renderPickedSavedCycle()
+{
+    if (patchesVisual != 0 && patchesVisual != 1) return;
+    if (pickedSavedCycle == -1) return;
+    
+    glColor3f(0.f , 1.f , 0.f);
+    glLineWidth(3.f);
+    glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+
+    for (int i = 0; i < dispCurveNet->cyclePoints[pickedSavedCycle].size(); i++)
+    {
+        drawLines(dispCurveNet->cyclePoints[pickedSavedCycle][i]);
+    }
+}
+
 void PointCloudRenderer::renderSavedCycles()
 {
+    if (patchesVisual != 0 && patchesVisual != 1) return;
     glColor3f(1.f , 0.f , 0.f);
     glLineWidth(3.f);
     glEnable(GL_LINE_STIPPLE);
@@ -725,6 +747,7 @@ void PointCloudRenderer::renderSavedCycles()
 
     for (int i = 0; i < dispCurveNet->cyclePoints.size(); i++)
     {
+        if (i == pickedSavedCycle) continue;
         for (int j = 0; j < dispCurveNet->cyclePoints[i].size(); j++)
         {
             drawLines(dispCurveNet->cyclePoints[i][j]);
@@ -734,6 +757,7 @@ void PointCloudRenderer::renderSavedCycles()
 
 void PointCloudRenderer::renderUnsavedMeshes()
 {
+    if (patchesVisual != 0 && patchesVisual != 2) return;
 	for (int patchID = 0; patchID < unsavedMeshes.size(); patchID++)
 	{
 		if (patchID == pickedCycle)
@@ -753,6 +777,7 @@ void PointCloudRenderer::renderUnsavedMeshes()
 
 void PointCloudRenderer::renderPickedMesh()
 {
+    if (patchesVisual != 0 && patchesVisual != 2) return;
     if (pickedCycle == -1) return;
 	/*
     glColor3f(0.f , 1.f , 0.f);
@@ -769,6 +794,7 @@ void PointCloudRenderer::renderPickedMesh()
 
 void PointCloudRenderer::renderSavedMeshes()
 {
+    if (patchesVisual != 0 && patchesVisual != 1) return;
     glColor3f(1.f , 0.f , 0.f);
     for (int patchID = 0; patchID < meshes.size(); patchID++)
 	{
@@ -806,6 +832,7 @@ void PointCloudRenderer::render()
 #else
     renderUnsavedCycles();
     renderPickedCycle();
+    renderPickedSavedCycle();
     renderSavedCycles();
 #endif
 }
@@ -918,7 +945,7 @@ int PointCloudRenderer::selectionByColorMap(int mouseX , int mouseY)
 	return selectedObj;
 }
 
-void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
+void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
 {
     int ni = -1;
     int selectedCurve = curveSelectionByRay(mouseX , mouseY , ni);
@@ -1015,7 +1042,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
         printf("pickedPos = (%.6f,%.6f,%.6f)\n" , pickedDispPoint.x ,
                 pickedDispPoint.y , pickedDispPoint.z);
         */
-        if (isStore)
+        if (op == 1)
 		{
 			int sti;
             bool newNode = true;
@@ -1053,10 +1080,14 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
                     newNode , bsp , pathForComp[0]);
 
+                printf("start optimization\n");
                 if (isAutoOpt)
                 {
+                    printf("opt init\n");
                     pcUtils->opt.init(dispCurveNet);
+                    printf("opt run\n");
                     pcUtils->opt.run(dispCurveNet);
+                    printf("after opt\n");
                     dispPos = dispCurveNet->polyLines[dispCurveNet->numPolyLines - 1][0];
                 }
                 // dispCurveNet->orthoSet.printLog();
@@ -1065,6 +1096,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , bool isStore)
                 // pcUtils->optimizeJunction(dispCurveNet , lastDisp);
 
                 // find cycle
+                printf("start cycle discovery\n");
                 cycleDisc();
             }
 
@@ -1111,14 +1143,14 @@ void PointCloudRenderer::optUpdate()
 
 void PointCloudRenderer::cycleDisc()
 {
-    std::vector<std::vector<vec3d> > inCurves;
-    std::vector<std::vector<unsigned> > inCycleConstraints;
+    // std::vector<std::vector<vec3d> > inCurves;
+    // std::vector<std::vector<unsigned> > inCycleConstraints;
     if (dispCurveNet->numPolyLines > 0)
     {
         unsavedCycles.clear();
         unsavedMeshes.clear();
         unsavedNormals.clear();
-
+        /*
         writeLog("====== inCycleConstraints %lu ======\n" , dispCurveNet->cycles.size());
         for (int i = 0; i < dispCurveNet->cycles.size(); i++)
         {
@@ -1144,8 +1176,9 @@ void PointCloudRenderer::cycleDisc()
             }
             writeLog("\n");
         }
-
+        */
         // output to screen
+        /*
         inCurves = dispCurveNet->polyLines;
         inCycleConstraints = dispCurveNet->cycles;
 
@@ -1174,10 +1207,13 @@ void PointCloudRenderer::cycleDisc()
             }
             printf("\n");
         }
-
         cycle::cycleDiscovery(inCurves , inCycleConstraints ,
             unsavedCycles , unsavedMeshes , unsavedNormals);
+        */
+        cycle::cycleDiscovery(dispCurveNet->polyLines , dispCurveNet->cycles ,
+            unsavedCycles , unsavedMeshes , unsavedNormals);
 
+        /*
         writeLog("!!!!!!!!!!! Output cycles !!!!!!!!!!\n");
         writeLog("%lu\n\n" , unsavedCycles.size());
         for (int i = 0; i < unsavedCycles.size(); i++)
@@ -1189,7 +1225,8 @@ void PointCloudRenderer::cycleDisc()
             }
             writeLog("\n");
         }
-
+        */
+        
         unsavedCyclePoints.clear();
         unsavedCycleCenters.clear();
         for (int i = 0; i < unsavedCycles.size(); i++)
@@ -1202,6 +1239,26 @@ void PointCloudRenderer::cycleDisc()
             unsavedCycleCenters.push_back(center);
         }
     }
+}
+
+void PointCloudRenderer::backup()
+{
+    pcUtils->timer.PushCurrentTime();
+    backupCurveNet.copyFrom(*dispCurveNet);
+    pcUtils->timer.PopAndDisplayTime("===== backup time: %.6fs =====\n");
+
+    //backupCurveNet.debugLog();
+}
+
+void PointCloudRenderer::undo()
+{
+    CurveNet tmp;
+    tmp.copyFrom(*dispCurveNet);
+    dispCurveNet->copyFrom(backupCurveNet);
+    backupCurveNet.copyFrom(tmp);
+
+    dispCurveNet->debugLog();
+    clearTemp();
 }
 
 std::vector<vec3d> getRay(int mouseX,int mouseY)
@@ -1274,20 +1331,45 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
     return res;
 }
 
-void PointCloudRenderer::pickCurve(int mouseX , int mouseY , bool isDelete)
+bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
 {
     int ni;
 	pickedCurve = curveSelectionByRay(mouseX , mouseY , ni);
-	if (pickedCurve != -1 && isDelete)
+	if (pickedCurve != -1)
     {
-        // curveNet->deletePath(pickedCurve);
-        dispCurveNet->deletePath(pickedCurve);
-        
-        //dispCurveNet->debugLog();
+        bool pickNode = (ni == 0 || ni == (int)dispCurveNet->polyLines[pickedCurve].size() - 1);
+        if (pickNode)
+        {
+            pickedDispPoint = dispCurveNet->polyLines[pickedCurve][ni];
+            pickedCurve = -1;
+            snapToNode = true;
+            snapToCurve = false;
+        }
+        else
+        {
+            setNull(pickedDispPoint);
+        }
+        if (op == 2)
+        {
+            if (!pickNode)
+            {
+                // curveNet->deletePath(pickedCurve);
+                dispCurveNet->deletePath(pickedCurve);
+                //dispCurveNet->debugLog();
+            }
+            else
+            {
+                int ni = dispCurveNet->getNodeIndex(pickedDispPoint);
+                dispCurveNet->deleteNode(ni);
+            }
+        }
+        return true;
     }
+    return false;
 }
 
-int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY)
+int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY ,
+    std::vector<vec3d>& cycleCenters)
 {
     std::vector<vec3d> rays = getRay(mouseX , mouseY);
     vec3d& rayStr = rays.front();
@@ -1298,9 +1380,9 @@ int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY)
 
     double p0p1LenSquared = (rayEnd - rayStr).dot(rayEnd - rayStr);
 
-	for (int i = 0; i < unsavedCycleCenters.size(); i++)
+	for (int i = 0; i < cycleCenters.size(); i++)
     {
-		vec3d p = unsavedCycleCenters[i];
+		vec3d p = cycleCenters[i];
         double paramU = (
             ((p[0]-rayStr[0])*(rayEnd[0]-rayStr[0])) +
             ((p[1]-rayStr[1])*(rayEnd[1]-rayStr[1])) +
@@ -1316,20 +1398,52 @@ int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY)
 	}
     
     // printf("%d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    if (minDistance > 0.5) res = -1;
     return res;
 }
 
-void PointCloudRenderer::pickCycle(int mouseX , int mouseY , bool isStore)
+void PointCloudRenderer::pickCycle(int mouseX , int mouseY , int op)
 {
-	pickedCycle = cycleSelectionByRay(mouseX , mouseY);
-	if (pickedCycle != -1 && isStore)
+	pickedCycle = cycleSelectionByRay(mouseX , mouseY , unsavedCycleCenters);
+	if (pickedCycle != -1)
     {
-        // curveNet->deletePath(pickedCurve);
-        dispCurveNet->addCycle(unsavedCycles[pickedCycle]);
+        if (op == 1)
+        {
+            dispCurveNet->addCycle(unsavedCycles[pickedCycle]);
 #ifdef _WIN32
-        meshes.push_back(unsavedMeshes[pickedCycle]);
-        meshNormals.push_back(unsavedNormals[pickedCycle]);
+            meshes.push_back(unsavedMeshes[pickedCycle]);
+            meshNormals.push_back(unsavedNormals[pickedCycle]);
 #endif
+        }
+        /*
+        printf("===== cycle size = %lu =====\n" , dispCurveNet->cycles.size());
+        for (int i = 0; i < dispCurveNet->cycles.size(); i++)
+        {
+            printf("cycle %d: " , i);
+            for (int j = 0; j < dispCurveNet->cycles[i].size(); j++)
+            {
+                printf("%d " , dispCurveNet->cycles[i][j]);
+            }
+            printf("\n");
+        }
+        */
+        //dispCurveNet->debugLog();
+    }
+}
+
+void PointCloudRenderer::pickSavedCycle(int mouseX , int mouseY , int op)
+{
+	pickedSavedCycle = cycleSelectionByRay(mouseX , mouseY , dispCurveNet->cycleCenters);
+	if (pickedSavedCycle != -1)
+    {
+        if (op == 2)
+        {
+            dispCurveNet->deleteCycle(pickedSavedCycle);
+#ifdef _WIN32
+            // meshes.push_back(unsavedMeshes[pickedCycle]);
+            // meshNormals.push_back(unsavedNormals[pickedCycle]);
+#endif
+        }
         /*
         printf("===== cycle size = %lu =====\n" , dispCurveNet->cycles.size());
         for (int i = 0; i < dispCurveNet->cycles.size(); i++)
@@ -1348,7 +1462,16 @@ void PointCloudRenderer::pickCycle(int mouseX , int mouseY , bool isStore)
 
 void PointCloudRenderer::clearPaths()
 {
-	pathVertex.clear();
+	clearTemp();
+    // curveNet->clear();
+    dispCurveNet->clear();
+    meshes.clear();
+    meshNormals.clear();
+}
+
+void PointCloudRenderer::clearTemp()
+{
+    pathVertex.clear();
     for (int i = 0; i < 3; i++)
         pathForComp[i].clear();
 	// pickedPoint = NULL;
@@ -1357,15 +1480,11 @@ void PointCloudRenderer::clearPaths()
     setNull(lastDispPoint);
     pickedCurve = -1;
     pickedCycle = -1;
-    // curveNet->clear();
-    dispCurveNet->clear();
     unsavedCycles.clear();
     unsavedCyclePoints.clear();
     unsavedCycleCenters.clear();
     unsavedMeshes.clear();
     unsavedNormals.clear();
-    meshes.clear();
-    meshNormals.clear();
 }
 
 void PointCloudRenderer::incBspCurveIndex()

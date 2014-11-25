@@ -392,6 +392,9 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
     if (event.ControlDown())
     {
+        m_pcUtils->pcRenderer->pickedCurve = -1;
+        m_pcUtils->pcRenderer->pickedCycle = -1;
+        m_pcUtils->pcRenderer->pickedSavedCycle = -1;
         lastKeyBoard=1;
 		m_pcUtils->pcRenderer->isCtrlPress = true;
 
@@ -400,11 +403,12 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 			isChangeView=false;
 		}
 
-		m_pcUtils->pcRenderer->pickPoint(x , y , false);
+		m_pcUtils->pcRenderer->pickPoint(x , y , 0);
 
 		if (event.LeftIsDown())
 		{
-			m_pcUtils->pcRenderer->pickPoint(x , y , true);
+            m_pcUtils->pcRenderer->backup();
+			m_pcUtils->pcRenderer->pickPoint(x , y , 1);
 		}
 		if (event.RightIsDown())
 		{
@@ -418,26 +422,46 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 	}
     else if (event.AltDown())
     {
+        m_pcUtils->pcRenderer->pickedCycle = -1;
         lastKeyBoard = 2;
         m_pcUtils->pcRenderer->isAltPress = true;
 
-		m_pcUtils->pcRenderer->pickCurve(x , y , false);
+        m_pcUtils->pcRenderer->pathVertex.clear();
+        m_pcUtils->pcRenderer->bsp.clear();
+        setNull(m_pcUtils->pcRenderer->lastDispPoint);
+        
+		bool curvePicked = m_pcUtils->pcRenderer->pickCurve(x , y , 0);
+        if (!curvePicked)
+        {
+            m_pcUtils->pcRenderer->pickSavedCycle(x , y , 0);
+        }
 		if (event.LeftIsDown())
 		{
-			m_pcUtils->pcRenderer->pickCurve(x , y , true);
+            m_pcUtils->pcRenderer->backup();
+            if (curvePicked)
+            {
+                m_pcUtils->pcRenderer->pickCurve(x , y , 2);
+            }
+			else
+            {
+                m_pcUtils->pcRenderer->pickSavedCycle(x , y , 2);
+            }
 		}
 
 		Render();
     }
     else if (event.ShiftDown())
     {
+        m_pcUtils->pcRenderer->pickedCurve = -1;
+        m_pcUtils->pcRenderer->pickedSavedCycle = -1;
         lastKeyBoard = 3;
         m_pcUtils->pcRenderer->isShiftPress = true;
 
-        m_pcUtils->pcRenderer->pickCycle(x , y , false);
+        m_pcUtils->pcRenderer->pickCycle(x , y , 0);
         if (event.LeftIsDown())
         {
-            m_pcUtils->pcRenderer->pickCycle(x , y , true);
+            m_pcUtils->pcRenderer->backup();
+            m_pcUtils->pcRenderer->pickCycle(x , y , 1);
             m_pcUtils->pcRenderer->pickedCycle = -1;
         }
 		if (event.RightIsDown())
@@ -458,7 +482,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     if (!event.ShiftDown())
     {
         m_pcUtils->pcRenderer->isShiftPress = false;
-		m_pcUtils->pcRenderer->pickedCycle = -1;
     }
 
 	if(!event.ControlDown()) {startDraw=false;}

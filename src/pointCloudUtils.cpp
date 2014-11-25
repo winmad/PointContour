@@ -42,7 +42,7 @@ PointCloudUtils::PointCloudUtils()
     engEvalString(ep , "addpath ~/Projects/PointContour/matlab/");
 #endif
 
-    cycle::cycleTest();
+    // cycle::cycleTest();
     /*
     if (!mclInitializeApplication(NULL,0))
     {
@@ -1267,7 +1267,7 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
         p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5;
         mid = p - oldPath[i];
         double len = mid.length();
-        //grad /= grad.length();
+        grad /= grad.length();
         vec3d d = -grad;
         double alpha = lineSearch(d , oldPath[i - 1] , ts[i - 1] ,
             oldPath[i] , ts[i] , oldPath[i + 1] , ts[i + 1]);

@@ -81,6 +81,13 @@ class PointContourGUIFrame: public wxFrame
         void OnAutoOptClick(wxCommandEvent& event);
         void OnOpenCurveNetworkSelected(wxCommandEvent& event);
         void OnSaveCurveNetworkSelected(wxCommandEvent& event);
+        void OnNumStartPointsTextEnter(wxCommandEvent& event);
+        void OnMaxTimeTextEnter(wxCommandEvent& event);
+        void OnLargeBoundTextEnter(wxCommandEvent& event);
+        void OnSmallBoundTextEnter(wxCommandEvent& event);
+        void OnPatchesVisualSelect(wxCommandEvent& event);
+        void OnUndoSelected(wxCommandEvent& event);
+        void OnRedoSelected(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -96,15 +103,11 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_SLIDER2;
         static const long ID_CHECKBOX4;
         static const long ID_SLIDER3;
-        static const long ID_STATICTEXT12;
-        static const long ID_TEXTCTRL12;
-        static const long ID_STATICTEXT13;
-        static const long ID_TEXTCTRL13;
-        static const long ID_CHOICE1;
         static const long ID_CHECKBOX5;
         static const long ID_CHECKBOX6;
         static const long ID_CHOICE3;
         static const long ID_CHECKBOX7;
+        static const long ID_CHOICE4;
         static const long ID_STATICTEXT7;
         static const long ID_TEXTCTRL7;
         static const long ID_STATICTEXT8;
@@ -131,6 +134,19 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_TEXTCTRL10;
         static const long ID_CHOICE2;
         static const long ID_BUTTON1;
+        static const long ID_STATICTEXT12;
+        static const long ID_TEXTCTRL12;
+        static const long ID_STATICTEXT13;
+        static const long ID_TEXTCTRL13;
+        static const long ID_CHOICE1;
+        static const long ID_STATICTEXT14;
+        static const long ID_TEXTCTRL14;
+        static const long ID_STATICTEXT15;
+        static const long ID_TEXTCTRL15;
+        static const long ID_STATICTEXT16;
+        static const long ID_TEXTCTRL16;
+        static const long ID_STATICTEXT17;
+        static const long ID_TEXTCTRL17;
         static const long ID_SCROLLEDWINDOW3;
         static const long ID_NOTEBOOK1;
         static const long ID_SCROLLEDWINDOW1;
@@ -140,6 +156,8 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_MENUITEM1;
         static const long ID_MENUITEM3;
         static const long idMenuQuit;
+        static const long ID_MENUITEM5;
+        static const long ID_MENUITEM6;
         static const long idMenuAbout;
         static const long ID_STATUSBAR1;
         //*)
@@ -150,6 +168,7 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText9;
         wxTextCtrl* FilterRadius;
         wxCheckBox* ShowMetric;
+        wxTextCtrl* MaxTime;
         wxChoice* SmoothingChoice;
         wxCheckBox* ShowHessian;
         wxCheckBox* HidePointCloud;
@@ -157,9 +176,11 @@ class PointContourGUIFrame: public wxFrame
         wxNotebook* Notebook1;
         wxStaticText* StaticText13;
         wxStaticText* StaticText2;
+        wxStaticText* StaticText14;
         wxScrolledWindow* ScrolledWindow3;
         wxScrolledWindow* ScrolledWindow1;
         wxTextCtrl* Alpha2;
+        wxMenu* Menu3;
         wxCheckBox* AutoOpt;
         wxStaticText* StaticText6;
         wxMenu* MenuItem3;
@@ -168,13 +189,16 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText8;
         wxStaticText* StaticText11;
         wxTextCtrl* ExtNum;
+        wxChoice* PatchesVisual;
         wxTextCtrl* SmoothIter;
         wxButton* PrintInfoButton;
+        wxTextCtrl* NumStartPoints;
         wxStaticText* StaticText1;
         wxSlider* HessianLength;
         wxStaticText* StaticText3;
         wxTextCtrl* AlphaN;
         wxMenuItem* OpenCurveNetwork;
+        wxMenuItem* Redo;
         wxTextCtrl* Alpha1;
         wxTextCtrl* PosX;
         wxTextCtrl* PosZ;
@@ -185,16 +209,22 @@ class PointContourGUIFrame: public wxFrame
         wxStatusBar* StatusBar1;
         wxScrolledWindow* ScrolledWindow2;
         wxCheckBox* ShowCtrlPoints;
+        wxStaticText* StaticText15;
         wxStaticText* StaticText12;
         wxChoice* MetricChoice;
         wxTextCtrl* GridResY;
         wxChoice* ConstraintsVisual;
+        wxTextCtrl* LargeBound;
         wxTextCtrl* GridResX;
+        wxTextCtrl* SmallBound;
         wxSplitterWindow* SplitterWindow1;
+        wxStaticText* StaticText17;
         wxStaticText* StaticText4;
         SketchGLCanvas* m_openGLView;
+        wxMenuItem* Undo;
         wxTextCtrl* PosY;
         wxSlider* DiscRadius;
+        wxStaticText* StaticText16;
         wxCheckBox* UseBSpline;
         wxMenuItem* OpenPointCloud;
         //*)

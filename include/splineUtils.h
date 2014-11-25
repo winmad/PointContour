@@ -16,6 +16,56 @@ public:
         coefs = NULL;
     }
 
+    ~BSpline()
+    {
+        clear();
+    }
+
+    BSpline(const BSpline& bsp)
+    {
+        /* printf("before copy construct\n"); */
+        if (coefs != NULL)
+        {
+            coefs = NULL;
+        }
+        K = bsp.K;
+        N = bsp.N;
+        knots = bsp.knots;
+        ctrlNodes = bsp.ctrlNodes;
+        if (bsp.coefs != NULL)
+        {
+            newCoefs();
+            for (int i = 0; i < N; i++)
+            {
+                for (int j = 0; j < K; j++) coefs[i][j] = bsp.coefs[i][j];
+            }
+        }
+        /* printf("after copy construct\n"); */
+    }
+
+    BSpline& operator=(const BSpline& bsp)
+    {
+        /* printf("before operator =\n"); */
+        if (this != &bsp)
+        {
+            this->clear();
+            K = bsp.K;
+            N = bsp.N;
+            knots = bsp.knots;
+            ctrlNodes = bsp.ctrlNodes;
+            if (bsp.coefs != NULL)
+            {
+                newCoefs();
+                for (int i = 0; i < N; i++)
+                {
+                    for (int j = 0; j < K; j++) coefs[i][j] = bsp.coefs[i][j];
+                }
+            }
+        }
+        /* printf("after operator =\n"); */
+        return *this;
+    }
+
     void clear()
     {
         if (coefs != NULL)

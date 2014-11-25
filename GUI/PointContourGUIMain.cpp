@@ -71,15 +71,11 @@ const long PointContourGUIFrame::ID_CHECKBOX3 = wxNewId();
 const long PointContourGUIFrame::ID_SLIDER2 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX4 = wxNewId();
 const long PointContourGUIFrame::ID_SLIDER3 = wxNewId();
-const long PointContourGUIFrame::ID_STATICTEXT12 = wxNewId();
-const long PointContourGUIFrame::ID_TEXTCTRL12 = wxNewId();
-const long PointContourGUIFrame::ID_STATICTEXT13 = wxNewId();
-const long PointContourGUIFrame::ID_TEXTCTRL13 = wxNewId();
-const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX5 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX6 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE3 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX7 = wxNewId();
+const long PointContourGUIFrame::ID_CHOICE4 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -106,6 +102,19 @@ const long PointContourGUIFrame::ID_STATICTEXT10 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL10 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE2 = wxNewId();
 const long PointContourGUIFrame::ID_BUTTON1 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT12 = wxNewId();
+const long PointContourGUIFrame::ID_TEXTCTRL12 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT13 = wxNewId();
+const long PointContourGUIFrame::ID_TEXTCTRL13 = wxNewId();
+const long PointContourGUIFrame::ID_CHOICE1 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT14 = wxNewId();
+const long PointContourGUIFrame::ID_TEXTCTRL14 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT15 = wxNewId();
+const long PointContourGUIFrame::ID_TEXTCTRL15 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT16 = wxNewId();
+const long PointContourGUIFrame::ID_TEXTCTRL16 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT17 = wxNewId();
+const long PointContourGUIFrame::ID_TEXTCTRL17 = wxNewId();
 const long PointContourGUIFrame::ID_SCROLLEDWINDOW3 = wxNewId();
 const long PointContourGUIFrame::ID_NOTEBOOK1 = wxNewId();
 const long PointContourGUIFrame::ID_SCROLLEDWINDOW1 = wxNewId();
@@ -115,6 +124,8 @@ const long PointContourGUIFrame::ID_MENUITEM4 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM1 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM3 = wxNewId();
 const long PointContourGUIFrame::idMenuQuit = wxNewId();
+const long PointContourGUIFrame::ID_MENUITEM5 = wxNewId();
+const long PointContourGUIFrame::ID_MENUITEM6 = wxNewId();
 const long PointContourGUIFrame::idMenuAbout = wxNewId();
 const long PointContourGUIFrame::ID_STATUSBAR1 = wxNewId();
 //*)
@@ -139,8 +150,11 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer2;
     wxMenu* Menu1;
     wxFlexGridSizer* FlexGridSizer7;
+    wxStaticBoxSizer* StaticBoxSizer7;
     wxStaticBoxSizer* StaticBoxSizer3;
+    wxStaticBoxSizer* StaticBoxSizer6;
     wxFlexGridSizer* FlexGridSizer8;
+    wxFlexGridSizer* FlexGridSizer13;
     wxFlexGridSizer* FlexGridSizer12;
     wxMenuBar* MenuBar1;
     wxFlexGridSizer* FlexGridSizer6;
@@ -193,21 +207,6 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer2->Add(ShowMetric, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     MetricLength = new wxSlider(ScrolledWindow2, ID_SLIDER3, 50, 0, 100, wxDefaultPosition, wxSize(150,20), 0, wxDefaultValidator, _T("ID_SLIDER3"));
     FlexGridSizer2->Add(MetricLength, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer11 = new wxFlexGridSizer(0, 2, 0, 0);
-    StaticText12 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT12, _("lambda"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
-    FlexGridSizer11->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    SmoothScale = new wxTextCtrl(ScrolledWindow2, ID_TEXTCTRL12, _("0.1"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL12"));
-    FlexGridSizer11->Add(SmoothScale, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText13 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT13, _("Iters"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
-    FlexGridSizer11->Add(StaticText13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    SmoothIter = new wxTextCtrl(ScrolledWindow2, ID_TEXTCTRL13, _("20"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL13"));
-    FlexGridSizer11->Add(SmoothIter, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer2->Add(FlexGridSizer11, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    SmoothingChoice = new wxChoice(ScrolledWindow2, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
-    SmoothingChoice->Append(_("None"));
-    SmoothingChoice->Append(_("Laplacian"));
-    SmoothingChoice->SetSelection( SmoothingChoice->Append(_("Gradient descent")) );
-    FlexGridSizer2->Add(SmoothingChoice, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     UseBSpline = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX5, _("use B-Spline"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX5"));
     UseBSpline->SetValue(true);
     FlexGridSizer2->Add(UseBSpline, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -225,6 +224,12 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     AutoOpt = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX7, _("Auto Optimization"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX7"));
     AutoOpt->SetValue(true);
     FlexGridSizer2->Add(AutoOpt, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    PatchesVisual = new wxChoice(ScrolledWindow2, ID_CHOICE4, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE4"));
+    PatchesVisual->SetSelection( PatchesVisual->Append(_("all patches")) );
+    PatchesVisual->Append(_("stored patches"));
+    PatchesVisual->Append(_("temp patches"));
+    PatchesVisual->Append(_("none"));
+    FlexGridSizer2->Add(PatchesVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -303,6 +308,43 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer3->Add(FlexGridSizer12, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     UpdateParametersButton = new wxButton(ScrolledWindow3, ID_BUTTON1, _("Update"), wxDefaultPosition, wxSize(100,40), 0, wxDefaultValidator, _T("ID_BUTTON1"));
     FlexGridSizer3->Add(UpdateParametersButton, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer6 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow3, _("Local smooth"));
+    FlexGridSizer11 = new wxFlexGridSizer(0, 2, 0, 0);
+    StaticText12 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT12, _("lambda"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
+    FlexGridSizer11->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    SmoothScale = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL12, _("0.1"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL12"));
+    FlexGridSizer11->Add(SmoothScale, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText13 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT13, _("Iters"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
+    FlexGridSizer11->Add(StaticText13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    SmoothIter = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL13, _("20"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL13"));
+    FlexGridSizer11->Add(SmoothIter, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer6->Add(FlexGridSizer11, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer3->Add(StaticBoxSizer6, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    SmoothingChoice = new wxChoice(ScrolledWindow3, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
+    SmoothingChoice->Append(_("None"));
+    SmoothingChoice->Append(_("Laplacian"));
+    SmoothingChoice->SetSelection( SmoothingChoice->Append(_("Gradient descent")) );
+    FlexGridSizer3->Add(SmoothingChoice, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer7 = new wxStaticBoxSizer(wxHORIZONTAL, ScrolledWindow3, _("Optimization"));
+    FlexGridSizer13 = new wxFlexGridSizer(0, 2, 0, 0);
+    StaticText14 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT14, _("#start points"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
+    FlexGridSizer13->Add(StaticText14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    NumStartPoints = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL14, _("6"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL14"));
+    FlexGridSizer13->Add(NumStartPoints, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText15 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT15, _("max time"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
+    FlexGridSizer13->Add(StaticText15, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    MaxTime = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL15, _("0.2"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL15"));
+    FlexGridSizer13->Add(MaxTime, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText16 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT16, _("large bound"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT16"));
+    FlexGridSizer13->Add(StaticText16, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    LargeBound = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL16, _("0.003"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL16"));
+    FlexGridSizer13->Add(LargeBound, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText17 = new wxStaticText(ScrolledWindow3, ID_STATICTEXT17, _("small bound"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT17"));
+    FlexGridSizer13->Add(StaticText17, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    SmallBound = new wxTextCtrl(ScrolledWindow3, ID_TEXTCTRL17, _("0.001"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL17"));
+    FlexGridSizer13->Add(SmallBound, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer7->Add(FlexGridSizer13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer3->Add(StaticBoxSizer7, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer2->Add(FlexGridSizer3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer10->Add(StaticBoxSizer2, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     ScrolledWindow3->SetSizer(FlexGridSizer10);
@@ -329,6 +371,12 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);
     Menu1->Append(MenuItem1);
     MenuBar1->Append(Menu1, _("&File"));
+    Menu3 = new wxMenu();
+    Undo = new wxMenuItem(Menu3, ID_MENUITEM5, _("Undo\tCtrl-Z"), wxEmptyString, wxITEM_NORMAL);
+    Menu3->Append(Undo);
+    Redo = new wxMenuItem(Menu3, ID_MENUITEM6, _("Redo\tCtrl-R"), wxEmptyString, wxITEM_NORMAL);
+    Menu3->Append(Redo);
+    MenuBar1->Append(Menu3, _("Edit"));
     Menu2 = new wxMenu();
     MenuItem2 = new wxMenuItem(Menu2, idMenuAbout, _("About\tF1"), _("Show info about this application"), wxITEM_NORMAL);
     Menu2->Append(MenuItem2);
@@ -350,13 +398,11 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_SLIDER2,wxEVT_SCROLL_THUMBTRACK,(wxObjectEventFunction)&PointContourGUIFrame::OnHessianLengthCmdScrollThumbTrack);
     Connect(ID_CHECKBOX4,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowMetricClick);
     Connect(ID_SLIDER3,wxEVT_SCROLL_THUMBTRACK,(wxObjectEventFunction)&PointContourGUIFrame::OnMetricLengthCmdScrollThumbTrack);
-    Connect(ID_TEXTCTRL12,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothScaleTextEnter);
-    Connect(ID_TEXTCTRL13,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothIterTextEnter);
-    Connect(ID_CHOICE1,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothingChoiceSelect);
     Connect(ID_CHECKBOX5,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUseBSplineClick);
     Connect(ID_CHECKBOX6,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowCtrlPointsClick);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnConstraintsVisualSelect);
     Connect(ID_CHECKBOX7,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnAutoOptClick);
+    Connect(ID_CHOICE4,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnPatchesVisualSelect);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -371,10 +417,19 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL10,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnAlphaNText);
     Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnMetricChoiceSelect);
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnUpdateParametersButtonClick);
+    Connect(ID_TEXTCTRL12,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothScaleTextEnter);
+    Connect(ID_TEXTCTRL13,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothIterTextEnter);
+    Connect(ID_CHOICE1,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSmoothingChoiceSelect);
+    Connect(ID_TEXTCTRL14,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnNumStartPointsTextEnter);
+    Connect(ID_TEXTCTRL15,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnMaxTimeTextEnter);
+    Connect(ID_TEXTCTRL16,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnLargeBoundTextEnter);
+    Connect(ID_TEXTCTRL17,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&PointContourGUIFrame::OnSmallBoundTextEnter);
     Connect(ID_MENUITEM2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenPointCloudSelected);
     Connect(ID_MENUITEM4,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenCurveNetworkSelected);
     Connect(ID_MENUITEM3,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSaveCurveNetworkSelected);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnQuit);
+    Connect(ID_MENUITEM5,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnUndoSelected);
+    Connect(ID_MENUITEM6,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnRedoSelected);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnAbout);
     Connect(wxEVT_KEY_DOWN,(wxObjectEventFunction)&PointContourGUIFrame::OnKeyDown);
     Connect(wxEVT_MOUSEWHEEL,(wxObjectEventFunction)&PointContourGUIFrame::OnMouseWheel);
@@ -475,6 +530,11 @@ void PointContourGUIFrame::constructPointCloud(const char* fileName , const char
     m_pcUtils->pcRenderer->pathChoice = SmoothingChoice->GetSelection();
     m_pcUtils->pcRenderer->smoothScale = getDouble(SmoothScale->GetValue());
     m_pcUtils->pcRenderer->smoothIter = getInt(SmoothIter->GetValue());
+
+    m_pcUtils->opt.numStartPoints = getInt(NumStartPoints->GetValue());
+    m_pcUtils->opt.maxRealTime = getDouble(MaxTime->GetValue());
+    m_pcUtils->opt.largeBound = getDouble(LargeBound->GetValue());
+    m_pcUtils->opt.smallBound = getDouble(SmallBound->GetValue());
 
 	StatusBar1->SetStatusText("Finish Loading");
 
@@ -733,6 +793,17 @@ void PointContourGUIFrame::OnLeftDClick(wxMouseEvent& event)
 
 void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
 {
+    if (m_pcUtils->pcRenderer->isShiftPress)
+    {
+        if (event.GetWheelRotation() > 0)
+        {
+            m_pcUtils->pcRenderer->patchesVisual = (m_pcUtils->pcRenderer->patchesVisual + 1) % 4;
+        }
+        else
+        {
+            m_pcUtils->pcRenderer->patchesVisual = (m_pcUtils->pcRenderer->patchesVisual + 3) % 4;
+        }
+    }
     m_openGLView->Render();
     m_openGLView->OnMouse(event);
 }
@@ -744,8 +815,8 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 		case WXK_ESCAPE:
 			exit(0);
         case WXK_SPACE:
-            m_pcUtils->pcRenderer->optUpdate();
-            //m_pcUtils->pcRenderer->dispCurveNet->outputPolyLines();
+            // m_pcUtils->pcRenderer->optUpdate();
+            m_pcUtils->pcRenderer->dispCurveNet->debugLog();
             break;
         case WXK_UP:
             m_pcUtils->pcRenderer->incBspCurveIndex();
@@ -794,8 +865,8 @@ void PointContourGUIFrame::OnSmoothScaleTextEnter(wxCommandEvent& event)
     if (!m_pcUtils->initialized) return;
     m_pcUtils->pcRenderer->smoothScale = getDouble(SmoothScale->GetValue());
     m_pcUtils->pcRenderer->smoothIter = getInt(SmoothIter->GetValue());
-    //printf("iter = %d, lambda = %.6f\n" , m_pcUtils->pcRenderer->smoothIter ,
-    //       m_pcUtils->pcRenderer->smoothScale);
+    printf("iter = %d, lambda = %.6f\n" , m_pcUtils->pcRenderer->smoothIter ,
+          m_pcUtils->pcRenderer->smoothScale);
     m_pcUtils->pcRenderer->pathForComp[1] = m_pcUtils->pcRenderer->pathForComp[0];
     m_pcUtils->pcRenderer->pathForComp[2] = m_pcUtils->pcRenderer->pathForComp[0];
     for (int i = 0; i < m_pcUtils->pcRenderer->smoothIter; i++)
@@ -881,4 +952,42 @@ void PointContourGUIFrame::OnOpenCurveNetworkSelected(wxCommandEvent& event)
 
 void PointContourGUIFrame::OnSaveCurveNetworkSelected(wxCommandEvent& event)
 {
+}
+
+void PointContourGUIFrame::OnNumStartPointsTextEnter(wxCommandEvent& event)
+{
+    m_pcUtils->opt.numStartPoints = getInt(NumStartPoints->GetValue());
+}
+
+void PointContourGUIFrame::OnMaxTimeTextEnter(wxCommandEvent& event)
+{
+    m_pcUtils->opt.maxRealTime = getDouble(MaxTime->GetValue());
+}
+
+void PointContourGUIFrame::OnLargeBoundTextEnter(wxCommandEvent& event)
+{
+    m_pcUtils->opt.largeBound = getDouble(LargeBound->GetValue());
+}
+
+void PointContourGUIFrame::OnSmallBoundTextEnter(wxCommandEvent& event)
+{
+    m_pcUtils->opt.smallBound = getDouble(SmallBound->GetValue());
+}
+
+void PointContourGUIFrame::OnPatchesVisualSelect(wxCommandEvent& event)
+{
+    m_pcUtils->pcRenderer->patchesVisual = event.GetSelection();
+    m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnUndoSelected(wxCommandEvent& event)
+{
+    m_pcUtils->pcRenderer->undo();
+    m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnRedoSelected(wxCommandEvent& event)
+{
+    m_pcUtils->pcRenderer->undo();
+    m_openGLView->Render();
 }
