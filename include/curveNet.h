@@ -93,6 +93,9 @@ public:
     std::vector<vec3d> cycleCenters;
     std::vector<std::vector<Path> > cyclePoints;
 
+	std::vector<std::vector<std::vector<vec3d> > > meshes;
+	std::vector<std::vector<std::vector<vec3d> > > meshNormals;
+
     // 1: line, 2: nothing, 3: coplanar
     std::vector<int> curveType;
 

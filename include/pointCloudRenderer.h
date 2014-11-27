@@ -94,6 +94,7 @@ public:
     void renderSavedCycles();
 	void renderUnsavedMeshes();
     void renderPickedMesh();
+    void renderPickedSavedMesh();
     void renderSavedMeshes();
 
     void render();
@@ -152,8 +153,8 @@ public:
 
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
-    std::vector<std::vector<std::vector<cycle::Point> > > meshes;
-    std::vector<std::vector<std::vector<cycle::Point> > > meshNormals;
+	/* std::vector<std::vector<std::vector<cycle::Point> > > meshes; */
+	/* std::vector<std::vector<std::vector<cycle::Point> > > meshNormals; */
     
     std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;

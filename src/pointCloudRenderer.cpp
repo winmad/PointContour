@@ -690,6 +690,7 @@ void PointCloudRenderer::renderTangentLines()
 void PointCloudRenderer::renderUnsavedCycles()
 {
     if (patchesVisual != 0 && patchesVisual != 2) return;
+    if (!isShiftPress) return;
     glColor3f(1.f , 0.f , 1.f);
     glLineWidth(3.f);
     glEnable(GL_LINE_STIPPLE);
@@ -779,28 +780,47 @@ void PointCloudRenderer::renderPickedMesh()
 {
     if (patchesVisual != 0 && patchesVisual != 2) return;
     if (pickedCycle == -1) return;
-	/*
+	int patchID = pickedCycle;
     glColor3f(0.f , 1.f , 0.f);
-    int patchID = pickedCycle;
     const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
     const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
     if(false)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     drawPatch(triangleCycle , triangleCycleNormal);
-	*/
+}
+
+void PointCloudRenderer::renderPickedSavedMesh()
+{
+    if (patchesVisual != 0 && patchesVisual != 1) return;
+    if (pickedSavedCycle == -1) return;
+    int patchID = pickedSavedCycle;
+    glColor3f(0.f , 1.f , 0.f);
+    const cycle::TriangleCycle &triangleCycle = dispCurveNet->meshes[patchID];
+    const cycle::TriangleCycle &triangleCycleNormal = dispCurveNet->meshNormals[patchID];
+    if(false)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    drawPatch(triangleCycle , triangleCycleNormal);
 }
 
 void PointCloudRenderer::renderSavedMeshes()
 {
     if (patchesVisual != 0 && patchesVisual != 1) return;
-    glColor3f(1.f , 0.f , 0.f);
-    for (int patchID = 0; patchID < meshes.size(); patchID++)
+    for (int patchID = 0; patchID < dispCurveNet->meshes.size(); patchID++)
 	{
-		const cycle::TriangleCycle &triangleCycle = meshes[patchID];
-		const cycle::TriangleCycle &triangleCycleNormal = meshNormals[patchID];
-		if(true)
+        if (patchID == pickedSavedCycle)
+			glColor3f(0.f , 1.f , 0.f);
+		else
+			glColor3f(1.f , 0.f , 0.f);
+
+        const cycle::TriangleCycle &triangleCycle = dispCurveNet->meshes[patchID];
+		const cycle::TriangleCycle &triangleCycleNormal = dispCurveNet->meshNormals[patchID];
+		if(false)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -826,8 +846,10 @@ void PointCloudRenderer::render()
     renderOrthogonalLines();
     renderTangentLines();
 #ifdef _WIN32
-    renderUnsavedMeshes();
+    //renderUnsavedMeshes();
+    renderUnsavedCycles();
     renderPickedMesh();
+    renderPickedSavedMesh();
     renderSavedMeshes();
 #else
     renderUnsavedCycles();
@@ -1411,8 +1433,8 @@ void PointCloudRenderer::pickCycle(int mouseX , int mouseY , int op)
         {
             dispCurveNet->addCycle(unsavedCycles[pickedCycle]);
 #ifdef _WIN32
-            meshes.push_back(unsavedMeshes[pickedCycle]);
-            meshNormals.push_back(unsavedNormals[pickedCycle]);
+            dispCurveNet->meshes.push_back(unsavedMeshes[pickedCycle]);
+            dispCurveNet->meshNormals.push_back(unsavedNormals[pickedCycle]);
 #endif
         }
         /*
@@ -1439,10 +1461,6 @@ void PointCloudRenderer::pickSavedCycle(int mouseX , int mouseY , int op)
         if (op == 2)
         {
             dispCurveNet->deleteCycle(pickedSavedCycle);
-#ifdef _WIN32
-            // meshes.push_back(unsavedMeshes[pickedCycle]);
-            // meshNormals.push_back(unsavedNormals[pickedCycle]);
-#endif
         }
         /*
         printf("===== cycle size = %lu =====\n" , dispCurveNet->cycles.size());
@@ -1465,8 +1483,6 @@ void PointCloudRenderer::clearPaths()
 	clearTemp();
     // curveNet->clear();
     dispCurveNet->clear();
-    meshes.clear();
-    meshNormals.clear();
 }
 
 void PointCloudRenderer::clearTemp()

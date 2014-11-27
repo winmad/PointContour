@@ -1638,7 +1638,7 @@ class tetgenmesh {
 ///////////////////////////////////////////////////////////////////////////////
 
   // PI is the ratio of a circle's circumference to its diameter.
-  static REAL PI;
+  //static REAL PI;
 
   // Triangle-triangle intersection test
   enum interresult edge_vert_col_inter(REAL*, REAL*, REAL*);

@@ -1,0 +1,5 @@
+PointContour: 1000 650
+SplitterWindow1: 1000 630, Sash position 700, min pane size 200 
+Canvas: 650 630
+ScorolledWindow1: 250 630, X = 750
+Notebook1: 250 630, X = 750, Y = 20

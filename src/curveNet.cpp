@@ -32,6 +32,9 @@ void CurveNet::clear()
 
     cycles.clear();
     cyclePoints.clear();
+    cycleCenters.clear();
+    meshes.clear();
+    meshNormals.clear();
 }
 
 void CurveNet::copyFrom(const CurveNet& net)
@@ -48,6 +51,8 @@ void CurveNet::copyFrom(const CurveNet& net)
     cycles = net.cycles;
     cycleCenters = net.cycleCenters;
     cyclePoints = net.cyclePoints;
+    meshes = net.meshes;
+    meshNormals = net.meshNormals;
     curveType = net.curveType;
     collinearThr = net.collinearThr;
     coplanarThr = net.coplanarThr;
@@ -277,6 +282,11 @@ void CurveNet::deleteCycle(const int& deleteCycleIndex)
     cycles.erase(cycles.begin() + deleteCycleIndex);
     cyclePoints.erase(cyclePoints.begin() + deleteCycleIndex);
     cycleCenters.erase(cycleCenters.begin() + deleteCycleIndex);
+
+#ifdef _WIN32
+    meshes.erase(meshes.begin() + deleteCycleIndex);
+    meshNormals.erase(meshNormals.begin() + deleteCycleIndex);
+#endif
 }
 
 int CurveNet::getNodeIndex(const vec3d& pos)

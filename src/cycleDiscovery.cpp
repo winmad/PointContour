@@ -71,6 +71,7 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 		}
 	}
 
+    std::vector<int> deleteSeq;
     for (int i = 0; i < inCycleConstraint.size(); i++)
     {
         for (int j = 0; j < outCycles.size(); j++)
@@ -78,6 +79,7 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
             if (isSameCycle(inCycleConstraint[i] , outCycles[j]))
             {
                 outCycles.erase(outCycles.begin() + j);
+                deleteSeq.push_back(j);
                 break;
             }
         }
@@ -86,6 +88,12 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 #ifdef _WIN32
 	outMeshes.swap(m_cycleUtil->m_triangleSurface);
 	outNormals.swap(m_cycleUtil->m_triangleSurfaceNormal);
+    for (int i = 0; i < deleteSeq.size(); i++)
+    {
+        int j = deleteSeq[i];
+        outMeshes.erase(outMeshes.begin() + j);
+        outNormals.erase(outNormals.begin() + j);
+    }
 #endif
 
     delete m_cycleUtil;
