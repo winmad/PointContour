@@ -36,7 +36,7 @@ double point2double(const vec3d& p)
 	double res = 0;
 	for (int i = 0; i < 3; i++) 
 	{
-		res += ((double)p[i] * 50.0 + 500.0) * pow2[i];
+		res += ((double)p[i] * 49.9 + 50.0) * pow2[i];
 	}
 	return res;
 }
@@ -59,6 +59,16 @@ bool isValid(const vec3d& pos)
 void setNull(vec3d& pos)
 {
     pos.x = -1e10;
+}
+
+bool isSameCycle(std::vector<unsigned>& c1 , std::vector<unsigned>& c2)
+{
+    if (c1.size() != c2.size()) return false;
+    for (int i = 0; i < c1.size(); i++)
+    {
+        if (c1[i] != c2[i]) return false;
+    }
+    return true;
 }
 
 void writeBMP(const char* filename , int w , int h ,

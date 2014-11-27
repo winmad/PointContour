@@ -9,8 +9,10 @@ Optimization::Optimization()
 {
     net = NULL;
 
+    /*
     largeBound = 0.003;
     smallBound = 0.001;
+    */
 }
 
 void Optimization::init(CurveNet *_net)
@@ -33,6 +35,7 @@ void Optimization::init(CurveNet *_net)
 	coplanes.clear();
 	coplanarPoints.clear();
 
+    printf("adding variables...\n");
     for (int i = 0; i < net->numNodes; i++)
     {
         if (!net->nodesStat[i]) continue;
@@ -40,6 +43,7 @@ void Optimization::init(CurveNet *_net)
     }
     for (int i = 0; i < net->numPolyLines; i++)
     {
+        if (net->curveType[i] == -1) continue;
         if (net->bsplines[i].ctrlNodes.size() <= 2) continue;
         for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; j++)
         {
@@ -47,7 +51,17 @@ void Optimization::init(CurveNet *_net)
         }
     }
 
+    /*
+    // print vars
+    writeLog("===== vars =====\n");
+    for (int i = 0; i < numVars; i++)
+    {
+        writeLog("var %d: (%d , %d , %d)\n" , i , vars[i].type , vars[i].ni , vars[i].ci);
+    }
+    */
+    
 	//find var index for lines
+    printf("finding var index for lines...\n");
 	for (int i = 0; i < numVars; ++ i) lastDraw.push_back(false);
 	for (int i = 0; i < net->numPolyLines; ++ i)
 	{
@@ -88,6 +102,7 @@ void Optimization::init(CurveNet *_net)
 	}
 
 	//constraint
+    printf("collinear and parallel constraints...\n");
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] != 1) continue;
@@ -97,6 +112,18 @@ void Optimization::init(CurveNet *_net)
 
         // collinear
         std::pair<int , int> root = net->collinearSet.find(i , 0);
+        if (net->curveType[root.first] == -1)
+        {
+            std::pair<int , int> tmp;
+            int j;
+            for (j = 0; j < net->numPolyLines; j++)
+            {
+                if (net->curveType[j] != 1 || j == i) continue;
+                tmp = net->collinearSet.find(j , 0);
+                if (tmp.first == root.first) break;
+            }
+            root.first = j;
+        }
         if (root.first != i)
         {
             u = net->polyLinesIndex[i];
@@ -109,6 +136,18 @@ void Optimization::init(CurveNet *_net)
         }
         // parallel
         root = net->parallelSet.find(i , 0);
+        if (net->curveType[root.first] == -1)
+        {
+            std::pair<int , int> tmp;
+            int j;
+            for (j = 0; j < net->numPolyLines; j++)
+            {
+                if (net->curveType[j] != 1 || j == i) continue;
+                tmp = net->parallelSet.find(j , 0);
+                if (tmp.first == root.first) break;
+            }
+            root.first = j;
+        }
         if (root.first != i)
         {
             u = net->polyLinesIndex[i];
@@ -122,6 +161,7 @@ void Optimization::init(CurveNet *_net)
     }
 
     // coplanar
+    printf("coplanar constraints...\n");
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == 3)
@@ -143,7 +183,8 @@ void Optimization::init(CurveNet *_net)
             }
         }
     }
-    
+
+    printf("coplanar between curves...\n");
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == 2 || net->curveType[i] == -1) continue;
@@ -165,6 +206,7 @@ void Optimization::init(CurveNet *_net)
                         int v1 = getOptVarIndex(v.first);
                         int v2 = getOptVarIndex(v.second);
                         if (u1 == v1 || u1 == v2 || u2 == v1 || u2 == v2) continue;
+
 						addCoplanar(u1, u2, v1, v2);
                         //cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
                     }
@@ -173,6 +215,7 @@ void Optimization::init(CurveNet *_net)
         }
     }
 
+    printf("adding coplanes...\n");
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
 		if (coplanarPoints[i].size() <= 3)
@@ -185,6 +228,7 @@ void Optimization::init(CurveNet *_net)
 	}
 
     // ortho & tangent
+    printf("orthogonal and tangent constraints...\n");
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == -1) continue;
@@ -223,17 +267,10 @@ void Optimization::init(CurveNet *_net)
 	// symmetric
 	for (int i = 0; i < net->symmLines.size(); ++ i)
 	{
-		
 	}
     numCons = cons.size();
 
     /*
-    // print vars
-    writeLog("===== vars =====\n");
-    for (int i = 0; i < numVars; i++)
-    {
-        writeLog("var %d: (%d , %d , %d)\n" , i , vars[i].type , vars[i].ni , vars[i].ci);
-    }
     // print constraints
     writeLog("===== cons =====\n");
     for (int i = 0; i < numCons; i++)
@@ -546,6 +583,7 @@ void Optimization::generateMOD(string file)
 				 << " <= smallBound;\n";
 		}
 	}
+    /*
 	for (int i = 0; i < net->symmLines.size(); ++ i)
 	{
 		for (int j = 0; j < net->symmLines[i].size(); ++ j)
@@ -555,6 +593,7 @@ void Optimization::generateMOD(string file)
 				 << " <= smallBound;\n";
 		}
 	}
+    */
     fout.close();
 }
 
@@ -576,7 +615,11 @@ void Optimization::generateRUN(string file)
     fout << "reset;\n"
 		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
 		 << "option solver knitroampl;\n"
-		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves=5 par_numthreads=6 ma_maxtime_real=0.2\";\n\n"
+		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves="
+         << numStartPoints
+         << " par_numthreads=6 ma_maxtime_real="
+         << maxRealTime
+         << "\";\n\n"
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
@@ -636,10 +679,11 @@ void Optimization::run(CurveNet *net)
         varbuff.push_back(pos);
     }
 
+    printf("change curve ends in bsp...\n");
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == -1) continue;
-        int ci[2] = {0 , net->bsplines[i].ctrlNodes.size() - 1};
+        int ci[2] = {0 , (int)net->bsplines[i].ctrlNodes.size() - 1};
         for (int j = 0; j < 2; j++)
         {
             int ni = net->getNodeIndex(net->bsplines[i].ctrlNodes[ci[j]]);
@@ -648,6 +692,7 @@ void Optimization::run(CurveNet *net)
         }
     }
 
+    printf("change nodes...\n");
     for (int i = 0; i < vars.size(); ++ i)
 	{
 		if (vars[i].type == 0)
@@ -660,6 +705,7 @@ void Optimization::run(CurveNet *net)
 		}
 	}
 
+    printf("resample polyLines...\n");
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == -1) continue;
@@ -848,7 +894,7 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 	else pos[1] = net->bsplines[vars[q].ni].ctrlNodes[vars[q].ci];
 	if (vars[r].type == 0) pos[2] = net->nodes[vars[r].ni];
 	else pos[2] = net->bsplines[vars[r].ni].ctrlNodes[vars[r].ci];
-	if (vars[p].type == 0) pos[3] = net->nodes[vars[s].ni];
+	if (vars[s].type == 0) pos[3] = net->nodes[vars[s].ni];
 	else pos[3] = net->bsplines[vars[s].ni].ctrlNodes[vars[s].ci];
     vec3d n = (pos[0]-pos[1]).cross(pos[0]-pos[2]);
 	Plane plane(pos[0], n);
@@ -927,6 +973,10 @@ double Optimization::var2double(const OptVariable& v)
 std::pair<OptVariable , OptVariable> Optimization::bsp2var(int bspIndex , int curveIndex , int numCtrlCurves)
 {
     OptVariable u1 , u2;
+    if (net->curveType[bspIndex] == -1)
+    {
+        printf("bsp2var error, bspIndex = %d\n" , bspIndex);
+    }
     if (curveIndex == 0 && curveIndex == numCtrlCurves - 1)
     {
         int ni = net->getNodeIndex(net->bsplines[bspIndex].ctrlNodes[curveIndex]);

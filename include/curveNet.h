@@ -28,19 +28,19 @@ public:
     int pli;
 };
 
-typedef std::vector<unsigned> Cycle;
-
 class CurveNet
 {
 public:
     CurveNet();
-
     void clear();
+    void copyFrom(const CurveNet& net);
     void startPath(const vec3d& st);
     void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
         bool newNode , const BSpline& bsp , const Path& originPath);
     void breakPath(const int& breakLine , const int& breakPoint);
-    void deletePath(const int& deleteLine);
+    void deleteNode(const int& deleteNodeIndex);
+    void deletePath(const int& deleteLineIndex);
+    void deleteCycle(const int& deleteCycleIndex);
     
     int getNodeIndex(const vec3d& pos);
     bool linkNoEdges(const int& ni);
@@ -89,6 +89,10 @@ public:
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
 
+    std::vector<Cycle> cycles;
+    std::vector<vec3d> cycleCenters;
+    std::vector<std::vector<Path> > cyclePoints;
+
     // 1: line, 2: nothing, 3: coplanar
     std::vector<int> curveType;
 
@@ -106,9 +110,6 @@ public:
     DisjointSet parallelSet;
     AdjMatrix coplanarSet;
     AdjMatrix orthoSet;
-
-    std::vector<Cycle> cycles;
-    std::vector<std::vector<Path> > cyclePoints;
 };
 
 #endif

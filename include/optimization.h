@@ -59,6 +59,10 @@ public:
 	void generateBAT(std::string file);
 	void run(CurveNet *net);
 
+    int numStartPoints;
+    double maxRealTime;
+    double largeBound , smallBound;
+
 private:
 	std::string generateLineOrtho(int, int, int, int);
 	std::string generateLineParallel(int, int, int, int);
@@ -97,8 +101,6 @@ private:
 	std::vector<std::vector<int> > coplanarPoints;
 
     TimeManager timer;
-
-    double largeBound , smallBound;
 };
 
 #endif //OPTIMIZATION_H

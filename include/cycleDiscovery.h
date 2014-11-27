@@ -344,7 +344,8 @@ private:
 public:
 
 	void dataCleanUp();
-	std::vector<unsigned> constructNetwork(std::vector<std::vector<Point> > &curveNet);
+	void constructNetwork(std::vector<std::vector<Point> > &curveNet,
+        std::vector<std::vector<unsigned> > &cycleMap);
 	void constructRandomRotationGraph();
 	void constructRotationGraphbyAngleMetric();
 	void constructRotationGraphbyAngleDihedralMetric();

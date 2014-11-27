@@ -13,6 +13,7 @@
 #include <map>
 
 #include "cycleDiscovery.h"
+#include "smallUtils.h"
 
 #ifdef _WIN32
 	#include "DrT.h"
@@ -40,17 +41,25 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 					std::vector<std::vector<std::vector<Point> > >&outMeshes,
 					std::vector<std::vector<std::vector<Point> > >&outNormals)
 {
-	cycleUtils* m_cycleUtil = new cycleUtils;
+    cycleUtils* m_cycleUtil = new cycleUtils;
     std::cout<<"making graph...\n";
-	std::vector<unsigned> cycleMap = m_cycleUtil->constructNetwork(inCurves);
+	std::vector<std::vector<unsigned> > cycleMap;
+	m_cycleUtil->constructNetwork(inCurves,cycleMap);
     std::cout<<"adding constraint cycles...\n";
-	m_cycleUtil->addCycleConstraint(inCycleConstraint);
+	std::vector<std::vector<unsigned> > cycleConstraint=inCycleConstraint;
+	for(int i=0;i<cycleConstraint.size();i++){
+		for(int j=0;j<cycleConstraint[i].size();j++){
+			cycleConstraint[i][j] = cycleMap.back()[cycleConstraint[i][j]];
+		}
+	}
+	m_cycleUtil->addCycleConstraint(cycleConstraint);
+    std::cout<<"building rotation graph...\n";
 	m_cycleUtil->constructRotationGraphbyPoleGraph();
     std::cout<<"tracing cycles from rotation graph...\n";
 	m_cycleUtil->constructCycles();
 	m_cycleUtil->cycleBreaking();
 #ifdef _WIN32
-    //std::cout<<"making surface from cycles...\n";
+    std::cout<<"making surface from cycles...\n";
 	m_cycleUtil->surfaceBuilding();
 #endif
 
@@ -58,14 +67,28 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 	outCycles.clear();	outCycles.resize(m_cycleUtil->m_cycleSetBreaked.size());
 	for(unsigned i=0;i<outCycles.size();i++){
 		for(unsigned j=0;j<m_cycleUtil->m_cycleSetBreaked[i].size();j++){
-			outCycles[i].push_back(cycleMap[m_cycleUtil->m_cycleSetBreaked[i][j].arcID]);
+			outCycles[i].push_back(cycleMap.front()[m_cycleUtil->m_cycleSetBreaked[i][j].arcID]);
 		}
 	}
 
+    for (int i = 0; i < inCycleConstraint.size(); i++)
+    {
+        for (int j = 0; j < outCycles.size(); j++)
+        {
+            if (isSameCycle(inCycleConstraint[i] , outCycles[j]))
+            {
+                outCycles.erase(outCycles.begin() + j);
+                break;
+            }
+        }
+    }
+    
 #ifdef _WIN32
 	outMeshes.swap(m_cycleUtil->m_triangleSurface);
 	outNormals.swap(m_cycleUtil->m_triangleSurfaceNormal);
 #endif
+
+    delete m_cycleUtil;
 }
 
 void cycleTest()
@@ -516,8 +539,8 @@ void GraphSearch::computeGeneralHamiltonGraph(	const Capacity &capacity,
 		adjcosts[n2].push_back(weights[i]);
 		adjnodes[n1].push_back(n2);
 		adjnodes[n2].push_back(n1);
-		adjnodeinds[n1].push_back(adjnodes[n2].size()-1);
-		adjnodeinds[n2].push_back(adjnodes[n1].size()-1);
+		adjnodeinds[n1].push_back((int)adjnodes[n2].size()-1);
+		adjnodeinds[n2].push_back((int)adjnodes[n1].size()-1);
 	}
 
 	double minArcCost = *std::min_element(weights.begin(),weights.end());
@@ -822,49 +845,68 @@ std::vector<int> ordering(const std::vector<double> &data)
 	return rank;
 }
 
-std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet)
+void cycleUtils::constructNetwork(std::vector<std::vector<Point> > &curveNet,
+        std::vector<std::vector<unsigned> > &cycleMap)
 {
 	//delete branch;
 	m_curves=curveNet;
 	unsigned curveSize = m_curves.size();
-	std::vector<unsigned> cycleMap;
+    unsigned newCurveSize = 0;
+
+    /*
+    printf("curveNet size = %d, m_curves size = %d, curveSize = %d\n" , curveNet.size() ,
+        m_curves.size() , curveSize);
+    for (int i = 0; i < m_curves.size(); i++)
+    {
+        printf("l = %d, (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , m_curves[i].size() ,
+            m_curves[i].front().x , m_curves[i].front().y , m_curves[i].front().z ,
+            m_curves[i].back().x , m_curves[i].back().y , m_curves[i].back().z);
+    }
+    */
+    
+    //std::vector<unsigned> cycleMap;
 	do{
 		std::vector<std::pair<int ,int> > capacity(m_curves.size(),std::pair<int,int>(1,1));
 		for(int i=0;i<(int)m_curves.size()-1;i++){
 			if(m_curves[i].empty()) continue;
 			for(int j=i+1;j<m_curves.size();j++){
 				if(m_curves[j].empty()) continue;
-				if(m_curves[i].front()==m_curves[j].front()){
+				if(isEqual(m_curves[i].front(),m_curves[j].front())){
 					capacity[i].first++;capacity[j].first++;
 				}
-				if(m_curves[i].front()==m_curves[j].back()){
+				if(isEqual(m_curves[i].front(),m_curves[j].back())){
 					capacity[i].first++;capacity[j].second++;
 				}
-				if(m_curves[i].back()==m_curves[j].front()){
+				if(isEqual(m_curves[i].back(),m_curves[j].front())){
 					capacity[i].second++;capacity[j].first++;
 				}
-				if(m_curves[i].back()==m_curves[j].back()){
+				if(isEqual(m_curves[i].back(),m_curves[j].back())){
 					capacity[i].second++;capacity[j].second++;
 				}
 			}
 		}
-		unsigned newCurveSize=0;
+		newCurveSize=0;
 		for(int i=0;i<capacity.size();i++){
 			if(capacity[i].first<=1||capacity[i].second<=1)
 				m_curves[i].clear();
 			else
 				newCurveSize++;
 		}
-		if(newCurveSize == curveSize){
-			
-			for(unsigned i=0;i<m_curves.size();i++){
+        if(newCurveSize == curveSize){
+			std::vector<unsigned> cycleMap1,cycleMap2;
+			int j = 0;
+			for(int i=0;i<m_curves.size();i++){
+				cycleMap2.push_back(i);
 				if(m_curves[i].empty()){
 					m_curves.erase(m_curves.begin()+i); i--;
 				}
 				else{
-					cycleMap.push_back(i);
+					cycleMap1.push_back(j);
 				}
-			}			
+				j++;
+			}
+			cycleMap.push_back(cycleMap1);
+			cycleMap.push_back(cycleMap2);
 			break;
 		}
 		else{
@@ -872,6 +914,8 @@ std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point
 		}
 	}while(true);
 
+    // printf("newCurveSize = %d\n" , newCurveSize);
+    
 	m_curveCapacitys.resize(m_curves.size(),2); //default capacity. probably need changes;
 
 	if(m_isSmothing){
@@ -896,31 +940,51 @@ std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point
 	LinearCurveNet& curves = m_curves;
 	std::vector<int>& capacity = m_curveCapacitys;
 
-	std::map< std::vector<double>,int> mapPointToIndex;
-	std::map< std::vector<double>,int>::iterator itMap;
+	std::map< double,int> mapPointToIndex;
+	std::map< double,int>::iterator itMap;
+    std::vector<std::pair<vec3d , int> > mapPoints;
 
 	int index=0;
 	int len = curves.size();
-	std::vector<double> stdPoint(3);
+    // printf("len = %d, m_curves size = %d\n" , len , m_curves.size());
+	Point stdPoint;
 	for(int i=0;i<len;i++)
 	{
 		Curve curve = curves[i];
 		std::vector<Point> endNodes; endNodes.push_back(curve.front()); endNodes.push_back(curve.back());
+        // printf("curve %d: (%.8f,%.8f,%.8f), (%.8f,%.8f,%.8f)\n" , i ,
+            // endNodes[0].x , endNodes[0].y , endNodes[0].z ,
+            // endNodes[1].x , endNodes[1].y , endNodes[1].z);
 		curve.erase(curve.begin());
 		int sizeCurve = curve.size();
 		curve.erase(curve.begin()+sizeCurve-1);
 
 		int currentIndex[2];
 		for(int j=0;j<2;j++){
-			for(unsigned k=0;k<3;k++) stdPoint[k] = endNodes[j][k];
-			itMap = mapPointToIndex.find(stdPoint);
-			if (itMap != mapPointToIndex.end()){
-				currentIndex[j] = itMap->second;
+			stdPoint = endNodes[j];
+            // double hashVal = point2double(stdPoint);
+			// itMap = mapPointToIndex.find(hashVal);
+            int it = -1;
+            for (int k = 0; k < mapPoints.size(); k++)
+            {
+                if (isEqual(stdPoint , mapPoints[k].first))
+                {
+                    it = k;
+                    break;
+                }
+            }
+			//if (itMap != mapPointToIndex.end()){
+            if (it != -1) {
+                //currentIndex[j] = itMap->second;
+                currentIndex[j] = mapPoints[it].second;
 				net.nodes[currentIndex[j]].arcID.push_back(i);
 				net.nodes[currentIndex[j]].arcDirection.push_back(j+1);
 			}
 			else {
-				mapPointToIndex.insert(std::pair< std::vector<double>,int>(stdPoint,index));
+                // printf("node = (%.8f,%.8f,%.8f), hashVal = %.12f\n" ,
+                    // stdPoint.x , stdPoint.y , stdPoint.z , point2double(stdPoint));
+				//mapPointToIndex.insert(std::pair< double,int>(hashVal,index));
+                mapPoints.push_back(std::make_pair(stdPoint , index));
 				currentIndex[j] = index;
 				index++;
 				GraphNode node;
@@ -936,13 +1000,13 @@ std::vector<unsigned> cycleUtils::constructNetwork(std::vector<std::vector<Point
 		arc.endNodesID.first=currentIndex[0];
 		arc.endNodesID.second=currentIndex[1];
 		if(currentIndex[0]==currentIndex[1])
-			arc.posInNode.first = net.nodes[currentIndex[0]].arcID.size()-2;
+			arc.posInNode.first = (int)net.nodes[currentIndex[0]].arcID.size()-2;
 		else
-			arc.posInNode.first = net.nodes[currentIndex[0]].arcID.size()-1;
-		arc.posInNode.second = net.nodes[currentIndex[1]].arcID.size()-1;
+			arc.posInNode.first = (int)net.nodes[currentIndex[0]].arcID.size()-1;
+		arc.posInNode.second = (int)net.nodes[currentIndex[1]].arcID.size()-1;
 		net.arcs.push_back(arc);
 	}
-	return cycleMap;
+    printf("net node size = %d, net arc size = %d\n" , net.nodes.size() , net.arcs.size());
 }
 /*
 void cycleUtils::deleteNodeWithTwoDegree()
@@ -1196,11 +1260,11 @@ void cycleUtils::constructJointRotationGraph()
 			pointLists.push_back(curve);
 		}
 		std::vector<std::vector<int> > indices(capacity.size(),std::vector<int>(capacity.size(),0));
-		for(int j=0;j<capacity.size()-1;j++){
+		for(int j=0;j<(int)capacity.size()-1;j++){
 			for(int k=j+1;k<capacity.size();k++){
 				double weight = computeAnglebetweenTwoCurves(j,k,pointLists);
 				arcsWithWeights.push_back(std::pair<double,std::pair<int,int> >(weight,std::pair<int,int>(j,k)));
-				indices[j][k]=(arcsWithWeights.size()-1);
+				indices[j][k]=((int)arcsWithWeights.size()-1);
 				indices[k][j]=indices[j][k];
 			}
 		}
@@ -1271,7 +1335,7 @@ void cycleUtils::constructJointRotationGraph()
 				jointRotationGraph[currentArcID[0]].push_back(std::pair<int,int>
 					(currentArcID[1],jointRotationGraph[currentArcID[1]].size()));
 				jointRotationGraph[currentArcID[1]].push_back(std::pair<int,int>
-					(currentArcID[0],jointRotationGraph[currentArcID[0]].size()-1));
+					(currentArcID[0],(int)jointRotationGraph[currentArcID[0]].size()-1));
 			}
 		}
 		roGraph.push_back(jointRotationGraph);
@@ -1747,7 +1811,7 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 				std::pair<double,std::pair<int,int> >(FLT_MAX,std::pair<int,int>(0,0))));
 		int id[2];
 		//make cost table including each arc pairs;
-		for(id[0]=0;id[0]<arcs.size()-1;id[0]++){
+		for(id[0]=0;id[0]<(int)arcs.size()-1;id[0]++){
 			for(id[1]=id[0]+1;id[1]<arcs.size();id[1]++){
 				int arcID[]={arcs[id[0]],arcs[id[1]]};
 				int dir[]={dirs[id[0]],dirs[id[1]]};
@@ -1807,7 +1871,7 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 		}
 		//set up arc pairs and weights and capacities;
 		std::vector<std::pair<double,std::pair<int,int> > > arcsWithWeights;
-		for(int j=0;j<arcs.size()-1;j++){
+		for(int j=0;j<(int)arcs.size()-1;j++){
 			for(int k=j+1;k<arcs.size();k++){
 				if( rank[j][k].second == FLT_MAX)
 					continue;
@@ -1871,7 +1935,7 @@ void cycleUtils::constructJointRotationGraphbyPoleGraph()
 			}
 			if(isfind==false){
 				allArcs.push_back(userDefinePairs[j]);
-				ind.push_back(allArcs.size()-1);
+				ind.push_back((int)allArcs.size()-1);
 			}
 		}
 		for(int j=0;j<userDefinePairs.size();j++){
@@ -2233,7 +2297,7 @@ void getBases(const std::vector<long long> &org, std::vector<long long> &tar)
 	tar = org;
 	tar.erase(tar.begin());
 	tar.push_back(1);
-	for(int i=tar.size()-2;i>=0;i--)
+	for(int i=(int)tar.size()-2;i>=0;i--)
 		tar[i]*=tar[i+1];
 }
 long long indicesToIndex(const std::vector<long long> &org, const std::vector<long long> &org2)
@@ -2317,7 +2381,7 @@ void cycleUtils::searchAlmostMinPoleGraph()
 	std::vector<std::vector<int> > nodesVal(numOfPole);
 
 	for(int i=0;i<numOfPole;i++){
-		int tsn = std::min(nState,m_expandPoleSequence[i].stateNum);
+		long long tsn = std::min(nState,m_expandPoleSequence[i].stateNum);
 		stateInd[i].resize(tsn,-1);			costsVal[i].resize(tsn,FLT_MAX);
 		nodesVal[i].resize(tsn,-1);			prevsVal[i].resize(tsn,-1);
 	}
@@ -2442,7 +2506,7 @@ void cycleUtils::searchAlmostMinPoleGraph()
 				}
 				else{
 					if(tempcosts[pSt-tempstates.begin()] > c){
-						int ti = pSt-tempstates.begin();
+						long long ti = pSt-tempstates.begin();
 						tempcosts[ti] = c;
 						tempstates[ti]=index;
 						tempprevs[ti]=state;
@@ -2463,7 +2527,7 @@ void cycleUtils::searchAlmostMinPoleGraph()
 
 	for(int i=numOfPole-1;i>=0;i--){
 		std::vector<long long>::iterator pstate = std::find(stateInd[i].begin(),stateInd[i].end(),state);
-		int stateid = pstate - stateInd[i].begin();
+		long long stateid = pstate - stateInd[i].begin();
 		res[m_expandPoleSequence[i].nodeID]=nodesVal[i][stateid];
 		state=prevsVal[i][stateid];
 	}
@@ -2639,7 +2703,10 @@ void cycleUtils::updateRotationGraphbyPoleGraph()
 void cycleUtils::constructRotationGraphbyPoleGraph()
 {
 	if(m_curveNet.arcs.empty())
+    {
+        // std::cout<<"m_curveNet.arcs is empty!\n";
 		return;
+    }
 
 	/* test data  compare with ground truth, make sure getting right results*/
 
@@ -2911,7 +2978,7 @@ void cycleUtils::cycleBreaking()
 				int	size =0;
 				int index=0;
 				for(int j=0;j<nodeID.size();j++){
-					if(size<arcPairs[j].size()){
+					if(size<(int)arcPairs[j].size()){
 						size = arcPairs[j].size();
 						index = j;
 					}

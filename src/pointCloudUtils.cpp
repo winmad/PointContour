@@ -36,13 +36,13 @@ PointCloudUtils::PointCloudUtils()
     }
 #ifdef _WIN32
 	//engEvalString(ep , "addpath D:\\fz\\point_cloud\\PointContour\\matlab");
-	//engEvalString(ep , "addpath Y:\\Projects\\PointContour\\matlab");
-	engEvalString(ep , "addpath D:\\Winmad\\PointContour\\matlab");
+	engEvalString(ep , "addpath Y:\\Projects\\PointContour\\matlab");
+	//engEvalString(ep , "addpath D:\\Winmad\\PointContour\\matlab");
 #else
     engEvalString(ep , "addpath ~/Projects/PointContour/matlab/");
 #endif
 
-    //cycle::cycleTest();
+    // cycle::cycleTest();
     /*
     if (!mclInitializeApplication(NULL,0))
     {
@@ -171,6 +171,7 @@ void PointCloudUtils::getBBox()
 {
 	box.lb = vec3d(1e20 , 1e20 , 1e20);
 	box.rt = -box.lb;
+    vec3d center(0.0);
 	for (int i = 0; i < pcData.size(); i++)
 	{
 		box.lb.x = std::min(box.lb.x , pcData[i].pos.x);
@@ -180,8 +181,19 @@ void PointCloudUtils::getBBox()
 		box.rt.x = std::max(box.rt.x , pcData[i].pos.x);
 		box.rt.y = std::max(box.rt.y , pcData[i].pos.y);
 		box.rt.z = std::max(box.rt.z , pcData[i].pos.z);
-	}
 
+        center = center + pcData[i].pos;
+	}
+    center = center / (double)pcData.size();
+    
+    // translate
+    for (int i = 0; i < pcData.size(); i++)
+    {
+        pcData[i].pos = pcData[i].pos - center;
+    }
+    box.lb = box.lb - center;
+    box.rt = box.rt - center;
+    
     // rescale
     vec3d diag = box.rt - box.lb;
     double scale = 0.8 / std::min(diag.x , std::min(diag.y , diag.z));
@@ -1255,7 +1267,7 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
         p = oldPath[i - 1] + (oldPath[i + 1] - oldPath[i - 1]) * 0.5;
         mid = p - oldPath[i];
         double len = mid.length();
-        //grad /= grad.length();
+        grad /= grad.length();
         vec3d d = -grad;
         double alpha = lineSearch(d , oldPath[i - 1] , ts[i - 1] ,
             oldPath[i] , ts[i] , oldPath[i + 1] , ts[i + 1]);
