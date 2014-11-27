@@ -73,6 +73,7 @@ private:
 	std::string generateCoplanar(int, int);
 	std::string generateSymmetryLine(int, std::pair<int, int>);
 	std::string generateSymmetryPoint(int, int, int);
+	std::string generateSelfSymmPoint(int, int);
 	void addCoplanar(int, int, int, int);
 
 	bool isLinked(int, int, int, int);
@@ -91,8 +92,10 @@ private:
 
 	std::vector<std::vector<int> > straightlines;
 	std::vector<std::vector<int> > bsplines;
+	std::vector<std::vector<int> > featurelines;
 	std::vector<int> straightlinesIdx;
 	std::vector<int> bsplinesIdx;
+	std::vector<int> curveIdx;
 	std::vector<bool> lastDraw;
 
     int numCons;

@@ -38,8 +38,8 @@ public:
 			p.n = -p.n;
 			p.d = -p.d;
 		}
-		n += p.n * p.weight / weight;
-		d += p.d * p.weight / weight;
+		n = n * weight + p.n * p.weight;
+		d = d * weight + p.d * p.weight;
 		weight += p.weight;
 		normalize();
 	}
@@ -50,10 +50,14 @@ public:
 			p.n = -p.n;
 			p.d = -p.d;
 		}
-		n -= p.n * p.weight / weight;
-		d -= p.d * p.weight / weight;
+		n = n * weight - p.n * p.weight;
+		d = d * weight - p.d * p.weight;
 		weight -= p.weight;
 		normalize();
+	}
+	vec3d reflect(vec3d &p)
+	{
+		return p + 2 * (-d - p.dot(n)) * n;
 	}
 
 	vec3d n;
