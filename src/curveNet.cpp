@@ -57,8 +57,9 @@ void CurveNet::copyFrom(const CurveNet& net)
     orthoThr = net.orthoThr;
     tangentThr = net.tangentThr;
     symmetryThr = net.symmetryThr;
-    reflectPlanes = net.reflectPlanes;
+    symmetricPlanes = net.symmetricPlanes;
     symmLines = net.symmLines;
+	symmPoints = net.symmPoints;
     collinearSet = net.collinearSet;
     parallelSet = net.parallelSet;
     coplanarSet = net.coplanarSet;
@@ -929,7 +930,8 @@ int CurveNet::addSelfSymmPlane(Plane &p, bool add, int l, int a, int b)
 		std::vector<SelfSymmIdx> tmp;
 		tmp.push_back(SelfSymmIdx(l, a, b));
 		symmPoints.push_back(tmp);
-		symmLines.push_back(std::vector<std::pair>());
+		std::vector<std::pair<int, int> > tmp2;
+		symmLines.push_back(tmp2);
 	}
 	return (int)symmetricPlanes.size() - 1;
 }
@@ -958,7 +960,7 @@ void CurveNet::mapOrigin2polyLines(int bspIndex)
 				s = i;
 			}
 		}
-		tmp.push_back(s)
+		tmp.push_back(s);
 		for (int i = 1; i < originNum; ++ i)
 		{
 			mindist = 10;

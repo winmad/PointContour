@@ -34,7 +34,7 @@ class SelfSymmIdx
 public:
 	SelfSymmIdx(int _n, int _n1, int _n2): n(_n), n1(_n1), n2(_n2) {}
 	int n, n1, n2;
-}
+};
 
 class CurveNet
 {

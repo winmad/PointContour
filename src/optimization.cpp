@@ -431,7 +431,7 @@ void Optimization::generateDAT(string file)
 			fout << "\t[" << i << ", " << j << ", *]";
 			for (int k = 0; k < bsplines[i].size(); ++ k)
 			{
-				fout << " " << k << " " << net->bsplines[bsplinesIdx[i]].coefs[mapOrigin[bsplinesIdx[i]][j]][k];
+				fout << " " << k << " " << net->bsplines[bsplinesIdx[i]].coefs[net->mapOrigin[bsplinesIdx[i]][j]][k];
 			}
 			fout << "\n";
 		}
