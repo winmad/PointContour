@@ -605,7 +605,6 @@ void Optimization::generateMOD(string file)
 				 << " <= smallBound;\n";
 		}
 	}
-    */
 	for (int i = 0; i < net->symmPoints.size(); ++ i)
 	{
 		if (net->symmPoints[i].size() == 0) continue;
@@ -616,6 +615,7 @@ void Optimization::generateMOD(string file)
 		}
 		fout << "0 <= smallBound;\n";
 	}
+	*/
     fout.close();
 }
 
