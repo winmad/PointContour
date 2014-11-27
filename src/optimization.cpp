@@ -77,6 +77,8 @@ void Optimization::init(CurveNet *_net)
 			tmpvec.push_back(tmpidx);
 			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			straightlines.push_back(tmpvec);
+			featurelines.push_back(tmpvec);
+			curveIdx.push_back(straightlinesIdx.size());
 			straightlinesIdx.push_back(i);
 		}
 		else
@@ -97,6 +99,8 @@ void Optimization::init(CurveNet *_net)
 			tmpvec.push_back(tmpidx);
 			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			bsplines.push_back(tmpvec);
+			featurelines.push_back(tmpvec);
+			curveIdx.push_back(bsplinesIdx.size());
 			bsplinesIdx.push_back(i);
 		}
 	}
@@ -427,7 +431,7 @@ void Optimization::generateDAT(string file)
 			fout << "\t[" << i << ", " << j << ", *]";
 			for (int k = 0; k < bsplines[i].size(); ++ k)
 			{
-				fout << " " << k << " " << net->bsplines[bsplinesIdx[i]].coefs[j][k];
+				fout << " " << k << " " << net->bsplines[bsplinesIdx[i]].coefs[mapOrigin[bsplinesIdx[i]][j]][k];
 			}
 			fout << "\n";
 		}
@@ -539,6 +543,14 @@ void Optimization::generateMOD(string file)
 				 << "\n";
 		}
 	}
+	for (int i = 0; i < net->symmPoints.size(); ++ i)
+	{
+		if (net->symmPoints[i].size() == 0) continue;
+		for (int j = 0; j < net->symmPoints[i].size(); ++ j)
+		{
+			fout << "+" << generateSelfSymmPoint(i, j) << "\n";
+		}
+	}
 	*/
 	fout << ";\n\n";
 
@@ -594,6 +606,16 @@ void Optimization::generateMOD(string file)
 		}
 	}
     */
+	for (int i = 0; i < net->symmPoints.size(); ++ i)
+	{
+		if (net->symmPoints[i].size() == 0) continue;
+		fout << "subject to symmetryPoint" << i << ": ";
+		for (int j = 0; j < net->symmPoints[i].size(); ++ j)
+		{
+			fout << "\n" << generateSelfSymmPoint(i, j) << "+";
+		}
+		fout << "0 <= smallBound;\n";
+	}
     fout.close();
 }
 
@@ -848,20 +870,18 @@ string Optimization::generateCoplanar(int plane, int point)
 string Optimization::generateSymmetryLine(int plane, std::pair<int, int> linepair)
 {
 	stringstream ss;
-	std::pair<OptVariable , OptVariable> tmp = bsp2var(linepair.first, 0, 1);
-	int x1 = getOptVarIndex(tmp.first);
-	int x2 = getOptVarIndex(tmp.second);
-	tmp = bsp2var(linepair.second, 0, 1);
-	int x3 = getOptVarIndex(tmp.first);
-	int x4 = getOptVarIndex(tmp.second);
-	vec3d v1 = net->nodes[vars[x1].ni];
-	vec3d v2 = net->nodes[vars[x2].ni];
-	vec3d v3 = net->nodes[vars[x3].ni];
-	vec3d v4 = net->nodes[vars[x4].ni];
-	Plane p = net->symmetricPlanes[plane];
-	Plane tmp_p((v1 + v3) / 2, v1 - v3);
 	if (net->curveType[linepair.first] == 1)
 	{
+		int x1 = featurelines[linepair.first][0];
+		int x2 = featurelines[linepair.first][1];
+		int x3 = featurelines[linepair.second][0];
+		int x4 = featurelines[linepair.second][1];
+		vec3d v1 = net->nodes[vars[x1].ni];
+		vec3d v2 = net->nodes[vars[x2].ni];
+		vec3d v3 = net->nodes[vars[x3].ni];
+		vec3d v4 = net->nodes[vars[x4].ni];
+		Plane p = net->symmetricPlanes[plane];
+		Plane tmp_p((v1 + v3) / 2, v1 - v3);
 		if (p.dist(tmp_p) > net->symmetryThr)
 		{
 			swap(v3, v4);
@@ -870,6 +890,16 @@ string Optimization::generateSymmetryLine(int plane, std::pair<int, int> linepai
 		ss << generateSymmetryPoint(plane, x1, x3)
 		   << "+"
 		   << generateSymmetryPoint(plane, x2, x4);
+	}
+	else
+	{
+		for (int i = 0; i < net->bsplines[linepair.first].ctrlNodes.size(); ++ i)
+		{
+			int x = featurelines[linepair.first][i];
+			int y = featurelines[linepair.second][i];
+			ss << generateSymmetryPoint(plane, x, y) << "+";
+		}
+		ss << "0";
 	}
 	return ss.str();
 }
@@ -880,6 +910,23 @@ string Optimization::generateSymmetryPoint(int plane, int u, int v)
 	ss << "(sum{i in Dim3} (p[" << u << ", i] - "
 	   << "(p[" << v << ", i] - 2*symmetric_plane[" << plane << ",4]*symmetric_plane[" << plane << ",i] - "
 	   << "2*(sum{j in Dim3}symmetric_plane[" << plane << ",j]*p[" << v << ",j])*symmetric_plane[" << plane << ",i])"
+	   << ") ^ 2)";
+	return ss.str();
+}
+
+string Optimization::generateSelfSymmPoint(int plane, int n)
+{
+	int c = net->symmPoints[plane][n].n;
+	int l = net->symmPoints[plane][n].n1;
+	int r = net->symmPoints[plane][n].n2;
+	c = curveIdx[c];
+	stringstream ss;
+	ss << "(sum{i in Dim3} ((sum{k in 0..CN[" << c << "]}coef[" << c << "," << l << ",k]*p[bidx[" << c << ",k],i]) - "
+	   << "((sum{k in 0..CN[" << c << "]}coef[" << c << "," << r << ",k]*p[bidx[" << c << ",k],i])"
+	   << "- 2*symmetric_plane[" << plane << ",4]*symmetric_plane[" << plane << ",i] - "
+	   << "2*(sum{j in Dim3}symmetric_plane[" << plane << ",j]*"
+	   << "(sum{k in 0..CN[" << c << "]}coef[" << c << "," << r << ",k]*p[bidx[" << c << ",k],i])"
+	   << ")*symmetric_plane[" << plane << ",i])"
 	   << ") ^ 2)";
 	return ss.str();
 }

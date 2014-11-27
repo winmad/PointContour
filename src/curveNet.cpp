@@ -10,6 +10,8 @@ CurveNet::CurveNet()
     orthoThr = 0.1;
     tangentThr = 0.05;
 	symmetryThr = 0.1;
+	ratioThr = 0.05;
+	planeDiffThr = 0.1;
 }
 
 void CurveNet::clear()
@@ -481,6 +483,7 @@ bool CurveNet::checkSymmetry(const vec3d& x , const vec3d& nx ,
 	vec3d v0 = x - y;
 	v0.normalize();
 	vec3d v1 = nx + ny;
+	if (abs(nx.length() - ny.length()) > ny.length() * ratioThr) return false;
 	v1.normalize();
 
 	vec3d v2 = nx - ny;
@@ -488,6 +491,11 @@ bool CurveNet::checkSymmetry(const vec3d& x , const vec3d& nx ,
 	if (abs(v0.dot(v1)) < threshold) return true;
 	//if (abs(v0.dot(v2)) < threshold) return true;
 	return false;
+}
+
+bool CurveNet::checkCycleSpline(int i)
+{
+	return (polyLines[i][0] - polyLines[i][polyLines[i].size()-1]).length() < 1e-6;
 }
 
 void CurveNet::addCurveType(int bspIndex)
@@ -730,7 +738,96 @@ void CurveNet::addSymmetryConstraint(int bspIndex, bool add)
 	}
 	else
 	{
+		int sampleNum = 10;
+		int pointNum = polyLines[bspIndex].size();
+		if (checkCycleSpline(bspIndex)) --pointNum;
+		int step = pointNum / sampleNum;
+		double length = 0;
+		Path &c1 = polyLines[bspIndex];
 
+		for (int i = 1; i < pointNum; ++ i) length += (c1[i] - c1[i-1]).length();
+		
+		for (int i = 0; i < numPolyLines; ++ i)
+		{
+			if (i == bspIndex) continue;
+			if (curveType[i] == curveType[bspIndex] && (!checkCycleSpline(bspIndex)^checkCycleSpline(i)))
+			{
+				bool flg = false;
+				Path &c2 = polyLines[i];
+				for (int j = 0; j < pointNum; ++ j)
+				{
+					Plane p(0);
+					for (int k = 0; k < pointNum; k += step)
+					{
+						Plane nextPlane((c1[k]+c2[(j+k)%pointNum])/2, c1[k]-c2[(j+k)%pointNum], (c1[k]-c2[(j+k)%pointNum]).length());
+						p.add(nextPlane);
+					}
+					double dist = 0;
+					for (int k = 0; k < pointNum; k += step)
+					{
+						dist += (p.reflect(c1[k]) - c2[(j+k)%pointNum]).length();
+					}
+					if (dist < symmetryThr)
+					{
+						p.weight = length;
+						addSymmetryPlane(p, add, bspIndex, i);
+						bsplines[bspIndex].copyBSP(bsplines[i]);
+						for (int t = 0; t < bsplines[i].ctrlNodes.size(); ++ t)
+						{
+							bsplines[bspIndex].ctrlNodes[t] = p.reflect(bsplines[i].ctrlNodes[t]);
+						}
+						flg = true;
+						break;
+					}
+					if (!checkCycleSpline(bspIndex))
+					{
+						if (flg)
+						{
+							bsplines[bspIndex].ctrlNodes[0] = c1[0];
+							bsplines[bspIndex].ctrlNodes[bsplines[bspIndex].N-1] = c1[pointNum-1];
+						}
+						break;
+					}
+				}
+				if (flg) break;
+				for (int j = 0; j < pointNum; ++ j)
+				{
+					Plane p(0);
+					for (int k = 0; k < pointNum; k += step)
+					{
+						Plane nextPlane((c1[pointNum-1-k]+c2[(j+k)%pointNum])/2, c1[pointNum-1-k]-c2[(j+k)%pointNum], (c1[pointNum-1-k]-c2[(j+k)%pointNum]).length());
+						p.add(nextPlane);
+					}
+					double dist = 0;
+					for (int k = 0; k < pointNum; k += step)
+					{
+						dist += (p.reflect(c1[pointNum-1-k]) - c2[(j+k)%pointNum]).length();
+					}
+					if (dist < symmetryThr)
+					{
+						p.weight = length;
+						addSymmetryPlane(p, add, bspIndex, i);
+						bsplines[bspIndex].copyBSP(bsplines[i]);
+						for (int t = 0; t < bsplines[i].ctrlNodes.size(); ++ t)
+						{
+							bsplines[bspIndex].ctrlNodes[t] = p.reflect(bsplines[i].ctrlNodes[t]);
+						}
+						flg = true;
+						break;
+					}
+					if (!checkCycleSpline(bspIndex))
+					{
+						if (flg)
+						{
+							bsplines[bspIndex].ctrlNodes[0] = c1[pointNum-1];
+							bsplines[bspIndex].ctrlNodes[bsplines[bspIndex].N-1] = c1[0];
+						}
+						break;
+					}
+				}
+				if (flg) break;
+			}
+		}
 	}
 }
 
@@ -738,7 +835,7 @@ int CurveNet::addSymmetryPlane(Plane &p, bool add, int a, int b)
 {
 	for (int i = 0; i < symmetricPlanes.size(); ++ i)
 	{
-		if (symmetricPlanes[i].dist(p) < symmetryThr)
+		if (symmetricPlanes[i].dist(p) < planeDiffThr)
 		{
 			if (add)
 			{
@@ -762,8 +859,146 @@ int CurveNet::addSymmetryPlane(Plane &p, bool add, int a, int b)
 		if (a > -1 && b > -1)
 			tmp.push_back(std::make_pair(a, b));
 		symmLines.push_back(tmp);
+		symmPoints.push_back(std::vector<SelfSymmIdx>());
 	}
 	return (int)symmetricPlanes.size() - 1;
+}
+
+void CurveNet::addSelfSymmetryConstraint(int bspIndex)
+{
+	int sampleNum = 10;
+	int pointNum = polyLines[bspIndex].size();
+	if (checkCycleSpline(bspIndex)) --pointNum;
+	int step = pointNum / sampleNum / 2;
+	double length = 0;
+	Path &c = polyLines[bspIndex];
+	for (int i = 0; i < pointNum; ++ i)
+	{
+		Plane p(0);
+		for (int j = 0; j < sampleNum; ++ j)
+		{
+			int l = (i + j * step) % pointNum;
+			int r = (i - 1 - j * step + pointNum) % pointNum;
+			Plane nextp((c[l]+c[r]) / 2, c[l] - c[r], (c[1] - c[r]).length());
+			p.add(nextp);
+		}
+		double dist = 0;
+		for (int j = 0; j < sampleNum; ++ j)
+		{
+			int l = (i + j * step) % pointNum;
+			int r = (i - 1 - j * step + pointNum) % pointNum;
+			dist += (p.reflect(c[l]) - c[r]).length();
+		}
+		if (dist < symmetryThr)
+		{
+			for (int j = 0; j < sampleNum; ++ j)
+			{
+				int l = (i + j * step) % pointNum;
+				int r = (i - 1 - j * step + pointNum) % pointNum;
+				addSelfSymmPlane(p, true, bspIndex, l, r);
+			}
+		}
+		if (!checkCycleSpline(bspIndex))
+		{
+			break;
+		}
+	}
+}
+
+int CurveNet::addSelfSymmPlane(Plane &p, bool add, int l, int a, int b)
+{
+	for (int i = 0; i < symmetricPlanes.size(); ++ i)
+	{
+		if (symmetricPlanes[i].dist(p) < planeDiffThr)
+		{
+			if (add)
+			{
+				symmetricPlanes[i].add(p);
+				symmPoints[i].push_back(SelfSymmIdx(l, a, b));
+			}
+			else
+			{
+				symmetricPlanes[i].remove(p);
+			}
+			return i;
+		}
+	}
+	if (add)
+	{
+		symmetricPlanes.push_back(p);
+		std::vector<SelfSymmIdx> tmp;
+		tmp.push_back(SelfSymmIdx(l, a, b));
+		symmPoints.push_back(tmp);
+		symmLines.push_back(std::vector<std::pair>());
+	}
+	return (int)symmetricPlanes.size() - 1;
+}
+
+void CurveNet::addTransformConstraint(int bspIndex)
+{
+
+}
+
+void CurveNet::mapOrigin2polyLines(int bspIndex)
+{
+	std::vector<int> tmp;
+	int sampleNum = polyLines[bspIndex].size();
+	int originNum = originPolyLines[bspIndex].size();
+	int range = sampleNum / originNum * 2 + 1;
+	if (checkCycleSpline(bspIndex))
+	{
+		int s;
+		double mindist = 10;
+		for (int i = 0; i < sampleNum; ++ i)
+		{
+			double dist = (originPolyLines[bspIndex][0] - polyLines[bspIndex][i]).length();
+			if (dist < mindist)
+			{
+				mindist = dist;
+				s = i;
+			}
+		}
+		tmp.push_back(s)
+		for (int i = 1; i < originNum; ++ i)
+		{
+			mindist = 10;
+			int nexts;
+			for (int j = s - range; j < s + range; ++ j)
+			{
+				double dist = (originPolyLines[bspIndex][i] - polyLines[bspIndex][(j+sampleNum) % sampleNum]).length();
+				if (dist < mindist)
+				{
+					mindist = dist;
+					nexts = j;
+				}
+			}
+			s = nexts;
+			tmp.push_back(s);
+		}
+	}
+	else
+	{
+		int s = 0;
+		double mindist = 10;
+		for (int i = 0; i < originNum; ++ i)
+		{
+			mindist = 10;
+			int nexts;
+			for (int j = s; j < s + range && j < sampleNum; ++ j)
+			{
+				double dist = (originPolyLines[bspIndex][i] - polyLines[bspIndex][j]).length();
+				if (dist < mindist)
+				{
+					mindist = dist;
+					nexts = j;
+				}
+			}
+			s = nexts;
+			tmp.push_back(s);
+		}
+	}
+	if (mapOrigin.size() > bspIndex) mapOrigin[bspIndex] = tmp;
+	else mapOrigin.push_back(tmp);
 }
 
 void CurveNet::calcDispCyclePoints(const Cycle& cycle ,

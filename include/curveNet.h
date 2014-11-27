@@ -6,6 +6,7 @@
 #include "disjointSet.h"
 #include "adjMatrix.h"
 #include "Plane.h"
+#include "curveMappingTool.h"
 
 struct PolyLineIndex
 {
@@ -27,6 +28,13 @@ public:
     int link;
     int pli;
 };
+
+class SelfSymmIdx
+{
+public:
+	SelfSymmIdx(int _n, int _n1, int _n2): n(_n), n1(_n1), n2(_n2) {}
+	int n, n1, n2;
+}
 
 class CurveNet
 {
@@ -62,6 +70,7 @@ public:
         const vec3d& x2 , const double& threshold);
 	bool checkSymmetry(const vec3d& x, const vec3d& nx,
 		const vec3d& y, const vec3d& ny, const double& threshold);
+	bool checkCycleSpline(int i);
 
     void addCurveType(int bspIndex);
     void addCollinearConstraint(int bspIndex);
@@ -70,6 +79,11 @@ public:
     void addJunctionConstraint(int bspIndex);
     void addSymmetryConstraint(int bspIndex, bool add = true);
 	int addSymmetryPlane(Plane &p, bool add, int a = -1, int b = -1);
+	int addSelfSymmPlane(Plane &p, bool add, int l, int a, int b);
+	void addSelfSymmetryConstraint(int bspIndex);
+
+	void addTransformConstraint(int bspIndex);
+	void mapOrigin2polyLines(int bspIndex);
 
     void calcDispCyclePoints(const Cycle& cycle ,
         std::vector<Path>& cyclePts , vec3d& cycleCenter);
@@ -86,6 +100,7 @@ public:
     std::vector<std::vector<CurveEdge> > edges;
     std::vector<Path> originPolyLines;
     std::vector<Path> polyLines;
+	std::vector<std::vector<int> > mapOrigin;
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
 
@@ -102,10 +117,16 @@ public:
     double orthoThr;
     double tangentThr;
 	double symmetryThr;
+	double ratioThr;
+	double planeDiffThr;
 
 	std::vector<Plane> symmetricPlanes;
 	std::vector<std::vector<std::pair<int, int> > > symmLines;
-    
+	std::vector<std::vector<SelfSymmIdx> > symmPoints;
+	
+	std::vector<CurveMapping> curveMaps;
+	std::vector<std::vector<std::pair<int, int> > > mapLines;
+
     DisjointSet collinearSet;
     DisjointSet parallelSet;
     AdjMatrix coplanarSet;
