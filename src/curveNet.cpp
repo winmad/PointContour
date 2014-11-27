@@ -677,7 +677,6 @@ void CurveNet::addSymmetryConstraint(int bspIndex, bool add)
 			{
 				bool flg = false;
 				Path &c2 = polyLines[i];
-				if ((c1[0] - c1[length-1]).length() > 1e-6)
 				for (int j = 0; j < pointNum; ++ j)
 				{
 					Plane p(0);
@@ -783,6 +782,77 @@ int CurveNet::addSymmetryPlane(Plane &p, bool add, int a, int b)
 		if (a > -1 && b > -1)
 			tmp.push_back(std::make_pair(a, b));
 		symmLines.push_back(tmp);
+		symmPoints.push_back(std::vector<SelfSymmIdx>());
+	}
+	return (int)symmetricPlanes.size() - 1;
+}
+
+void CurveNet::addSelfSymmetryConstraint(int bspIndex)
+{
+	int sampleNum = 10;
+	int pointNum = polyLines[bspIndex].size();
+	if (checkCycleSpline(bspIndex)) --pointNum;
+	int step = pointNum / sampleNum / 2;
+	double length = 0;
+	Path &c = polyLines[bspIndex];
+	for (int i = 0; i < pointNum; ++ i)
+	{
+		Plane p(0);
+		for (int j = 0; j < sampleNum; ++ j)
+		{
+			int l = (i + j * step) % pointNum;
+			int r = (i - 1 - j * step + pointNum) % pointNum;
+			Plane nextp((c[l]+c[r]) / 2, c[l] - c[r], (c[1] - c[r]).length());
+			p.add(nextp);
+		}
+		double dist = 0;
+		for (int j = 0; j < sampleNum; ++ j)
+		{
+			int l = (i + j * step) % pointNum;
+			int r = (i - 1 - j * step + pointNum) % pointNum;
+			dist += (p.reflect(c[l]) - c[r]).length();
+		}
+		if (dist < symmetryThr)
+		{
+			for (int j = 0; j < sampleNum; ++ j)
+			{
+				int l = (i + j * step) % pointNum;
+				int r = (i - 1 - j * step + pointNum) % pointNum;
+				addSelfSymmPlane(p, true, bspIndex, l, r);
+			}
+		}
+		if (!checkCycleSpline(bspIndex))
+		{
+			break;
+		}
+	}
+}
+
+int CurveNet::addSelfSymmPlane(Plane &p, bool add, int l, int a, int b)
+{
+	for (int i = 0; i < symmetricPlanes.size(); ++ i)
+	{
+		if (symmetricPlanes[i].dist(p) < planeDiffThr)
+		{
+			if (add)
+			{
+				symmetricPlanes[i].add(p);
+				symmPoints[i].push_back(SelfSymmIdx(l, a, b));
+			}
+			else
+			{
+				symmetricPlanes[i].remove(p);
+			}
+			return i;
+		}
+	}
+	if (add)
+	{
+		symmetricPlanes.push_back(p);
+		std::vector<SelfSymmIdx> tmp;
+		tmp.push_back(SelfSymmIdx(l, a, b));
+		symmPoints.push_back(tmp);
+		symmLines.push_back(std::vector<std::pair>());
 	}
 	return (int)symmetricPlanes.size() - 1;
 }

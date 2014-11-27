@@ -31,6 +31,13 @@ public:
 
 typedef std::vector<unsigned> Cycle;
 
+class SelfSymmIdx
+{
+public:
+	SelfSymmIdx(int _n, int _n1, int _n2): n(_n), n1(_n1), n2(_n2) {}
+	int n, n1, n2;
+}
+
 class CurveNet
 {
 public:
@@ -72,6 +79,8 @@ public:
     void addJunctionConstraint(int bspIndex);
     void addSymmetryConstraint(int bspIndex, bool add = true);
 	int addSymmetryPlane(Plane &p, bool add, int a = -1, int b = -1);
+	int addSelfSymmPlane(Plane &p, bool add, int l, int a, int b);
+	void addSelfSymmetryConstraint(int bspIndex);
 
 	void addTransformConstraint(int bspIndex);
 	void mapOrigin2polyLines(int bspIndex);
@@ -109,6 +118,7 @@ public:
 
 	std::vector<Plane> symmetricPlanes;
 	std::vector<std::vector<std::pair<int, int> > > symmLines;
+	std::vector<std::vector<SelfSymmIdx> > symmPoints;
 	
 	std::vector<CurveMapping> curveMaps;
 	std::vector<std::vector<std::pair<int, int> > > mapLines;
