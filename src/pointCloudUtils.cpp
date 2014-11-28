@@ -35,8 +35,8 @@ PointCloudUtils::PointCloudUtils()
         fprintf(stderr , "\nStart MATLAB successfully\n");
     }
 #ifdef _WIN32
-	//engEvalString(ep , "addpath D:\\fz\\point_cloud\\PointContour\\matlab");
-	engEvalString(ep , "addpath Y:\\Projects\\PointContour\\matlab");
+	engEvalString(ep , "addpath D:\\fz\\point_cloud\\PointContour\\matlab");
+	//engEvalString(ep , "addpath Y:\\Projects\\PointContour\\matlab");
 	//engEvalString(ep , "addpath D:\\Winmad\\PointContour\\matlab");
 #else
     engEvalString(ep , "addpath ~/Projects/PointContour/matlab/");
