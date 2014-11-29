@@ -38,6 +38,7 @@ include_directories(
   src
   GUI
   external/include
+  external/include/rapidxml
   external/lib/wx/wx/include/osx_cocoa-unicode-static-3.0
   /Applications/MATLAB_R2014a.app/extern/include
   /Users/Winmad/wxWidgets-3.0.1/build-osx/lib/wx/include/osx_cocoa-unicode-static-3.0

@@ -31,6 +31,7 @@
 
 class SketchGLCanvas;
 class PointCloudUtils;
+class ConfigManager;
 
 class PointContourGUIFrame: public wxFrame
 {
@@ -230,6 +231,7 @@ class PointContourGUIFrame: public wxFrame
         //*)
 
         PointCloudUtils *m_pcUtils;
+        ConfigManager *m_config;
         bool gridResChanged , extNumChanged , radiusChanged , alphaChanged;
         bool debugPosChanged;
 

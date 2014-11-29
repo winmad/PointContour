@@ -222,10 +222,13 @@ public:
     CurveNet *curveNet;
     Optimization opt;
 
+    std::string matlabFilesPath;
+    
 public:
 	PointCloudUtils();
 	~PointCloudUtils();
 
+    void globalInit();
 	void init();
 	void preprocess(const int& _gridResX , const int& _gridResY , const int& _gridResZ ,
 					const int& _extNum , const int& _filterRadius , 

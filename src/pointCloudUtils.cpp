@@ -5,6 +5,7 @@
 #include <omp.h>
 #include <queue>
 #include <algorithm>
+#include <string>
 #include <wx/filename.h>
 
 PointCloudUtils::PointCloudUtils()
@@ -26,42 +27,6 @@ PointCloudUtils::PointCloudUtils()
     KNN = 50;
 
     restartLog("debug.txt");
-    if (!(ep = engOpen("")))
-    {
-        fprintf(stderr , "\nCan't start MATLAB engine\n");
-    }
-    else
-    {
-        fprintf(stderr , "\nStart MATLAB successfully\n");
-    }
-#ifdef _WIN32
-	//engEvalString(ep , "addpath D:\\fz\\point_cloud\\PointContour\\matlab");
-	engEvalString(ep , "addpath Y:\\Projects\\PointContour\\matlab");
-	//engEvalString(ep , "addpath D:\\Winmad\\PointContour\\matlab");
-#else
-    engEvalString(ep , "addpath ~/Projects/PointContour/matlab/");
-#endif
-
-    // cycle::cycleTest();
-    /*
-    if (!mclInitializeApplication(NULL,0))
-    {
-        fprintf(stderr , "\nmcl initialized error\n");
-    }
-    else
-    {
-        fprintf(stderr , "\nmcl init successfully");
-    }
-    
-    if (!libbsInitialize())
-    {
-        fprintf(stderr , "\nlibbs initialized error\n");
-    }
-    else
-    {
-        fprintf(stderr , "\nlibbs init successfully");
-    }
-    */
 }
 
 PointCloudUtils::~PointCloudUtils()
@@ -72,6 +37,24 @@ PointCloudUtils::~PointCloudUtils()
 		delete pcRenderer;
 	if (tree != NULL)
 		delete tree;
+}
+
+void PointCloudUtils::globalInit()
+{
+    if (!(ep = engOpen("")))
+    {
+        fprintf(stderr , "\nCan't start MATLAB engine\n");
+    }
+    else
+    {
+        fprintf(stderr , "\nStart MATLAB successfully\n");
+    }
+
+    std::string cmd = "addpath " + matlabFilesPath;
+    printf("cmd = %s\n" , cmd.c_str());
+    engEvalString(ep , cmd.c_str());
+
+    // cycle::cycleTest();
 }
 
 void PointCloudUtils::allocateMemory(vec3i resol , int extra)
