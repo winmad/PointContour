@@ -112,7 +112,8 @@ public:
     bool pickCurve(int mouseX , int mouseY , int op);
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
-
+    void cycleStatusUpdate();
+    
     void optUpdate();
     void cycleDisc();
     void backup();
@@ -150,9 +151,13 @@ public:
     std::vector<Cycle> unsavedCycles;
     std::vector<std::vector<Path> > unsavedCyclePoints;
     std::vector<vec3d> unsavedCycleCenters;
+	std::vector<double> unsavedCycleScores;
 
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
+    
+    // true: if not be picked
+    std::vector<bool> unsavedStatus;
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshes; */
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshNormals; */
     

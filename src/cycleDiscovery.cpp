@@ -70,7 +70,7 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 			outCycles[i].push_back(cycleMap.front()[m_cycleUtil->m_cycleSetBreaked[i][j].arcID]);
 		}
 	}
-
+	
     std::vector<int> deleteSeq;
     for (int i = 0; i < inCycleConstraint.size(); i++)
     {
@@ -88,12 +88,14 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 #ifdef _WIN32
 	outMeshes.swap(m_cycleUtil->m_triangleSurface);
 	outNormals.swap(m_cycleUtil->m_triangleSurfaceNormal);
+	
     for (int i = 0; i < deleteSeq.size(); i++)
     {
         int j = deleteSeq[i];
         outMeshes.erase(outMeshes.begin() + j);
         outNormals.erase(outNormals.begin() + j);
     }
+	
 #endif
 
     delete m_cycleUtil;
@@ -3201,8 +3203,11 @@ void cycleUtils::surfaceBuilding()
 
 #ifdef _WIN32
 		if(m_normalsTable.empty())
+		{
+			printf("Normals empty...\n");
 			res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
 			&tile_list,&tileNum,weights,dosmooth,subs,laps);
+		}
 #endif
 
 
@@ -3357,6 +3362,7 @@ void cycleUtils::surfaceBuilding()
 			}
 
 #ifdef _WIN32
+			printf("Normals not empty...\n");
 			res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
 				dosmooth,subs,laps);
 #endif

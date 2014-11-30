@@ -102,6 +102,11 @@ void PointCloudUtils::init()
     
     initialized = true;
 	getBBox();
+
+	pcColor.resize(pcData.size());
+	for (int i = 0; i < pcColor.size(); i++)
+		pcColor[i] = -1;
+
 	pcRenderer->init();
 	if (tree != NULL)
 		delete tree;
@@ -1452,6 +1457,114 @@ void PointCloudUtils::optimizeJunction(CurveNet* cn , const vec3d& pos)
         printf("adj pt = (%.6f,%.6f,%.6f)\n" , pts[i].x , pts[i].y , pts[i].z);
     }
     */
+}
+
+double PointCloudUtils::calcPatchScore(std::vector<std::vector<vec3d> >& mesh)
+{
+	double numer = 0 , denom = 0;
+	for (int i = 0; i < mesh.size(); i++)
+	{
+		for (int j = 0; j < mesh[i].size(); j++)
+		{
+			vec3d pos = mesh[i][j];
+			DistQuery q;
+			q.maxSqrDis = 1e30;
+			tree->searchKnn(0 , pos , q);
+			numer += q.maxSqrDis;
+			denom += 1;
+		}
+	}
+	return numer / denom;
+}
+
+void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d> > >& meshes , 
+	std::vector<double>& scores)
+{
+	int numCycles = meshes.size();
+	scores.resize(numCycles);
+
+	std::vector<PatchPointData> patchPointData;
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		for (int j = 0; j < meshes[i].size(); j++)
+		{
+			vec3d triCenter;
+			for (int k = 0; k < meshes[i][j].size(); k++)
+				triCenter += meshes[i][j][k];
+			if (meshes[i][j].size() > 0)
+				triCenter /= (double)meshes[i][j].size();
+			patchPointData.push_back(PatchPointData(triCenter , i));
+		}
+	}
+
+	if (patchPointData.size() == 0)
+		return;
+	PointKDTree<PatchPointData> patchPointTree(patchPointData);
+
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		double numer = 0 , denom = 0;
+		for (int j = 0; j < meshes[i].size(); j++)
+		{
+			for (int k = 0; k < meshes[i][j].size(); k++)
+			{
+				vec3d pos = meshes[i][j][k];
+				DistQuery q;
+				q.maxSqrDis = 1e30;
+				tree->searchKnn(0 , pos , q);
+				pos = q.nearest;
+				q.maxSqrDis = 1e30;
+				patchPointTree.searchKnn(0 , pos , q);
+
+				if (q.patchId == i)
+					numer += 1.0;
+				denom += 1.0;
+			}
+		}
+		printf("cycle %d: %.2f / %.2f\n" , i , numer , denom);
+		if (denom > 0)
+			scores[i] = numer / denom;
+		else
+			scores[i] = 0;
+	}
+}
+
+void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes)
+{
+	std::vector<PatchPointData> patchPointData;
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		for (int j = 0; j < meshes[i].size(); j++)
+		{
+			vec3d triCenter;
+			for (int k = 0; k < meshes[i][j].size(); k++)
+				triCenter += meshes[i][j][k];
+			if (meshes[i][j].size() > 0)
+				triCenter /= (double)meshes[i][j].size();
+			patchPointData.push_back(PatchPointData(triCenter , i));
+		}
+	}
+
+	if (patchPointData.size() == 0)
+		return;
+	PointKDTree<PatchPointData> patchPointTree(patchPointData);
+
+	for (int i = 0; i < pcData.size(); i++)
+	{
+		DistQuery q;
+		q.maxSqrDis = 1e30;
+		patchPointTree.searchKnn(0 , pcData[i].pos , q);
+		if (q.maxSqrDis < 1e-4)
+		{
+			pcColor[i] = q.patchId;
+		}
+		else
+		{
+			pcColor[i] = -1;
+		}
+	}
+
+	Colormap::colormapHeatColor(meshes.size() , colors);
 }
 
 void PointCloudUtils::loadCurveNet()
