@@ -1531,6 +1531,8 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 
 void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes)
 {
+	timer.PushCurrentTime();
+
 	std::vector<PatchPointData> patchPointData;
 	for (int i = 0; i < meshes.size(); i++)
 	{
@@ -1554,7 +1556,7 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 		DistQuery q;
 		q.maxSqrDis = 1e30;
 		patchPointTree.searchKnn(0 , pcData[i].pos , q);
-		if (q.maxSqrDis < 1e-4)
+		if (q.maxSqrDis < 0.005)
 		{
 			pcColor[i] = q.patchId;
 		}
@@ -1565,6 +1567,8 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 	}
 
 	Colormap::colormapHeatColor(meshes.size() , colors);
+
+	timer.PopAndDisplayTime("\nPoint segmentation: %.6f\n");
 }
 
 void PointCloudUtils::loadCurveNet()

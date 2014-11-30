@@ -7,7 +7,9 @@
 #include "curveNet.h"
 #include "optimization.h"
 #include "cycleDiscovery.h"
+#include "colormap.h"
 #include <vector>
+#include <string>
 
 class PointCloudUtils;
 class CurveNet;
@@ -66,11 +68,13 @@ public:
 					   const vec3d& c , const double& lc);
     void drawPatch(const cycle::TriangleCycle& triangleCycle ,
         const cycle::TriangleCycle& triangleCycleNormal);
+	void drawString(const std::string& str);
 
 	void callListPoints();
 	void callListSurfelDisc();
 	void callListSelectionBuffer();
 
+	void renderString();
 	void renderPoints();
 	void renderSurfelDisc();
 	void renderPointCloud();
@@ -99,6 +103,9 @@ public:
 
     void render();
 
+	void cycleColorGenByRandom(std::vector<Cycle>& cycles , std::vector<Colormap::color>& colors);
+	void cycleColorGenByRanking(std::vector<double>& cycleScores , std::vector<Colormap::color>& colors);
+
 	void clearPaths();
     void clearTemp();
 
@@ -110,9 +117,11 @@ public:
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
     bool pickCurve(int mouseX , int mouseY , int op);
+	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
     void cycleStatusUpdate();
+	void cycleGroupUpdate();
     
     void optUpdate();
     void cycleDisc();
@@ -152,6 +161,9 @@ public:
     std::vector<std::vector<Path> > unsavedCyclePoints;
     std::vector<vec3d> unsavedCycleCenters;
 	std::vector<double> unsavedCycleScores;
+
+	std::vector<int> group;
+	std::vector<bool> inGroup;
 
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;

@@ -292,6 +292,11 @@ void CurveNet::deleteCycle(const int& deleteCycleIndex)
 #endif
 }
 
+void CurveNet::deleteCycleGroup(const int& deleteGroupIndex)
+{
+
+}
+
 int CurveNet::getNodeIndex(const vec3d& pos)
 {
     for (int i = 0; i < numNodes; i++)
@@ -1043,14 +1048,27 @@ void CurveNet::calcDispCyclePoints(const Cycle& cycle ,
     }
 }
 
-void CurveNet::addCycle(const Cycle& cycle)
+void CurveNet::addCycle(const Cycle& cycle , const std::vector<Path>& cyclePts , 
+	const vec3d& cycleCenter)
 {
     cycles.push_back(cycle);
-    std::vector<Path> cyclePts;
-    vec3d center;
-    calcDispCyclePoints(cycle , cyclePts , center);
-    cycleCenters.push_back(center);
+    cycleCenters.push_back(cycleCenter);
     cyclePoints.push_back(cyclePts);
+}
+
+void CurveNet::addCycleGroup(const std::vector<Cycle>& _cycles , 
+	const std::vector<std::vector<Path> >& _cyclePts , 
+	const std::vector<vec3d>& _cycleCenters)
+{
+	std::vector<int> _group;
+	for (int i = 0; i < _cycles.size(); i++)
+	{
+		_group.push_back(cycles.size());
+		cycles.push_back(_cycles[i]);
+		cyclePoints.push_back(_cyclePts[i]);
+		cycleCenters.push_back(_cycleCenters[i]);
+	}
+	cycleGroups.push_back(_group);
 }
 
 void CurveNet::test()

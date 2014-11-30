@@ -166,10 +166,10 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer5;
 
     Create(parent, wxID_ANY, _("PointContour"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
-    SetClientSize(wxSize(1000,650));
+    SetClientSize(wxSize(1000,670));
     Move(wxPoint(50,20));
     SplitterWindow1 = new wxSplitterWindow(this, ID_SPLITTERWINDOW1, wxPoint(0,0), wxSize(1000,630), wxSP_3D, _T("ID_SPLITTERWINDOW1"));
-    SplitterWindow1->SetMinSize(wxSize(300,300));
+    SplitterWindow1->SetMinSize(wxSize(200,200));
     SplitterWindow1->SetMinimumPaneSize(200);
     SplitterWindow1->SetSashGravity(1);
     int GLCanvasAttributes_1[] = {
@@ -179,6 +179,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     	WX_GL_STENCIL_SIZE,    0,
     	0, 0 };
     m_openGLView = new SketchGLCanvas(SplitterWindow1, ID_GLCANVAS1, wxPoint(0,0), wxSize(650,630), wxTRANSPARENT_WINDOW, _T("ID_GLCANVAS1"), GLCanvasAttributes_1);
+    m_openGLView->SetFocus();
     m_openGLView->SetBackgroundColour(wxColour(255,255,255));
     ScrolledWindow1 = new wxScrolledWindow(SplitterWindow1, ID_SCROLLEDWINDOW1, wxPoint(750,0), wxSize(250,630), wxTRANSPARENT_WINDOW, _T("ID_SCROLLEDWINDOW1"));
     ScrolledWindow1->SetBackgroundColour(wxColour(255,255,255));

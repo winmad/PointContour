@@ -3,7 +3,7 @@
 	<object class="wxFrame" name="PointContourGUIFrame">
 		<title>PointContour</title>
 		<pos>50,20</pos>
-		<size>1000,650</size>
+		<size>1000,670</size>
 		<id_arg>0</id_arg>
 		<handler function="OnKeyDown" entry="EVT_KEY_DOWN" />
 		<handler function="OnMouseWheel" entry="EVT_MOUSEWHEEL" />
@@ -15,11 +15,12 @@
 			<orientation>vertical</orientation>
 			<pos>0,0</pos>
 			<size>1000,630</size>
-			<minsize>300,300</minsize>
+			<minsize>200,200</minsize>
 			<object class="wxGLCanvas" name="ID_GLCANVAS1" subclass="SketchGLCanvas" variable="m_openGLView" member="yes">
 				<mDepthSize>16</mDepthSize>
 				<pos>0,0</pos>
 				<size>650,630</size>
+				<focused>1</focused>
 				<bg>#FFFFFF</bg>
 				<style>wxTRANSPARENT_WINDOW</style>
 				<handler function="OnOpenGLViewKeyDown" entry="EVT_KEY_DOWN" />

@@ -72,6 +72,27 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 	}
 	
     std::vector<int> deleteSeq;
+	// remove duplicated cycles
+	bool flag = true;
+	while (flag)
+	{
+		flag = false;
+		for (int i = 0; i < outCycles.size(); i++)
+		{
+			for (int j = i + 1; j < outCycles.size(); j++)
+			{
+				if (isSameCycle(outCycles[i] , outCycles[j]))
+				{
+					outCycles.erase(outCycles.begin() + j);
+					deleteSeq.push_back(j);
+					flag = true;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+	}
+	// remove existing cycles
     for (int i = 0; i < inCycleConstraint.size(); i++)
     {
         for (int j = 0; j < outCycles.size(); j++)
@@ -3180,7 +3201,7 @@ void cycleUtils::surfaceBuilding()
 		}
 		Curve pointList;
 		for(int i=0;i<curves.size();i++){
-			for(int j=0;j<curves[i].size()-1;j++)
+			for(int j=0;j<(int)curves[i].size()-1;j++)
 				pointList.push_back(curves[i][j]);
 		}
 		double* points;
@@ -3202,6 +3223,13 @@ void cycleUtils::surfaceBuilding()
 		int newPointNum;
 
 #ifdef _WIN32
+		/*
+		writeLog("===== cycle %d =====\n" , c);
+		for (int i = 0; i < point_num; i++)
+		{
+			writeLog("%.6f %.6f %.6f\n" , points[i * 3] , points[i * 3 + 1] , points[i * 3 + 2]);
+		}
+		*/
 		if(m_normalsTable.empty())
 		{
 			printf("Normals empty...\n");
@@ -3365,6 +3393,7 @@ void cycleUtils::surfaceBuilding()
 			printf("Normals not empty...\n");
 			res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
 				dosmooth,subs,laps);
+			printf("surface res = %d\n" , res);
 #endif
 		
 			LinearCurveNet cycleNormalForVis = cycleNormal;
