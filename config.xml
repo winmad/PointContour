@@ -1,0 +1,17 @@
+<config>
+  <matlab_files>
+    <path>Y:\\Projects\\PointContour\\matlab\\</path>
+  </matlab_files>
+  
+  <ampl_exe>
+    <path>Y:\\AMPL_win\\</path>
+  </ampl_exe>
+  
+  <ampl_include>
+    <path>Y:\\Projects\\PointContour\\ampl\\</path>
+  </ampl_include>
+
+  <ampl_result>
+    <path>Y:\\Projects\\PointContour\\ampl\\</path>
+  </ampl_result>
+</config>

@@ -3,7 +3,7 @@
 	<object class="wxFrame" name="PointContourGUIFrame">
 		<title>PointContour</title>
 		<pos>50,20</pos>
-		<size>1000,650</size>
+		<size>1000,670</size>
 		<id_arg>0</id_arg>
 		<handler function="OnKeyDown" entry="EVT_KEY_DOWN" />
 		<handler function="OnMouseWheel" entry="EVT_MOUSEWHEEL" />
@@ -20,6 +20,7 @@
 				<mDepthSize>16</mDepthSize>
 				<pos>0,0</pos>
 				<size>650,630</size>
+				<focused>1</focused>
 				<bg>#FFFFFF</bg>
 				<style>wxTRANSPARENT_WINDOW</style>
 				<handler function="OnOpenGLViewKeyDown" entry="EVT_KEY_DOWN" />
@@ -123,64 +124,6 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxFlexGridSizer" variable="FlexGridSizer11" member="no">
-																<cols>2</cols>
-																<object class="sizeritem">
-																	<object class="wxStaticText" name="ID_STATICTEXT12" variable="StaticText12" member="yes">
-																		<label>lambda</label>
-																	</object>
-																	<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-																	<border>5</border>
-																	<option>1</option>
-																</object>
-																<object class="sizeritem">
-																	<object class="wxTextCtrl" name="ID_TEXTCTRL12" variable="SmoothScale" member="yes">
-																		<value>0.1</value>
-																		<style>wxTE_PROCESS_ENTER</style>
-																		<handler function="OnSmoothScaleTextEnter" entry="EVT_TEXT_ENTER" />
-																	</object>
-																	<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-																	<border>5</border>
-																	<option>1</option>
-																</object>
-																<object class="sizeritem">
-																	<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticText13" member="yes">
-																		<label>Iters</label>
-																	</object>
-																	<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-																	<border>5</border>
-																	<option>1</option>
-																</object>
-																<object class="sizeritem">
-																	<object class="wxTextCtrl" name="ID_TEXTCTRL13" variable="SmoothIter" member="yes">
-																		<value>20</value>
-																		<style>wxTE_PROCESS_ENTER</style>
-																		<handler function="OnSmoothIterTextEnter" entry="EVT_TEXT_ENTER" />
-																	</object>
-																	<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-																	<border>5</border>
-																	<option>1</option>
-																</object>
-															</object>
-															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxChoice" name="ID_CHOICE1" variable="SmoothingChoice" member="yes">
-																<content>
-																	<item>None</item>
-																	<item>Laplacian</item>
-																	<item>Gradient descent</item>
-																</content>
-																<selection>2</selection>
-																<handler function="OnSmoothingChoiceSelect" entry="EVT_CHOICE" />
-															</object>
-															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
 															<object class="wxCheckBox" name="ID_CHECKBOX5" variable="UseBSpline" member="yes">
 																<label>use B-Spline</label>
 																<checked>1</checked>
@@ -218,8 +161,24 @@
 														</object>
 														<object class="sizeritem">
 															<object class="wxCheckBox" name="ID_CHECKBOX7" variable="AutoOpt" member="yes">
-																<label>auto optimization</label>
+																<label>Auto Optimization</label>
+																<checked>1</checked>
 																<handler function="OnAutoOptClick" entry="EVT_CHECKBOX" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+														<object class="sizeritem">
+															<object class="wxChoice" name="ID_CHOICE4" variable="PatchesVisual" member="yes">
+																<content>
+																	<item>all patches</item>
+																	<item>stored patches</item>
+																	<item>temp patches</item>
+																	<item>none</item>
+																</content>
+																<selection>0</selection>
+																<handler function="OnPatchesVisualSelect" entry="EVT_CHOICE" />
 															</object>
 															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 															<border>5</border>
@@ -549,6 +508,161 @@
 															<border>5</border>
 															<option>1</option>
 														</object>
+														<object class="sizeritem">
+															<object class="wxStaticBoxSizer" variable="StaticBoxSizer6" member="no">
+																<label>Local smooth</label>
+																<orient>wxVERTICAL</orient>
+																<object class="sizeritem">
+																	<object class="wxFlexGridSizer" variable="FlexGridSizer11" member="no">
+																		<cols>2</cols>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="ID_STATICTEXT12" variable="StaticText12" member="yes">
+																				<label>lambda</label>
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxTextCtrl" name="ID_TEXTCTRL12" variable="SmoothScale" member="yes">
+																				<value>0.1</value>
+																				<style>wxTE_PROCESS_ENTER</style>
+																				<handler function="OnSmoothScaleTextEnter" entry="EVT_TEXT_ENTER" />
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticText13" member="yes">
+																				<label>Iters</label>
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxTextCtrl" name="ID_TEXTCTRL13" variable="SmoothIter" member="yes">
+																				<value>20</value>
+																				<style>wxTE_PROCESS_ENTER</style>
+																				<handler function="OnSmoothIterTextEnter" entry="EVT_TEXT_ENTER" />
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																	</object>
+																	<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+																	<border>5</border>
+																	<option>1</option>
+																</object>
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+														<object class="sizeritem">
+															<object class="wxChoice" name="ID_CHOICE1" variable="SmoothingChoice" member="yes">
+																<content>
+																	<item>None</item>
+																	<item>Laplacian</item>
+																	<item>Gradient descent</item>
+																</content>
+																<selection>2</selection>
+																<handler function="OnSmoothingChoiceSelect" entry="EVT_CHOICE" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+														<object class="sizeritem">
+															<object class="wxStaticBoxSizer" variable="StaticBoxSizer7" member="no">
+																<label>Optimization</label>
+																<object class="sizeritem">
+																	<object class="wxFlexGridSizer" variable="FlexGridSizer13" member="no">
+																		<cols>2</cols>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="ID_STATICTEXT14" variable="StaticText14" member="yes">
+																				<label>#start points</label>
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxTextCtrl" name="ID_TEXTCTRL14" variable="NumStartPoints" member="yes">
+																				<value>6</value>
+																				<style>wxTE_PROCESS_ENTER</style>
+																				<handler function="OnNumStartPointsTextEnter" entry="EVT_TEXT_ENTER" />
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="ID_STATICTEXT15" variable="StaticText15" member="yes">
+																				<label>max time</label>
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxTextCtrl" name="ID_TEXTCTRL15" variable="MaxTime" member="yes">
+																				<value>0.2</value>
+																				<style>wxTE_PROCESS_ENTER</style>
+																				<handler function="OnMaxTimeTextEnter" entry="EVT_TEXT_ENTER" />
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="ID_STATICTEXT16" variable="StaticText16" member="yes">
+																				<label>large bound</label>
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxTextCtrl" name="ID_TEXTCTRL16" variable="LargeBound" member="yes">
+																				<value>0.003</value>
+																				<style>wxTE_PROCESS_ENTER</style>
+																				<handler function="OnLargeBoundTextEnter" entry="EVT_TEXT_ENTER" />
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="ID_STATICTEXT17" variable="StaticText17" member="yes">
+																				<label>small bound</label>
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxTextCtrl" name="ID_TEXTCTRL17" variable="SmallBound" member="yes">
+																				<value>0.001</value>
+																				<style>wxTE_PROCESS_ENTER</style>
+																				<handler function="OnSmallBoundTextEnter" entry="EVT_TEXT_ENTER" />
+																			</object>
+																			<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																	<border>5</border>
+																	<option>1</option>
+																</object>
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -581,12 +695,35 @@
 						<accel>Ctrl-F</accel>
 						<handler function="OnOpenPointCloudSelected" entry="EVT_MENU" />
 					</object>
+					<object class="wxMenuItem" name="ID_MENUITEM4" variable="OpenCurveNetwork" member="yes">
+						<label>Curve Network</label>
+						<accel>Ctrl-C</accel>
+						<handler function="OnOpenCurveNetworkSelected" entry="EVT_MENU" />
+					</object>
+				</object>
+				<object class="wxMenuItem" name="ID_MENUITEM3" variable="SaveCurveNetwork" member="yes">
+					<label>Save curve network</label>
+					<accel>Ctrl-S</accel>
+					<handler function="OnSaveCurveNetworkSelected" entry="EVT_MENU" />
 				</object>
 				<object class="wxMenuItem" name="idMenuQuit" variable="MenuItem1" member="no">
 					<label>Quit</label>
 					<accel>Alt-F4</accel>
 					<help>Quit the application</help>
 					<handler function="OnQuit" entry="EVT_MENU" />
+				</object>
+			</object>
+			<object class="wxMenu" variable="Menu3" member="yes">
+				<label>Edit</label>
+				<object class="wxMenuItem" name="ID_MENUITEM5" variable="Undo" member="yes">
+					<label>Undo</label>
+					<accel>Ctrl-Z</accel>
+					<handler function="OnUndoSelected" entry="EVT_MENU" />
+				</object>
+				<object class="wxMenuItem" name="ID_MENUITEM6" variable="Redo" member="yes">
+					<label>Redo</label>
+					<accel>Ctrl-R</accel>
+					<handler function="OnRedoSelected" entry="EVT_MENU" />
 				</object>
 			</object>
 			<object class="wxMenu" variable="Menu2" member="no">

@@ -9,6 +9,7 @@
 #include "Heap.h"
 #include "TimeManager.h"
 #include "curveNet.h"
+#include "colormap.h"
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -30,9 +31,20 @@ struct Data
 	vec3d n;
 };
 
+struct PatchPointData
+{
+	vec3d pos;
+	int patchId;
+
+	PatchPointData() {}
+	PatchPointData(const vec3d& _pos , const int& _patchId)
+		: pos(_pos) , patchId(_patchId) {}
+};
+
 struct DistQuery
 {
     double maxSqrDis;
+	int patchId;
     vec3d nearest;
 
     void process(Data* d , double& dist2)
@@ -40,6 +52,13 @@ struct DistQuery
         nearest = d->pos;
         maxSqrDis = dist2;
     }
+
+	void process(PatchPointData* d , double& dist2)
+	{
+		nearest = d->pos;
+		maxSqrDis = dist2;
+		patchId = d->patchId;
+	}
 };
 
 struct Tensor
@@ -222,10 +241,16 @@ public:
     CurveNet *curveNet;
     Optimization opt;
 
+	std::vector<int> pcColor;
+	std::vector<Colormap::color> colors;
+
+    std::string matlabFilesPath;
+    
 public:
 	PointCloudUtils();
 	~PointCloudUtils();
 
+    void globalInit();
 	void init();
 	void preprocess(const int& _gridResX , const int& _gridResY , const int& _gridResZ ,
 					const int& _extNum , const int& _filterRadius , 
@@ -267,6 +292,14 @@ public:
     void laplacianSmooth(Path& path);
     void gradientDescentSmooth(Path& path);
     void optimizeJunction(CurveNet* cn , const vec3d& pos);
+
+	// weak one
+	double calcPatchScore(std::vector<std::vector<vec3d> >& mesh);
+	// strong one
+	void calcPatchScores(std::vector<std::vector<std::vector<vec3d> > >& meshes ,
+		std::vector<double>& scores);
+
+	void pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes);
 
     void loadCurveNet();
     void saveCurveNet();

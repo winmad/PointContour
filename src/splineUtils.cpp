@@ -121,7 +121,7 @@ void resampleBsp(BSpline& bsp , Path& path)
         {
             vec3d u = path[j] - x1;
             double proj = u.dot(v);
-            proj = std::min(std::max(proj , 0.0) , len);
+            proj = std::min(std::max(proj , 1e-5) , len - 1e-5);
             path[j] = x1 + v * proj;
         }
         return;

@@ -59,6 +59,9 @@ public:
 	void generateBAT(std::string file);
 	void run(CurveNet *net);
 
+    std::string amplExePath;
+    std::string amplIncludePath;
+    std::string amplResultPath;
     int numStartPoints;
     double maxRealTime;
     double largeBound , smallBound;

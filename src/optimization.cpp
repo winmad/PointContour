@@ -288,7 +288,7 @@ void Optimization::init(CurveNet *_net)
 void Optimization::generateDAT(string file)
 {
 	ofstream fout(file.data());
-	fout << "param N := " << numVars - 1 << ";\n";
+    fout << "param N := " << numVars - 1 << ";\n";
     fout << "param largeBound := " << largeBound << ";\n";
     fout << "param smallBound := " << smallBound << ";\n";
 
@@ -335,7 +335,7 @@ void Optimization::generateDAT(string file)
 	}
 	fout << ";\n";
 
-	fout << "param RPN := " << (int)net->symmetricPlanes.size() - 1 << ";\n";
+    fout << "param RPN := " << (int)net->symmetricPlanes.size() - 1 << ";\n";
 
 	fout << "param init_symmetric_plane :=\n";
 	for (int i = 0; i < net->symmetricPlanes.size(); ++ i)
@@ -349,7 +349,7 @@ void Optimization::generateDAT(string file)
 	}
 	fout << ";\n";
 
-	fout << "param SN := " << (int)straightlines.size() - 1 << ";\n";
+    fout << "param SN := " << (int)straightlines.size() - 1 << ";\n";
 	fout << "param sidx :=\n";
 	for (int i = 0; i < straightlines.size(); ++ i)
 	{
@@ -422,6 +422,7 @@ void Optimization::generateDAT(string file)
 		}
 	}
 	fout << ";\n";
+
 	fout << "param coef :=\n";
 	for (int i = 0; i < bsplines.size(); ++ i)
 	{
@@ -431,7 +432,8 @@ void Optimization::generateDAT(string file)
 			fout << "\t[" << i << ", " << j << ", *]";
 			for (int k = 0; k < bsplines[i].size(); ++ k)
 			{
-				fout << " " << k << " " << net->bsplines[bsplinesIdx[i]].coefs[net->mapOrigin[bsplinesIdx[i]][j]][k];
+                fout << " " << k << " " << net->bsplines[bsplinesIdx[i]].coefs[j][k];
+                // fout << " " << k << " " << net->bsplines[bsplinesIdx[i]].coefs[net->mapOrigin[bsplinesIdx[i]][j]][k];
 			}
 			fout << "\n";
 		}
@@ -622,6 +624,7 @@ void Optimization::generateMOD(string file)
 void Optimization::generateRUN(string file)
 {
 	ofstream fout(file.data());
+    /*
 #if defined(_WIN32)
 	fout << "reset;\n"
 		 << "option ampl_include 'D:\\fz\\point_cloud\\PointContour\\Release';\n"
@@ -634,8 +637,11 @@ void Optimization::generateRUN(string file)
 		 << "p[i, 1], p[i, 2], p[i, 3] "
 		 << "> D:\\fz\\point_cloud\\PointContour\\Release\\result.out;\n";
 #elif defined(__APPLE__)
+    */
     fout << "reset;\n"
-		 << "option ampl_include '/Users/Winmad/Projects/PointContour/ampl';\n"
+		 << "option ampl_include '"
+         << amplIncludePath
+         << "';\n"
 		 << "option solver knitroampl;\n"
 		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves="
          << numStartPoints
@@ -647,8 +653,10 @@ void Optimization::generateRUN(string file)
 		 << "solve;\n"
 		 << "printf {i in 0..N} \"%f %f %f\\n\", "
 		 << "p[i, 1], p[i, 2], p[i, 3] "
-		 << "> /Users/Winmad/Projects/PointContour/ampl/result.out;\n";
-#endif
+		 << "> "
+         << amplResultPath
+         << "result.out;\n";
+    //#endif
 	fout.close();
 }
 
@@ -656,30 +664,39 @@ void Optimization::generateBAT(string file)
 {
 	ofstream fout(file.data());
 #if defined(_WIN32)
-	fout << "D:\n"
-		 << "cd D:\\fz\\point_cloud\\AMPLcml\n"
-		 << "ampl.exe D:\\fz\\point_cloud\\PointContour\\Release\\test.run\n";
+    std::string diskStr = amplExePath.substr(0 , 2) + "\n";
+	fout << diskStr
+		 << "cd "
+         << amplExePath
+         << "\n"
+		 << "ampl.exe "
+         << amplIncludePath
+         << "test.run\n";
 		 //<< "pause\n";
 #elif defined(__APPLE__)
-    fout << "cd /Users/Winmad/AMPL_win\n"
-		 << "wine ampl.exe /Users/Winmad/Projects/PointContour/ampl/test.run\n";
+    fout << "cd "
+         << amplExePath
+         << "\n"
+		 << "wine ampl.exe "
+         << amplIncludePath
+         << "test.run\n";
 #endif
 	fout.close();
 }
 
 void Optimization::run(CurveNet *net)
 {
-
 #if defined(_WIN32)
-	generateDAT("test.dat");
-	generateMOD("test.mod");
-	generateRUN("test.run");
-	generateBAT("test.bat");
-	system("test.bat");
-	ifstream fin("result.out");
+    string fileroot = amplIncludePath;
+    generateDAT(fileroot + "test.dat");
+	generateMOD(fileroot + "test.mod");
+	generateRUN(fileroot + "test.run");
+	generateBAT(fileroot + "test.bat");
+	string cmd = fileroot + "test.bat";
+	system(cmd.c_str());
 #elif defined(__APPLE__)
     // timer.PushCurrentTime();
-    string fileroot = "/Users/Winmad/Projects/PointContour/ampl/";
+    string fileroot = amplIncludePath;
     generateDAT(fileroot + "test.dat");
 	generateMOD(fileroot + "test.mod");
 	generateRUN(fileroot + "test.run");
@@ -689,9 +706,8 @@ void Optimization::run(CurveNet *net)
     system(cmd.c_str());
     cmd = fileroot + "test.sh";
 	system(cmd.c_str());
-	ifstream fin(fileroot + "result.out");
 #endif
-
+	ifstream fin(fileroot + "result.out");
     // timer.PushCurrentTime();
     std::vector<vec3d> varbuff;
     for (int i = 0; i < vars.size(); i++)

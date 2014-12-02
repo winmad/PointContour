@@ -10,6 +10,7 @@
 #include "SketchGLCanvas.h"
 #include "PointContourGUIMain.h"
 #include "pointCloudUtils.h"
+#include "ConfigManager.h"
 #include "fileIOHelper.h"
 #include <wx/wx.h>
 #include <wx/msgdlg.h>
@@ -438,7 +439,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
 
     m_pcUtils = new PointCloudUtils();
     *(m_openGLView->getPointCloudUtils()) = m_pcUtils;
-
+    m_config = new ConfigManager(m_pcUtils);
+    m_config->load("config.xml");
+    m_pcUtils->globalInit();
     m_pcUtils->statusBar = StatusBar1;
 }
 

@@ -46,9 +46,19 @@ public:
     void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
         bool newNode , const BSpline& bsp , const Path& originPath);
     void breakPath(const int& breakLine , const int& breakPoint);
+
+	void calcDispCyclePoints(const Cycle& cycle ,
+		std::vector<Path>& cyclePts , vec3d& cycleCenter);
+	void addCycle(const Cycle& cycle , const std::vector<Path>& cyclePts , 
+		const vec3d& cycleCenter);
+	void addCycleGroup(const std::vector<Cycle>& _cycles , 
+		const std::vector<std::vector<Path> >& _cyclePts ,
+		const std::vector<vec3d>& _cycleCenters);
+
     void deleteNode(const int& deleteNodeIndex);
     void deletePath(const int& deleteLineIndex);
     void deleteCycle(const int& deleteCycleIndex);
+	void deleteCycleGroup(const int& deleteGroupIndex);
     
     int getNodeIndex(const vec3d& pos);
     bool linkNoEdges(const int& ni);
@@ -85,10 +95,6 @@ public:
 	void addTransformConstraint(int bspIndex);
 	void mapOrigin2polyLines(int bspIndex);
 
-    void calcDispCyclePoints(const Cycle& cycle ,
-        std::vector<Path>& cyclePts , vec3d& cycleCenter);
-    void addCycle(const Cycle& cycle);
-
     void test();
     void debugPrint();
     void debugLog();
@@ -107,6 +113,11 @@ public:
     std::vector<Cycle> cycles;
     std::vector<vec3d> cycleCenters;
     std::vector<std::vector<Path> > cyclePoints;
+
+	std::vector<std::vector<int> > cycleGroups;
+
+	std::vector<std::vector<std::vector<vec3d> > > meshes;
+	std::vector<std::vector<std::vector<vec3d> > > meshNormals;
 
     // 1: line, 2: nothing, 3: coplanar
     std::vector<int> curveType;
