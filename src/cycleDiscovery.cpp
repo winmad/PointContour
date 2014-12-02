@@ -36,8 +36,11 @@ typedef graph_traits < graph_t >::edge_descriptor edge_descriptor;
 typedef std::pair<int, int> Edge;
 
 void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
-					std::vector<std::vector<unsigned> > &inCycleConstraint, 
-					std::vector<std::vector<unsigned> > &outCycles, 
+					std::vector<std::vector<unsigned> > &inCycleConstraint,
+					std::vector<std::vector<unsigned> > &outCycles,
+                    std::vector<int> &inCurveNums,
+                    std::vector<double*> &inCurvePoints,
+                    std::vector<double*> &inCurveNormals,
 					std::vector<std::vector<std::vector<Point> > >&outMeshes,
 					std::vector<std::vector<std::vector<Point> > >&outNormals)
 {
@@ -58,10 +61,8 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
     std::cout<<"tracing cycles from rotation graph...\n";
 	m_cycleUtil->constructCycles();
 	m_cycleUtil->cycleBreaking();
-#ifdef _WIN32
-    std::cout<<"making surface from cycles...\n";
-	m_cycleUtil->surfaceBuilding();
-#endif
+    std::cout<<"preparing to make surface from cycles...\n";
+	m_cycleUtil->surfaceBuilding(inCurveNums , inCurvePoints , inCurveNormals);
 
 	//result;
 	outCycles.clear();	outCycles.resize(m_cycleUtil->m_cycleSetBreaked.size());
@@ -105,6 +106,16 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
             }
         }
     }
+
+    for (int i = 0; i < deleteSeq.size(); i++)
+    {
+        int j = deleteSeq[i];
+        inCurveNums.erase(inCurveNums.begin() + j);
+        delete[] inCurvePoints[j];
+        inCurvePoints.erase(inCurvePoints.begin() + j);
+        delete[] inCurveNormals[j];
+        inCurveNormals.erase(inCurveNormals.begin() + j);
+    }
     
 #ifdef _WIN32
 	outMeshes.swap(m_cycleUtil->m_triangleSurface);
@@ -127,6 +138,9 @@ void cycleTest()
     std::vector<std::vector<vec3d> > curves;
     std::vector<std::vector<unsigned> > inCycleCons;
     std::vector<std::vector<unsigned> > cycles;
+    std::vector<int> inCurveNums;
+    std::vector<double*> inCurvePoints;
+    std::vector<double*> inCurveNormals;
     std::vector<std::vector<std::vector<vec3d> > > outMeshes;
 	std::vector<std::vector<std::vector<vec3d> > > outNormals;
 
@@ -178,7 +192,8 @@ void cycleTest()
 		curves.push_back(curve);
 	}
 
-    cycle::cycleDiscovery(curves , inCycleCons , cycles , outMeshes , outNormals);
+    cycle::cycleDiscovery(curves , inCycleCons , cycles ,
+        inCurveNums , inCurvePoints , inCurveNormals , outMeshes , outNormals);
     for (int i = 0; i < cycles.size(); i++)
     {
         printf("===== cycle %d =====\n" , i);
@@ -3170,7 +3185,9 @@ void cycleUtils::computeCycleCost()
 	}
 }
 
-void cycleUtils::surfaceBuilding()
+void cycleUtils::surfaceBuilding(std::vector<int> &inCurveNums,
+    std::vector<double*> &inCurvePoints ,
+    std::vector<double*> &inCurveNormals)
 {
 	if(m_cycleSetBreaked.empty())
 		return;
@@ -3189,7 +3206,7 @@ void cycleUtils::surfaceBuilding()
 		Cycle cycle = cycles[c];
 		LinearCurveNet curves;
 		for(int i=0;i<cycle.size();i++){
-			int arcID = cycle[i].arcID;			
+			int arcID = cycle[i].arcID;
 			curves.push_back(net.arcs[arcID].vertexList);
 			int strNode = m_curveNet.arcs[arcID].endNodesID.first;
 			int endNode = m_curveNet.arcs[arcID].endNodesID.second;
@@ -3207,10 +3224,15 @@ void cycleUtils::surfaceBuilding()
 		double* points;
 		int point_num= pointList.size();
 		points= new double[point_num*3];
+        inCurvePoints.push_back(NULL);
+        inCurvePoints.back() = new double[point_num*3];
 		for(int i=0;i<pointList.size();i++){
 			points[i*3+0]=pointList[i].x;
 			points[i*3+1]=pointList[i].y;
 			points[i*3+2]=pointList[i].z;
+            inCurvePoints.back()[i*3+0]=pointList[i].x;
+            inCurvePoints.back()[i*3+1]=pointList[i].y;
+            inCurvePoints.back()[i*3+2]=pointList[i].z;
 		}
 		double* tile_list;
 		int tileNum;
@@ -3222,6 +3244,8 @@ void cycleUtils::surfaceBuilding()
 		float* newNormals;
 		int newPointNum;
 
+        inCurveNums.push_back(point_num);
+        // inCurvePoints.push_back(points);
 #ifdef _WIN32
 		/*
 		writeLog("===== cycle %d =====\n" , c);
@@ -3232,7 +3256,6 @@ void cycleUtils::surfaceBuilding()
 		*/
 		if(m_normalsTable.empty())
 		{
-			printf("Normals empty...\n");
 			res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
 			&tile_list,&tileNum,weights,dosmooth,subs,laps);
 		}
@@ -3381,19 +3404,23 @@ void cycleUtils::surfaceBuilding()
 			}
 
 			float* normals;
+            inCurveNormals.push_back(NULL);
 			int normal_num= normalList.size();
 			normals= new float[normal_num*3];
+            inCurveNormals.back() = new double[normal_num*3];
 			for(int i=0;i<normalList.size();i++){
 				normals[i*3+0]=normalList[i].x;
 				normals[i*3+1]=normalList[i].y;
 				normals[i*3+2]=normalList[i].z;
+                inCurveNormals.back()[i*3+0]=normalList[i].x;
+                inCurveNormals.back()[i*3+1]=normalList[i].y;
+                inCurveNormals.back()[i*3+2]=normalList[i].z;
 			}
 
+            // inCurveNormals.push_back(normals_d);
 #ifdef _WIN32
-			printf("Normals not empty...\n");
 			res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
 				dosmooth,subs,laps);
-			printf("surface res = %d\n" , res);
 #endif
 		
 			LinearCurveNet cycleNormalForVis = cycleNormal;

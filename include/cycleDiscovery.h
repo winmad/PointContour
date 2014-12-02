@@ -355,7 +355,9 @@ public:
 	void constructRotationGraphbyPoleGraph();
 	void constructCycles();
 	void cycleBreaking();
-    void surfaceBuilding();
+    void surfaceBuilding(std::vector<int> &inCurveNums,
+        std::vector<double*> &inCurvePoints,
+        std::vector<double*> &inCurveNormals);
 
 	void drawPatch(int patchID);
 
@@ -370,8 +372,11 @@ public:
 
 
 void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
-	std::vector<std::vector<unsigned> > &inCycleConstraint, 
-	std::vector<std::vector<unsigned> > &outCycles, 
+	std::vector<std::vector<unsigned> > &inCycleConstraint,
+	std::vector<std::vector<unsigned> > &outCycles,
+    std::vector<int> &inCurveNums,
+    std::vector<double*> &inCurvePoints,
+    std::vector<double*> &inCurveNormals,
 	std::vector<std::vector<std::vector<Point> > >&outMeshes,
 	std::vector<std::vector<std::vector<Point> > >&outNormals);
 

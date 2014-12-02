@@ -262,10 +262,13 @@ void CurveNet::deletePath(const int& deleteLineIndex)
         {
             for (int j = 0; j < cycles[i].size(); j++)
             {
-                if (cycles[i][j] == deleteLineIndex)
+                for (int k = 0; k < cycles[i][j].size(); k++)
                 {
-                    deleteCycleIndex = i;
-                    break;
+                    if (cycles[i][j][k] == deleteLineIndex)
+                    {
+                        deleteCycleIndex = i;
+                        break;
+                    }
                 }
             }
             if (deleteCycleIndex != -1) break;
@@ -286,15 +289,81 @@ void CurveNet::deleteCycle(const int& deleteCycleIndex)
     cyclePoints.erase(cyclePoints.begin() + deleteCycleIndex);
     cycleCenters.erase(cycleCenters.begin() + deleteCycleIndex);
 
-#ifdef _WIN32
     meshes.erase(meshes.begin() + deleteCycleIndex);
     meshNormals.erase(meshNormals.begin() + deleteCycleIndex);
-#endif
 }
 
 void CurveNet::deleteCycleGroup(const int& deleteGroupIndex)
 {
 
+}
+
+void CurveNet::cycle2boundary(Cycle& cycle ,
+    std::vector<std::vector<vec3d> >& inCurves)
+{
+    CycleGroup cycleGroup;
+    cycleGroup.push_back(cycle);
+    cycle2boundary(cycleGroup , inCurves);
+}
+
+void CurveNet::cycle2boundary(CycleGroup& cycleGroup ,
+    std::vector<std::vector<vec3d> >& inCurves)
+{
+    inCurves.clear();
+    for (int i = 0; i < cycleGroup.size(); i++)
+    {
+        std::vector<vec3d> curve;
+        for (int j = 0; j < cycleGroup[i].size(); j++)
+        {
+            bool needReverse = false;
+            if (j > 0)
+            {
+                int u = cycleGroup[i][j];
+                if (isEqual(curve.back() , polyLines[u].back()))
+                {
+                    needReverse = true;
+                }
+                if (!needReverse)
+                {
+                    for (int i = 1; i < polyLines[u].size(); i++)
+                    {
+                        curve.push_back(polyLines[u][i]);
+                    }
+                }
+                else
+                {
+                    for (int i = (int)polyLines[u].size() - 2; i >= 0; i--)
+                    {
+                        curve.push_back(polyLines[u][i]);
+                    }
+                }
+            }
+            else
+            {
+                int u = cycleGroup[i][0] , v = cycleGroup[i][1];
+                if (isEqual(polyLines[u][0] , polyLines[v].front()) ||
+                    isEqual(polyLines[u][0] , polyLines[v].back()))
+                {
+                    needReverse = true;
+                }
+                if (!needReverse)
+                {
+                    for (int i = 1; i < polyLines[u].size(); i++)
+                    {
+                        curve.push_back(polyLines[u][i]);
+                    }
+                }
+                else
+                {
+                    for (int i = (int)polyLines[u].size() - 2; i >= 0; i--)
+                    {
+                        curve.push_back(polyLines[u][i]);
+                    }
+                }
+            }
+        }
+        inCurves.push_back(curve);
+    }
 }
 
 int CurveNet::getNodeIndex(const vec3d& pos)
@@ -1051,24 +1120,22 @@ void CurveNet::calcDispCyclePoints(const Cycle& cycle ,
 void CurveNet::addCycle(const Cycle& cycle , const std::vector<Path>& cyclePts , 
 	const vec3d& cycleCenter)
 {
-    cycles.push_back(cycle);
-    cycleCenters.push_back(cycleCenter);
-    cyclePoints.push_back(cyclePts);
+    CycleGroup _cycles;
+    std::vector<std::vector<Path> >  _cyclePts;
+    std::vector<vec3d> _cycleCenters;
+    _cycles.push_back(cycle);
+    _cycleCenters.push_back(cycleCenter);
+    _cyclePts.push_back(cyclePts);
+    addCycleGroup(_cycles , _cyclePts , _cycleCenters);
 }
 
 void CurveNet::addCycleGroup(const std::vector<Cycle>& _cycles , 
 	const std::vector<std::vector<Path> >& _cyclePts , 
 	const std::vector<vec3d>& _cycleCenters)
 {
-	std::vector<int> _group;
-	for (int i = 0; i < _cycles.size(); i++)
-	{
-		_group.push_back(cycles.size());
-		cycles.push_back(_cycles[i]);
-		cyclePoints.push_back(_cyclePts[i]);
-		cycleCenters.push_back(_cycleCenters[i]);
-	}
-	cycleGroups.push_back(_group);
+    cycles.push_back(_cycles);
+    cyclePoints.push_back(_cyclePts);
+    cycleCenters.push_back(_cycleCenters);
 }
 
 void CurveNet::test()

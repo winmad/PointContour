@@ -59,6 +59,9 @@ public:
     void deletePath(const int& deleteLineIndex);
     void deleteCycle(const int& deleteCycleIndex);
 	void deleteCycleGroup(const int& deleteGroupIndex);
+
+    void cycle2boundary(Cycle& cycle , std::vector<std::vector<vec3d> >& inCurves);
+    void cycle2boundary(CycleGroup& cycleGroup , std::vector<std::vector<vec3d> >& inCurves);
     
     int getNodeIndex(const vec3d& pos);
     bool linkNoEdges(const int& ni);
@@ -110,11 +113,9 @@ public:
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
 
-    std::vector<Cycle> cycles;
-    std::vector<vec3d> cycleCenters;
-    std::vector<std::vector<Path> > cyclePoints;
-
-	std::vector<std::vector<int> > cycleGroups;
+    std::vector<CycleGroup> cycles;
+    std::vector<std::vector<vec3d> > cycleCenters;
+    std::vector<std::vector<std::vector<Path> > > cyclePoints;
 
 	std::vector<std::vector<std::vector<vec3d> > > meshes;
 	std::vector<std::vector<std::vector<vec3d> > > meshNormals;

@@ -113,7 +113,10 @@ public:
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
     int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
-    int cycleSelectionByRay(int mouseX , int mouseY , std::vector<vec3d>& cycleCenters);
+    int cycleSelectionByRay(int mouseX , int mouseY ,
+        std::vector<vec3d>& cycleCenters);
+    int cycleGroupSelectionByRay(int mouseX , int mouseY ,
+        std::vector<std::vector<vec3d> >& cycleCenters);
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
     bool pickCurve(int mouseX , int mouseY , int op);
@@ -125,6 +128,9 @@ public:
     
     void optUpdate();
     void cycleDisc();
+    void surfacingUnsavedCycles();
+    void evalUnsavedCycles();
+
     void backup();
     void undo();
 public:
@@ -165,6 +171,10 @@ public:
 	std::vector<int> group;
 	std::vector<bool> inGroup;
 
+    std::vector<int> unsavedInCurveNums;
+    std::vector<double*> unsavedInCurvePoints;
+    std::vector<double*> unsavedInCurveNormals;
+    
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
     
