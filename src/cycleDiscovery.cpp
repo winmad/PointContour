@@ -3256,7 +3256,7 @@ void cycleUtils::surfaceBuilding(std::vector<int> &inCurveNums,
 		*/
 		if(m_normalsTable.empty())
 		{
-			res=delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
+			res=DrT::delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
 			&tile_list,&tileNum,weights,dosmooth,subs,laps);
 		}
 #endif
@@ -3419,7 +3419,7 @@ void cycleUtils::surfaceBuilding(std::vector<int> &inCurveNums,
 
             // inCurveNormals.push_back(normals_d);
 #ifdef _WIN32
-			res=delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
+			res=DrT::delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
 				dosmooth,subs,laps);
 #endif
 		

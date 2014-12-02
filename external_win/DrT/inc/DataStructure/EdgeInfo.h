@@ -2,6 +2,9 @@
 #define _EDGE_INFO_H_
 #include <float.h>
 
+namespace DrT
+{
+
 class EdgeInfo {
 public:
 	EdgeInfo();
@@ -19,4 +22,5 @@ public:
 private:
 };
 
+}
 #endif

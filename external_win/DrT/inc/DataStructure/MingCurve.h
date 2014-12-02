@@ -12,6 +12,9 @@
 #include <cmath>
 #include <stdio.h>
 
+namespace DrT
+{
+
 using namespace std;
 
 class MingCurve {
@@ -97,5 +100,7 @@ private:
 	bool isOpen;
 	int capacity;
 };
+
+}
 
 #endif

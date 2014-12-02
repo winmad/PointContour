@@ -12,6 +12,9 @@
 #include <cmath>
 #include <stdio.h>
 
+namespace DrT
+{
+
 #define RIGHT 1  //[a,b]
 #define LEFT 0	 //[-infinity,a)&(b,+infinity]
 #define triangle(t,i) tris[t*3+i]
@@ -127,4 +130,5 @@ protected:
 
 };
 
+}
 #endif

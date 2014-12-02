@@ -1,5 +1,8 @@
 #include "DMWT.h"
 
+namespace DrT
+{
+
 using namespace std;
 
 void DMWT::setDot(bool isdot1){
@@ -211,4 +214,6 @@ bool DMWT::tileSegment(int eind, char side, int ti, float& thisCost, int& thisTi
 	thisCost = optCost;
 	thisTile = optTile;
 	return true;
+}
+
 }

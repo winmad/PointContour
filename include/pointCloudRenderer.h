@@ -123,15 +123,24 @@ public:
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
-    void cycleStatusUpdate();
-	void cycleGroupUpdate();
     
+	void surfaceBuilding(// input
+		std::vector<int> &numPoints, std::vector<double*> &inCurves, std::vector<double*> &inNorms,
+		bool useDelaunay, bool useMinSet, bool useNormal, 
+		float areaWeight, float edgeWeight,	float dihedralWeight, float boundaryNormalWeight, 
+		// output
+		std::vector<std::vector<vec3d> > &mesh , std::vector<std::vector<vec3d> > &meshNormals
+		);
+
     void optUpdate();
     void cycleDisc();
+	void cycleStatusUpdate();
+
     void surfacingUnsavedCycles();
     void surfacingUnsavedCycleGroup();
     void evalUnsavedCycles();
-
+	void cycleGroupUpdate();
+	
     void backup();
     void undo();
 public:

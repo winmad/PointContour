@@ -2,6 +2,9 @@
 
 #include "SmoothPatch.h"
 
+namespace DrT
+{
+
 using namespace std;
 
 DMWT::DMWT(){
@@ -574,5 +577,7 @@ void DMWT::getResult(int** outFaces,int *outNum, double**outPoints, float** outN
 		}
 		*outNorms = outNs;
 	}
+
+}
 
 }

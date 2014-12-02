@@ -7,6 +7,10 @@
 #include "colormap.h"
 #include "CoarseSuf.h"
 
+#ifdef _WIN32
+	#include "SmoothPatch.h"
+#endif
+
 PointCloudRenderer::PointCloudRenderer()
 {
     pcUtils = NULL;
@@ -1402,47 +1406,13 @@ void PointCloudRenderer::surfacingUnsavedCycles()
         inCurves.push_back(unsavedInCurvePoints[i]);
         inNorms.push_back(unsavedInCurveNormals[i]);
 
-        int numPositions , numFaces;
-        float *pPositions;
-        float *pNormals;
-        int *pFaceIndices;
-        coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
-            true , true , true ,
-            0.f , 0.f , 1.f , 1.f , numPositions , numFaces ,
-            &pPositions , &pNormals , &pFaceIndices);
+		std::vector<std::vector<vec3d> > mesh;
+		std::vector<std::vector<vec3d> > meshNorm;
 
-        /*
-        writeLog("============== mesh ============\n");
-        for (int i = 0; i < numPositions; i++)
-        {
-            writeLog("p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f)\n" ,
-                pPositions[3 * i] , pPositions[3 * i + 1] , pPositions[3 * i + 2] ,
-                pNormals[3 * i] , pNormals[3 * i + 1], pNormals[3 * i + 2]);
-        }
-        */
-        std::vector<std::vector<vec3d> > mesh;
-        std::vector<std::vector<vec3d> > meshNorm;
-        for (int j = 0; j < numFaces; j++)
-        {
-            vec3i face(pFaceIndices[3 * j] , pFaceIndices[3 * j + 1] , pFaceIndices[3 * j + 2]);
-            std::vector<vec3d> triPos;
-            std::vector<vec3d> triNorm;
-            for (int k = 0; k < 3; k++)
-            {
-                vec3d p , n;
-                p.x = pPositions[3 * face[k]];
-                p.y = pPositions[3 * face[k] + 1];
-                p.z = pPositions[3 * face[k] + 2];
-                n.x = pNormals[3 * face[k]];
-                n.y = pNormals[3 * face[k] + 1];
-                n.z = pNormals[3 * face[k] + 2];
-                triPos.push_back(p);
-                triNorm.push_back(n);
-            }
-            mesh.push_back(triPos);
-            meshNorm.push_back(triNorm);
-        }
-
+		surfaceBuilding(numPoints , inCurves , inNorms ,
+			true , true , true , 0.f , 0.f , 1.f , 1.f , 
+			mesh , meshNorm);
+        
         unsavedMeshes.push_back(mesh);
         unsavedNormals.push_back(meshNorm);
         /*
@@ -1730,9 +1700,9 @@ void PointCloudRenderer::pickCycle(int mouseX , int mouseY , int op)
 				unsavedCycleCenters[pickedCycle]);
             dispCurveNet->meshes.push_back(unsavedMeshes[pickedCycle]);
             dispCurveNet->meshNormals.push_back(unsavedNormals[pickedCycle]);
-#ifdef _WIN32
+
             pcUtils->pcSegmentByPatches(dispCurveNet->meshes);
-#endif
+
 			cycleStatusUpdate();
         }
 		else if (op == 3)
@@ -1804,42 +1774,20 @@ void PointCloudRenderer::cycleGroupUpdate()
         inNorms.push_back(unsavedInCurveNormals[group[i]]);
 	}
 
-    int numPositions , numFaces;
-    float *pPositions;
-    float *pNormals;
-    int *pFaceIndices;
-    coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
-        true , true , true ,
-        1.f , 0.f , 0.f , 0.f , numPositions , numFaces ,
-        &pPositions , &pNormals , &pFaceIndices);
-
-    std::vector<std::vector<vec3d> > mesh;
-    std::vector<std::vector<vec3d> > meshNorm;
-    for (int j = 0; j < numFaces; j++)
-    {
-        vec3i face(pFaceIndices[3 * j] , pFaceIndices[3 * j + 1] , pFaceIndices[3 * j + 2]);
-        std::vector<vec3d> triPos;
-        std::vector<vec3d> triNorm;
-        for (int k = 0; k < 3; k++)
-        {
-            vec3d p , n;
-            p.x = pPositions[3 * face[k]];
-            p.y = pPositions[3 * face[k] + 1];
-            p.z = pPositions[3 * face[k] + 2];
-            n.x = pNormals[3 * face[k]];
-            n.y = pNormals[3 * face[k] + 1];
-            n.z = pNormals[3 * face[k] + 2];
-            triPos.push_back(p);
-            triNorm.push_back(n);
-        }
-        mesh.push_back(triPos);
-        meshNorm.push_back(triNorm);
-    }
+	std::vector<std::vector<vec3d> > mesh;
+	std::vector<std::vector<vec3d> > meshNorm;
+    
+	surfaceBuilding(numPoints , inCurves , inNorms ,
+		true , true , true , 1.f , 0.f , 0.f , 0.f , mesh , meshNorm);
 
     dispCurveNet->addCycleGroup(unsavedCycleGroup , unsavedCycleGroupPoints , unsavedCycleGroupCenters);
     dispCurveNet->meshes.push_back(mesh);
-    dispCurveNet->meshNormals.push_back(mesh);
+    dispCurveNet->meshNormals.push_back(meshNorm);
 	group.clear();
+
+	pcUtils->pcSegmentByPatches(dispCurveNet->meshes);
+
+	cycleStatusUpdate();
 }
 
 void PointCloudRenderer::pickSavedCycle(int mouseX , int mouseY , int op)
@@ -1869,6 +1817,103 @@ void PointCloudRenderer::pickSavedCycle(int mouseX , int mouseY , int op)
         */
         //dispCurveNet->debugLog();
     }
+}
+
+void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vector<double*> &inCurves, 
+	std::vector<double*> &inNorms, bool useDelaunay, bool useMinSet, bool useNormal, 
+	float areaWeight, float edgeWeight, float dihedralWeight, float boundaryNormalWeight, 
+	std::vector<std::vector<vec3d> > &mesh , std::vector<std::vector<vec3d> > &meshNormals)
+{
+	int numPositions , numFaces;
+	float *_pPositions;
+	float *_pNormals;
+	int *_pFaceIndices;
+	coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
+		true , true , true ,
+		1.f , 0.f , 0.f , 0.f , numPositions , numFaces ,
+		&_pPositions , &_pNormals , &_pFaceIndices);
+	mesh.clear();
+	meshNormals.clear();
+
+#ifdef _WIN32
+	SP::Mesh spMesh,outputMesh;
+	spMesh.allocateVertices(numPositions);
+	spMesh.allocateFaces(numFaces);
+
+	float *pPositions(spMesh.getPositions()),
+		*pNormals(spMesh.getNormals());
+
+	for(int i=0;i<numPositions;++i){
+		pPositions[3*i] = _pPositions[3*i];
+		pPositions[3*i+1] = _pPositions[3*i+1];
+		pPositions[3*i+2] = _pPositions[3*i+2];
+		pNormals[3*i] = _pNormals[3*i];
+		pNormals[3*i+1] = _pNormals[3*i+1];
+		pNormals[3*i+2] = _pNormals[3*i+2];
+	}
+
+	int *pFaceIndices(spMesh.getFaceIndices());
+	int nTempIndex(0);
+	for(int i=0; i<numFaces*3; i++){
+		pFaceIndices[i] = _pFaceIndices[i]; 
+	}	
+
+	SP::SmoothPatchSettings settings;
+	settings.mbConstrainNormals=true;
+	settings.mbRemesh=true;
+	settings.mfTension=0.0;
+	settings.mnNumSubdivisions=1;
+	settings.mnNumLaplacianSmooths=3;
+
+	SP::SmoothPatchBuilder smoothPatchBuilder;
+
+	smoothPatchBuilder.buildSmoothPatch(settings,spMesh,outputMesh);
+
+	int outFaceNum = outputMesh.getFaceCount();
+	
+	int *pInd = outputMesh.getFaceIndices();
+	float *pPoints=outputMesh.getPositions();
+	float *pNewNormals = outputMesh.getNormals();
+	for(int i=0; i<outFaceNum; i++){
+		std::vector<vec3d> tri;
+		std::vector<vec3d> triNorms;
+		for (int j=0;j<3;j++){
+			int pointID = pInd[i*3+j];
+			vec3d p(0.0) , n(0.0);
+			for(int k=0;k<3;k++){
+				p[k]=(double)pPoints[pointID*3+k];
+				if(useNormal)
+					n[k]=(double)pNewNormals[pointID*3+k];
+			}
+			tri.push_back(p);
+			triNorms.push_back(n);
+		}
+		mesh.push_back(tri);
+		if (useNormal)
+			meshNormals.push_back(triNorms);
+	}
+#else
+	for (int j = 0; j < numFaces; j++)
+	{
+		vec3i face(_pFaceIndices[3 * j] , _pFaceIndices[3 * j + 1] , _pFaceIndices[3 * j + 2]);
+		std::vector<vec3d> triPos;
+		std::vector<vec3d> triNorm;
+		for (int k = 0; k < 3; k++)
+		{
+			vec3d p , n;
+			p.x = _pPositions[3 * face[k]];
+			p.y = _pPositions[3 * face[k] + 1];
+			p.z = _pPositions[3 * face[k] + 2];
+			n.x = _pNormals[3 * face[k]];
+			n.y = _pNormals[3 * face[k] + 1];
+			n.z = _pNormals[3 * face[k] + 2];
+			triPos.push_back(p);
+			triNorm.push_back(n);
+		}
+		mesh.push_back(triPos);
+		meshNormals.push_back(triNorm);
+	}
+#endif
 }
 
 void PointCloudRenderer::cycleColorGenByRandom(std::vector<Cycle>& cycles , 

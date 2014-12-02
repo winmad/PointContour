@@ -425,7 +425,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		{
 			m_pcUtils->pcRenderer->backup();
 			m_pcUtils->pcRenderer->cycleGroupUpdate();
-			m_pcUtils->pcRenderer->cycleStatusUpdate();
 		}
 		Render();
 	}
