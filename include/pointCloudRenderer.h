@@ -129,6 +129,7 @@ public:
     void optUpdate();
     void cycleDisc();
     void surfacingUnsavedCycles();
+    void surfacingUnsavedCycleGroup();
     void evalUnsavedCycles();
 
     void backup();

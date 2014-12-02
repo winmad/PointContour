@@ -1789,13 +1789,56 @@ void PointCloudRenderer::cycleGroupUpdate()
 	std::vector<Cycle> unsavedCycleGroup;
 	std::vector<std::vector<Path> > unsavedCycleGroupPoints;
 	std::vector<vec3d> unsavedCycleGroupCenters;
+
+    std::vector<int> numPoints;
+    std::vector<double*> inCurves;
+    std::vector<double*> inNorms;
 	for (int i = 0; i < group.size(); i++)
 	{
 		unsavedCycleGroup.push_back(unsavedCycles[group[i]]);
 		unsavedCycleGroupPoints.push_back(unsavedCyclePoints[group[i]]);
 		unsavedCycleGroupCenters.push_back(unsavedCycleCenters[group[i]]);
+
+        numPoints.push_back(unsavedInCurveNums[group[i]]);
+        inCurves.push_back(unsavedInCurvePoints[group[i]]);
+        inNorms.push_back(unsavedInCurveNormals[group[i]]);
 	}
-	dispCurveNet->addCycleGroup(unsavedCycleGroup , unsavedCycleGroupPoints , unsavedCycleGroupCenters);
+
+    int numPositions , numFaces;
+    float *pPositions;
+    float *pNormals;
+    int *pFaceIndices;
+    coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
+        true , true , true ,
+        1.f , 0.f , 0.f , 0.f , numPositions , numFaces ,
+        &pPositions , &pNormals , &pFaceIndices);
+
+    std::vector<std::vector<vec3d> > mesh;
+    std::vector<std::vector<vec3d> > meshNorm;
+    for (int j = 0; j < numFaces; j++)
+    {
+        vec3i face(pFaceIndices[3 * j] , pFaceIndices[3 * j + 1] , pFaceIndices[3 * j + 2]);
+        std::vector<vec3d> triPos;
+        std::vector<vec3d> triNorm;
+        for (int k = 0; k < 3; k++)
+        {
+            vec3d p , n;
+            p.x = pPositions[3 * face[k]];
+            p.y = pPositions[3 * face[k] + 1];
+            p.z = pPositions[3 * face[k] + 2];
+            n.x = pNormals[3 * face[k]];
+            n.y = pNormals[3 * face[k] + 1];
+            n.z = pNormals[3 * face[k] + 2];
+            triPos.push_back(p);
+            triNorm.push_back(n);
+        }
+        mesh.push_back(triPos);
+        meshNorm.push_back(triNorm);
+    }
+
+    dispCurveNet->addCycleGroup(unsavedCycleGroup , unsavedCycleGroupPoints , unsavedCycleGroupCenters);
+    dispCurveNet->meshes.push_back(mesh);
+    dispCurveNet->meshNormals.push_back(mesh);
 	group.clear();
 }
 
