@@ -66,6 +66,7 @@ wxString wxbuildinfo(wxbuildinfoformat format)
 //(*IdInit(PointContourGUIFrame)
 const long PointContourGUIFrame::ID_GLCANVAS1 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX1 = wxNewId();
+const long PointContourGUIFrame::ID_CHECKBOX8 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX2 = wxNewId();
 const long PointContourGUIFrame::ID_SLIDER1 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX3 = wxNewId();
@@ -77,6 +78,7 @@ const long PointContourGUIFrame::ID_CHECKBOX6 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE3 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX7 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE4 = wxNewId();
+const long PointContourGUIFrame::ID_CHOICE5 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -169,7 +171,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     SetClientSize(wxSize(1200,800));
     Move(wxPoint(50,20));
     SplitterWindow1 = new wxSplitterWindow(this, ID_SPLITTERWINDOW1, wxPoint(0,0), wxSize(1200,780), wxSP_3D, _T("ID_SPLITTERWINDOW1"));
-    SplitterWindow1->SetMinSize(wxSize(300,300));
+    SplitterWindow1->SetMinSize(wxSize(200,200));
     SplitterWindow1->SetMinimumPaneSize(300);
     SplitterWindow1->SetSashGravity(1);
     int GLCanvasAttributes_1[] = {
@@ -179,6 +181,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     	WX_GL_STENCIL_SIZE,    0,
     	0, 0 };
     m_openGLView = new SketchGLCanvas(SplitterWindow1, ID_GLCANVAS1, wxPoint(0,0), wxSize(800,780), wxTRANSPARENT_WINDOW, _T("ID_GLCANVAS1"), GLCanvasAttributes_1);
+    m_openGLView->SetFocus();
     m_openGLView->SetBackgroundColour(wxColour(255,255,255));
     ScrolledWindow1 = new wxScrolledWindow(SplitterWindow1, ID_SCROLLEDWINDOW1, wxPoint(900,0), wxSize(300,800), wxTRANSPARENT_WINDOW, _T("ID_SCROLLEDWINDOW1"));
     ScrolledWindow1->SetBackgroundColour(wxColour(255,255,255));
@@ -191,6 +194,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     ShowPoint = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX1, _("show point"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     ShowPoint->SetValue(false);
     FlexGridSizer2->Add(ShowPoint, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
+    HideDrawnPoints = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX8, _("hide drawn points"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX8"));
+    HideDrawnPoints->SetValue(true);
+    FlexGridSizer2->Add(HideDrawnPoints, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     HidePointCloud = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX2, _("hide point cloud"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX2"));
     HidePointCloud->SetValue(false);
     FlexGridSizer2->Add(HidePointCloud, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -231,6 +237,10 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     PatchesVisual->Append(_("temp patches"));
     PatchesVisual->Append(_("none"));
     FlexGridSizer2->Add(PatchesVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    PatchesDraw = new wxChoice(ScrolledWindow2, ID_CHOICE5, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE5"));
+    PatchesDraw->Append(_("Shaded"));
+    PatchesDraw->SetSelection( PatchesDraw->Append(_("Lines")) );
+    FlexGridSizer2->Add(PatchesDraw, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -393,6 +403,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     m_openGLView->Connect(wxEVT_KEY_DOWN,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenGLViewKeyDown,0,this);
     m_openGLView->Connect(wxEVT_MOUSEWHEEL,(wxObjectEventFunction)&PointContourGUIFrame::OnMouseWheel,0,this);
     Connect(ID_CHECKBOX1,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowPointClick);
+    Connect(ID_CHECKBOX8,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnHideDrawnPointsClick);
     Connect(ID_CHECKBOX2,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnHidePointCloudClick);
     Connect(ID_SLIDER1,wxEVT_SCROLL_THUMBTRACK,(wxObjectEventFunction)&PointContourGUIFrame::OnDiscRadiusCmdScrollThumbTrack);
     Connect(ID_CHECKBOX3,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnShowHessianClick);
@@ -404,6 +415,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnConstraintsVisualSelect);
     Connect(ID_CHECKBOX7,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnAutoOptClick);
     Connect(ID_CHOICE4,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnPatchesVisualSelect);
+    Connect(ID_CHOICE5,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnPatchesDrawSelect);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -439,9 +451,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
 
     m_pcUtils = new PointCloudUtils();
     *(m_openGLView->getPointCloudUtils()) = m_pcUtils;
-    m_config = new ConfigManager(m_pcUtils);
-    m_config->load("config.xml");
-    m_pcUtils->globalInit();
+	m_config = new ConfigManager(m_pcUtils);
+	m_config->load("config.xml");
+	m_pcUtils->globalInit();
     m_pcUtils->statusBar = StatusBar1;
 }
 
@@ -993,4 +1005,16 @@ void PointContourGUIFrame::OnRedoSelected(wxCommandEvent& event)
 {
     m_pcUtils->pcRenderer->undo();
     m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnPatchesDrawSelect(wxCommandEvent& event)
+{
+	m_pcUtils->pcRenderer->patchesDraw = event.GetSelection();
+	m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnHideDrawnPointsClick(wxCommandEvent& event)
+{
+	m_pcUtils->pcRenderer->isHideDrawnPoints = !m_pcUtils->pcRenderer->isHideDrawnPoints;
+	m_openGLView->Render();
 }
