@@ -34,6 +34,7 @@ PointCloudRenderer::~PointCloudRenderer()
 
 void PointCloudRenderer::init()
 {
+	isHideDrawnPoints = true;
 	isShowPoints = false;
 	isShowUniformGrid = false;
 	isShowAdaptiveGrid = false;
@@ -136,6 +137,7 @@ void PointCloudRenderer::drawPoints()
 	{
 		if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
 		{
+			if (isHideDrawnPoints) continue;
 			int c = pcUtils->pcColor[i];
 			glColor3f(pcUtils->colors[c].r , pcUtils->colors[c].g , pcUtils->colors[c].b);
 		}
@@ -314,6 +316,8 @@ void PointCloudRenderer::callListSurfelDisc()
 
 	for (int i = 0; i < pcUtils->pcData.size(); i++)
 	{
+		if (isHideDrawnPoints && pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+			continue;
 		drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , discRenderRadiusScale , pcUtils->pcData[i].n);
 	}
 
@@ -332,8 +336,8 @@ void PointCloudRenderer::renderPoints()
 	glColor3f(0.f , 0.f , 0.f);
 	glPointSize(2.f);
 	
-	drawPoints();
-	//glCallList(LIST_POINTS);
+	//drawPoints();
+	glCallList(LIST_POINTS);
     
 	//callListPoints();
 }
@@ -345,6 +349,15 @@ void PointCloudRenderer::renderSurfelDisc()
 	glColor3f(0.5f , 0.539f , 0.527f);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	/*
+	for (int i = 0; i < pcUtils->pcData.size(); i++)
+	{
+		if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+			continue;
+
+		drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , discRenderRadiusScale , pcUtils->pcData[i].n);
+	}
+	*/
 	glCallList(LIST_SURFEL_DISC);
     //callListSurfelDisc();
 }
@@ -816,9 +829,9 @@ void PointCloudRenderer::renderUnsavedMeshes()
 			glColor3f(0.f , 0.f , 1.f);
 		const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
-		if(false)
+		if (patchesDraw == 1)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		else
+		else if (patchesDraw == 0)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		drawPatch(triangleCycle , triangleCycleNormal);
@@ -834,9 +847,9 @@ void PointCloudRenderer::renderPickedMesh()
     glColor3f(0.f , 1.f , 0.f);
     const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
     const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
-    if(false)
+    if (patchesDraw == 1)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    else
+    else if (patchesDraw == 0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     drawPatch(triangleCycle , triangleCycleNormal);
@@ -850,9 +863,9 @@ void PointCloudRenderer::renderPickedSavedMesh()
     glColor3f(0.f , 1.f , 0.f);
     const cycle::TriangleCycle &triangleCycle = dispCurveNet->meshes[patchID];
     const cycle::TriangleCycle &triangleCycleNormal = dispCurveNet->meshNormals[patchID];
-    if(false)
+    if (patchesDraw == 1)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    else
+    else if (patchesDraw == 0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     drawPatch(triangleCycle , triangleCycleNormal);
@@ -870,9 +883,9 @@ void PointCloudRenderer::renderSavedMeshes()
 
         const cycle::TriangleCycle &triangleCycle = dispCurveNet->meshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = dispCurveNet->meshNormals[patchID];
-		if(false)
+		if (patchesDraw == 1)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		else
+		else if (patchesDraw == 0)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		drawPatch(triangleCycle , triangleCycleNormal);
@@ -956,6 +969,9 @@ void PointCloudRenderer::callListSelectionBuffer()
 
 	for (int i = 0; i < axisU.size(); i++)
 	{
+		if (isHideDrawnPoints && pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+			continue;
+
 		vec3uc& col = glObjColors[i];
 		glColor3ub(col.x , col.y , col.z);
 		drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , selectionOffset);
@@ -972,6 +988,17 @@ void PointCloudRenderer::updateSelectionBuffer()
 	
 	if (isNormalInfo)
 	{
+		/*
+		for (int i = 0; i < axisU.size(); i++)
+		{
+			if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+				continue;
+
+			vec3uc& col = glObjColors[i];
+			glColor3ub(col.x , col.y , col.z);
+			drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , selectionOffset);
+		}
+		*/
 		glCallList(LIST_SELECTION_BUFFER);
         //callListSelectionBuffer();
 	}
@@ -1440,15 +1467,24 @@ void PointCloudRenderer::evalUnsavedCycles()
         printf("calculate cycle scores...\n");
         pcUtils->timer.PushCurrentTime();
         unsavedCycleScores.clear();
+		unsavedCycleScoreRanks.clear();
         pcUtils->calcPatchScores(unsavedMeshes , unsavedCycleScores);
+
         for (int i = 0; i < unsavedMeshes.size(); i++)
         {
             //unsavedCycleScores.push_back(pcUtils->calcPatchScore(unsavedMeshes[i]));
+			int cnt = 0;
+			for (int j = 0; j < unsavedMeshes.size(); j++)
+			{
+				if (unsavedCycleScores[j] > unsavedCycleScores[i]) cnt++;
+			}
+			unsavedCycleScoreRanks.push_back(cnt + 1);
+
             printf("cycle %d: (" , i);
             for (int j = 0; j < unsavedCycles[i].size(); j++)
-            printf(" %d " , unsavedCycles[i][j]);
+				printf(" %d " , unsavedCycles[i][j]);
             printf(")\n");
-            printf("score = %.6f\n" , unsavedCycleScores[i]);
+            printf("score = %.6f, rank = %d/%d\n" , unsavedCycleScores[i] , unsavedCycleScoreRanks[i] , unsavedMeshes.size());
         }
         pcUtils->timer.PopAndDisplayTime("\nCycle scoring time: %.6f\n");
     }
@@ -1689,7 +1725,8 @@ void PointCloudRenderer::pickCycle(int mouseX , int mouseY , int op)
 	if (pickedCycle != -1)
     {
 		char buf[128];
-		sprintf(buf , "cycle score = %.6f\n" , unsavedCycleScores[pickedCycle]);
+		sprintf(buf , "cycle score = %.6f, rank = %d/%d\n" , unsavedCycleScores[pickedCycle] ,
+			unsavedCycleScoreRanks[pickedCycle] , unsavedMeshes.size());
 		wxString str(buf);
 		pcUtils->statusBar->SetStatusText(str);
 
@@ -1799,9 +1836,7 @@ void PointCloudRenderer::pickSavedCycle(int mouseX , int mouseY , int op)
         {
             dispCurveNet->deleteCycle(pickedSavedCycle);
             cycleStatusUpdate();
-#ifdef _WIN32
 			pcUtils->pcSegmentByPatches(dispCurveNet->meshes);
-#endif
         }
         /*
         printf("===== cycle size = %lu =====\n" , dispCurveNet->cycles.size());
@@ -1859,7 +1894,7 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	}	
 
 	SP::SmoothPatchSettings settings;
-	settings.mbConstrainNormals=true;
+	settings.mbConstrainNormals=false;
 	settings.mbRemesh=true;
 	settings.mfTension=0.0;
 	settings.mnNumSubdivisions=1;

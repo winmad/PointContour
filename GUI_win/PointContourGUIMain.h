@@ -89,6 +89,8 @@ class PointContourGUIFrame: public wxFrame
         void OnPatchesVisualSelect(wxCommandEvent& event);
         void OnUndoSelected(wxCommandEvent& event);
         void OnRedoSelected(wxCommandEvent& event);
+        void OnPatchesDrawSelect(wxCommandEvent& event);
+        void OnHideDrawnPointsClick(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -98,6 +100,7 @@ class PointContourGUIFrame: public wxFrame
         //(*Identifiers(PointContourGUIFrame)
         static const long ID_GLCANVAS1;
         static const long ID_CHECKBOX1;
+        static const long ID_CHECKBOX8;
         static const long ID_CHECKBOX2;
         static const long ID_SLIDER1;
         static const long ID_CHECKBOX3;
@@ -109,6 +112,7 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_CHOICE3;
         static const long ID_CHECKBOX7;
         static const long ID_CHOICE4;
+        static const long ID_CHOICE5;
         static const long ID_STATICTEXT7;
         static const long ID_TEXTCTRL7;
         static const long ID_STATICTEXT8;
@@ -166,6 +170,7 @@ class PointContourGUIFrame: public wxFrame
         //(*Declarations(PointContourGUIFrame)
         wxStaticText* StaticText10;
         wxTextCtrl* SmoothScale;
+        wxChoice* PatchesDraw;
         wxStaticText* StaticText9;
         wxTextCtrl* FilterRadius;
         wxCheckBox* ShowMetric;
@@ -177,6 +182,7 @@ class PointContourGUIFrame: public wxFrame
         wxNotebook* Notebook1;
         wxStaticText* StaticText13;
         wxStaticText* StaticText2;
+        wxCheckBox* HideDrawnPoints;
         wxStaticText* StaticText14;
         wxScrolledWindow* ScrolledWindow3;
         wxScrolledWindow* ScrolledWindow1;

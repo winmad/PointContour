@@ -404,12 +404,12 @@ bool CurveNet::collinearTest(Path& path , BSpline& bsp)
         v = (path[i] - x1).cross(path[i] - x2);
         double numer = std::abs(v.length());
         double d = numer / denom;
-        if (d > 0.05) return false;
+        if (d > denom * 0.1) return false;
         totDist += d;
     }
 
     //printf("--- %.6f ---\n" , totDist / (double)path.size());
-    if (totDist / (double)path.size() < 0.02)
+    if (totDist / (double)path.size() < denom * 0.05)
     {
         bsp.clear();
         bsp.ctrlNodes.push_back(x1);

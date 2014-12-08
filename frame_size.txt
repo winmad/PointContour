@@ -1,5 +1,13 @@
+---------- Windows ------------
 PointContour: 1000 670
 SplitterWindow1: 1000 630, Sash position 700, min pane size 200 
 Canvas: 650 630
 ScorolledWindow1: 250 630, X = 750
 Notebook1: 250 630, X = 750, Y = 20
+
+---------- Mac OS X -----------
+PointContour: 1200 800
+SplitterWindow1: 1200 780, Sash position 850, min pane size 300
+Canvas: 800 780
+ScorolledWindow1: 300 800, X = 900
+Notebook1: 300 800, X Y = default

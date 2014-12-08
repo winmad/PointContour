@@ -2,6 +2,7 @@
 #include "nvVector.h"
 #include "TimeManager.h"
 #include "curveNet.h"
+#include "RandGenerator.h"
 #include <omp.h>
 #include <queue>
 #include <algorithm>
@@ -1486,6 +1487,16 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 	std::vector<PatchPointData> patchPointData;
 	for (int i = 0; i < meshes.size(); i++)
 	{
+		// area importance sampling
+		std::vector<vec3d> samples;
+		samples = samplePointsFromPatch(meshes[i]);
+		for (int j = 0; j < samples.size(); j++)
+		{
+			patchPointData.push_back(PatchPointData(samples[j] , i));
+		}
+
+		// arbitrary sampling
+		/*
 		for (int j = 0; j < meshes[i].size(); j++)
 		{
 			vec3d triCenter;
@@ -1495,6 +1506,7 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 				triCenter /= (double)meshes[i][j].size();
 			patchPointData.push_back(PatchPointData(triCenter , i));
 		}
+		*/
 	}
 
 	if (patchPointData.size() == 0)
@@ -1529,6 +1541,32 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 	}
 }
 
+std::vector<vec3d> PointCloudUtils::samplePointsFromPatch(std::vector<std::vector<vec3d> >& mesh)
+{
+	std::vector<vec3d> res;
+	std::vector<double> areas;
+	double totArea = 0.0;
+	for (int i = 0; i < mesh.size(); i++)
+	{
+		vec3d v = (mesh[i][2] - mesh[i][0]).cross(mesh[i][1] - mesh[i][0]);
+		double triArea = std::abs(v.length());
+		areas.push_back(triArea);
+		totArea += triArea;
+	}
+
+	int totSamples = std::min((int)mesh.size() , 500);
+	for (int i = 0; i < mesh.size(); i++)
+	{
+		int k = std::max(1 , (int)((double)totSamples * areas[i] / totArea));
+		for (int j = 0; j < k; j++)
+		{
+			res.push_back(RandGenerator::genRandTrianglePosition(mesh[i][0] , mesh[i][1] , mesh[i][2]));
+		}
+	}
+
+	return res;
+}
+
 void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes)
 {
 	timer.PushCurrentTime();
@@ -1536,6 +1574,16 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 	std::vector<PatchPointData> patchPointData;
 	for (int i = 0; i < meshes.size(); i++)
 	{
+		// area importance sampling
+		/*
+		std::vector<vec3d> samples;
+		samples = samplePointsFromPatch(meshes[i]);
+		for (int j = 0; j < samples.size(); j++)
+		{
+			patchPointData.push_back(PatchPointData(samples[j] , i));
+		}
+		*/
+		// arbitrary sampling
 		for (int j = 0; j < meshes[i].size(); j++)
 		{
 			vec3d triCenter;
@@ -1556,7 +1604,7 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 		DistQuery q;
 		q.maxSqrDis = 1e30;
 		patchPointTree.searchKnn(0 , pcData[i].pos , q);
-		if (q.maxSqrDis < 0.003)
+		if (q.maxSqrDis < 0.002)
 		{
 			pcColor[i] = q.patchId;
 		}
@@ -1569,6 +1617,13 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 	Colormap::colormapHeatColor(meshes.size() , colors);
 
 	timer.PopAndDisplayTime("\nPoint segmentation: %.6f\n");
+
+	// update renderer call list
+	timer.PushCurrentTime();
+	pcRenderer->callListPoints();
+	pcRenderer->callListSurfelDisc();
+	pcRenderer->callListSelectionBuffer();
+	timer.PopAndDisplayTime("\nUpdate callLists: %.6f\n");
 }
 
 void PointCloudUtils::loadCurveNet()

@@ -23,6 +23,7 @@ public:
     
 	bool isShowPointCloud;
 	bool isShowPoints;
+	bool isHideDrawnPoints;
 	bool isShowUniformGrid;
 	bool isShowAdaptiveGrid;
 	bool isShowHessian;
@@ -32,6 +33,7 @@ public:
     bool isShowCollinear;
     int constraintsVisual;
     int patchesVisual;
+	int patchesDraw;
     int bspIndex , curveIndex;
 
     void incBspCurveIndex();
@@ -177,6 +179,7 @@ public:
     std::vector<std::vector<Path> > unsavedCyclePoints;
     std::vector<vec3d> unsavedCycleCenters;
 	std::vector<double> unsavedCycleScores;
+	std::vector<int> unsavedCycleScoreRanks;
 
 	std::vector<int> group;
 	std::vector<bool> inGroup;
