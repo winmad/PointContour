@@ -1172,7 +1172,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
             if (isSnap && newNode)
             {
                 // curveNet->breakPath(breakLine , breakPoint);
-                dispCurveNet->breakPath(breakLine , breakPoint);
+                dispCurveNet->breakPath(breakLine , breakPoint , isAutoOpt);
                 newNode = false;
             }
             
@@ -1195,7 +1195,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
 				}
 				*/
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
-                    newNode , bsp , pathForComp[0]);
+                    newNode , bsp , pathForComp[0] , isAutoOpt);
 
                 printf("start optimization\n");
                 if (isAutoOpt)

@@ -44,8 +44,10 @@ public:
     void copyFrom(const CurveNet& net);
     void startPath(const vec3d& st);
     void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
-        bool newNode , const BSpline& bsp , const Path& originPath);
-    void breakPath(const int& breakLine , const int& breakPoint);
+        bool newNode , const BSpline& bsp , const Path& originPath ,
+        bool addConstrants);
+    void breakPath(const int& breakLine , const int& breakPoint ,
+        bool addConstraints);
 
 	void calcDispCyclePoints(const Cycle& cycle ,
 		std::vector<Path>& cyclePts , vec3d& cycleCenter);

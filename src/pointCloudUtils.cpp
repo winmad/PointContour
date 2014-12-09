@@ -104,6 +104,8 @@ void PointCloudUtils::init()
     initialized = true;
 	getBBox();
 
+    for (int i = 0; i < pcData.size(); i++)
+        pcData[i].index = i;
 	pcColor.resize(pcData.size());
 	for (int i = 0; i < pcColor.size(); i++)
 		pcColor[i] = -1;
@@ -1516,23 +1518,30 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 	for (int i = 0; i < meshes.size(); i++)
 	{
 		double numer = 0 , denom = 0;
-		for (int j = 0; j < meshes[i].size(); j++)
-		{
-			for (int k = 0; k < meshes[i][j].size(); k++)
-			{
-				vec3d pos = meshes[i][j][k];
-				DistQuery q;
-				q.maxSqrDis = 1e30;
-				tree->searchKnn(0 , pos , q);
-				pos = q.nearest;
-				q.maxSqrDis = 1e30;
-				patchPointTree.searchKnn(0 , pos , q);
+        std::vector<vec3d> samples;
+		samples = samplePointsFromPatch(meshes[i]);
 
-				if (q.patchId == i)
-					numer += 1.0;
-				denom += 1.0;
-			}
-		}
+		for (int j = 0; j < samples.size(); j++)
+        {
+            vec3d pos = samples[j];
+            DistQuery q;
+            q.maxSqrDis = 1e30;
+            tree->searchKnn(0 , pos , q);
+
+            if (pcColor[q.pointIndex] != -1)
+            {
+                denom += 1.0;
+                continue;
+            }
+
+            pos = q.nearest;
+            q.maxSqrDis = 1e30;
+            patchPointTree.searchKnn(0 , pos , q);
+
+            if (q.patchId == i)
+            numer += 1.0;
+            denom += 1.0;
+        }
 		printf("cycle %d: %.2f / %.2f\n" , i , numer , denom);
 		if (denom > 0)
 			scores[i] = numer / denom;

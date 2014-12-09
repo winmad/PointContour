@@ -82,7 +82,8 @@ void CurveNet::startPath(const vec3d& st)
 }
 
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
-    const Path& path , bool newNode , const BSpline& bsp , const Path& originPath)
+    const Path& path , bool newNode , const BSpline& bsp , const Path& originPath ,
+    bool addConstrants)
 {
     if (path.size() < 2)
     {
@@ -128,14 +129,18 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
 
     printf("===== path extend =====\n");
     addCurveType(numPolyLines - 1);
-    addCollinearConstraint(numPolyLines - 1);
-    addParallelConstraint(numPolyLines - 1);
-    addCoplanarConstraint(numPolyLines - 1);
-    addJunctionConstraint(numPolyLines - 1);
-	addSymmetryConstraint(numPolyLines - 1);
+    if (addConstrants)
+    {
+        addCollinearConstraint(numPolyLines - 1);
+        addParallelConstraint(numPolyLines - 1);
+        addCoplanarConstraint(numPolyLines - 1);
+        addJunctionConstraint(numPolyLines - 1);
+        addSymmetryConstraint(numPolyLines - 1);
+    }
 }
 
-void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
+void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
+    bool addConstrants)
 {
     PolyLineIndex index = polyLinesIndex[breakLine];
     int st_ni = index.ni[0] , st_ei = index.ei[0];
@@ -213,11 +218,14 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint)
     for (int t = 0; t < 2; t++)
     {
         addCurveType(bspIndex[t]);
-        addCollinearConstraint(bspIndex[t]);
-        addParallelConstraint(bspIndex[t]);
-        addCoplanarConstraint(bspIndex[t]);
-        addJunctionConstraint(bspIndex[t]);
-		addSymmetryConstraint(bspIndex[t]);
+        if (addConstrants)
+        {
+            addCollinearConstraint(bspIndex[t]);
+            addParallelConstraint(bspIndex[t]);
+            addCoplanarConstraint(bspIndex[t]);
+            addJunctionConstraint(bspIndex[t]);
+            addSymmetryConstraint(bspIndex[t]);
+        }
     }
 }
 
@@ -1148,7 +1156,7 @@ void CurveNet::test()
     {
         path.push_back(vec3d(i , 0 , 0));
     }
-    extendPath(vec3d(0 , 0 , 0) , vec3d(10 , 0 , 0) , path , true , bsp , originPath);
+    extendPath(vec3d(0 , 0 , 0) , vec3d(10 , 0 , 0) , path , true , bsp , originPath , false);
     
     startPath(vec3d(5 , 2 , 0));
     path.clear();
@@ -1156,8 +1164,8 @@ void CurveNet::test()
     {
         path.push_back(vec3d(5 , i , 0));
     }
-    extendPath(vec3d(5 , 2 , 0) , vec3d(5 , 0 , 0) , path , true , bsp , originPath);
-    breakPath(0 , 5);
+    extendPath(vec3d(5 , 2 , 0) , vec3d(5 , 0 , 0) , path , true , bsp , originPath , false);
+    breakPath(0 , 5 , false);
     
     debugLog();
 }

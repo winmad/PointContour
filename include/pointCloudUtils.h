@@ -29,6 +29,7 @@ struct Data
 {
 	vec3d pos;
 	vec3d n;
+    int index;
 };
 
 struct PatchPointData
@@ -45,12 +46,14 @@ struct DistQuery
 {
     double maxSqrDis;
 	int patchId;
+    int pointIndex;
     vec3d nearest;
 
     void process(Data* d , double& dist2)
     {
         nearest = d->pos;
         maxSqrDis = dist2;
+        pointIndex = d->index;
     }
 
 	void process(PatchPointData* d , double& dist2)
