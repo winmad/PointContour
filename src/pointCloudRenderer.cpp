@@ -1900,6 +1900,25 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	settings.mnNumSubdivisions=1;
 	settings.mnNumLaplacianSmooths=3;
 
+	for (int i = 0; i < numFaces; i++)
+	{
+		vec3i pi;
+		for (int j = 0; j < 3; j++)
+		{
+			pi[j] = pFaceIndices[3 * i + j];
+		}
+		writeLog("===== face (%d %d %d) =====\n" , pi.x , pi.y , pi.z);
+		for (int j = 0; j < 3; j++)
+		{
+			vec3d p;
+			int index = pi[j];
+			p.x = pPositions[3 * index];
+			p.y = pPositions[3 * index + 1];
+			p.z = pPositions[3 * index + 2];
+			writeLog("(%.6f , %.6f , %.6f)\n" , p.x , p.y , p.z);
+		}
+	}
+
 	SP::SmoothPatchBuilder smoothPatchBuilder;
 
 	smoothPatchBuilder.buildSmoothPatch(settings,spMesh,outputMesh);
