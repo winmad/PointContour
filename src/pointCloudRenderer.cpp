@@ -609,7 +609,7 @@ void PointCloudRenderer::renderCollinearLines()
         for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
         {
             if (i == bspIndex && j == curveIndex) continue;
-            if (!dispCurveNet->collinearSet.sameRoot(bspIndex , curveIndex , i , j)) continue;
+            if (!dispCurveNet->conSet->collinearSet.sameRoot(bspIndex , curveIndex , i , j)) continue;
             drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
                 dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
         }
@@ -635,7 +635,7 @@ void PointCloudRenderer::renderParallelLines()
     {
         if (dispCurveNet->bsplines[i].ctrlNodes.size() == 0) continue;
         if (dispCurveNet->curveType[i] != 1) continue;
-        if (i != bspIndex && !dispCurveNet->parallelSet.sameRoot(bspIndex , 0 , i , 0)) continue;
+        if (i != bspIndex && !dispCurveNet->conSet->parallelSet.sameRoot(bspIndex , 0 , i , 0)) continue;
         for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
         {
             if (i == bspIndex && j == curveIndex) continue;
@@ -665,7 +665,7 @@ void PointCloudRenderer::renderCoplanarLines()
     {
         if (dispCurveNet->bsplines[i].ctrlNodes.size() == 0) continue;
         if (dispCurveNet->curveType[i] == 2) continue;
-        if (dispCurveNet->coplanarSet.getMark(bspIndex , 0 , i , 0) != 1) continue;
+        if (dispCurveNet->conSet->coplanarSet.getMark(bspIndex , 0 , i , 0) != 1) continue;
         for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
         {
             if (i == bspIndex && j == curveIndex) continue;
@@ -695,7 +695,7 @@ void PointCloudRenderer::renderOrthogonalLines()
         for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
         {
             if (i == bspIndex && j == curveIndex) continue;
-            if (dispCurveNet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 1) continue;
+            if (dispCurveNet->conSet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 1) continue;
             drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
                 dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
         }
@@ -723,7 +723,7 @@ void PointCloudRenderer::renderTangentLines()
         for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
         {
             if (i == bspIndex && j == curveIndex) continue;
-            if (dispCurveNet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 2) continue;
+            if (dispCurveNet->conSet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 2) continue;
             // printf("(%d , %d) <==> (%d , %d), %d\n" , bspIndex , curveIndex , i , j ,
                 // dispCurveNet->orthoSet.getMark(bspIndex , curveIndex , i , j));
             drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
@@ -1149,7 +1149,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
 
             if (useBSpline)
             {
-                if (!dispCurveNet->collinearTest(pathVertex , bsp))
+                if (!ConstraintDetector::collinearTest(pathVertex , bsp))
                 {
                     convert2Spline(pathVertex , bsp);
                 }
@@ -1183,11 +1183,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
             }
             else
             {
-                // vec3d lastp(lastPoint->x , lastPoint->y , lastPoint->z);
-                // vec3d lastDisp(lastDispPoint->x , lastDispPoint->y , lastDispPoint->z);
-
-                // curveNet->extendPath(lastp , pos , pathForComp[0] , newNode);
-				/*
+                /*
 				printf("========== origin path ==========\n");
 				for (int i = 0; i < pathForComp[0].size(); i++)
 				{
@@ -1227,7 +1223,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
             // dispCurveNet->debugLog();
 
             // printf("dispPos = (%.6f,%.6f,%.6f)\n" , dispPos.x , dispPos.y , dispPos.z);
-            
+
             if (pcUtils->addPointToGraph(dispPos))
             {
                 sti = pcUtils->point2Index[point2double(dispPos)];

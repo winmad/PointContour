@@ -1530,7 +1530,7 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 
             if (pcColor[q.pointIndex] != -1)
             {
-                denom += 1.0;
+                // denom += 1.0;
                 continue;
             }
 
@@ -1539,7 +1539,7 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
             patchPointTree.searchKnn(0 , pos , q);
 
             if (q.patchId == i)
-            numer += 1.0;
+                numer += 1.0;
             denom += 1.0;
         }
 		printf("cycle %d: %.2f / %.2f\n" , i , numer , denom);

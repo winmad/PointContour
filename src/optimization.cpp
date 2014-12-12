@@ -115,7 +115,7 @@ void Optimization::init(CurveNet *_net)
         int u1 , u2 , v1 , v2;
 
         // collinear
-        std::pair<int , int> root = net->collinearSet.find(i , 0);
+        std::pair<int , int> root = net->conSet->collinearSet.find(i , 0);
         if (net->curveType[root.first] == -1)
         {
             std::pair<int , int> tmp;
@@ -123,7 +123,7 @@ void Optimization::init(CurveNet *_net)
             for (j = 0; j < net->numPolyLines; j++)
             {
                 if (net->curveType[j] != 1 || j == i) continue;
-                tmp = net->collinearSet.find(j , 0);
+                tmp = net->conSet->collinearSet.find(j , 0);
                 if (tmp.first == root.first) break;
             }
             root.first = j;
@@ -139,7 +139,7 @@ void Optimization::init(CurveNet *_net)
             cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_collinear));
         }
         // parallel
-        root = net->parallelSet.find(i , 0);
+        root = net->conSet->parallelSet.find(i , 0);
         if (net->curveType[root.first] == -1)
         {
             std::pair<int , int> tmp;
@@ -147,7 +147,7 @@ void Optimization::init(CurveNet *_net)
             for (j = 0; j < net->numPolyLines; j++)
             {
                 if (net->curveType[j] != 1 || j == i) continue;
-                tmp = net->parallelSet.find(j , 0);
+                tmp = net->conSet->parallelSet.find(j , 0);
                 if (tmp.first == root.first) break;
             }
             root.first = j;
@@ -195,7 +195,7 @@ void Optimization::init(CurveNet *_net)
         for (int j = i + 1; j < net->numPolyLines; j++)
         {
             if (net->curveType[j] == 2 || net->curveType[j] == -1) continue;
-            if (net->coplanarSet.getMark(i , 0 , j , 0) == 1)
+            if (net->conSet->coplanarSet.getMark(i , 0 , j , 0) == 1)
             {
                 for (int x = 0; x < (int)net->bsplines[i].ctrlNodes.size() - 1; x++)
                 {
@@ -243,7 +243,7 @@ void Optimization::init(CurveNet *_net)
             {
                 for (int y = (i != j ? 0 : x + 1); y < (int)net->bsplines[j].ctrlNodes.size() - 1; y++)
                 {
-                    int mark = net->orthoSet.getMark(i , x , j , y);
+                    int mark = net->conSet->orthoSet.getMark(i , x , j , y);
                     if (mark == 1 || mark == 2)
                     {
                         std::pair<OptVariable , OptVariable> u = bsp2var(i , x ,
@@ -269,7 +269,7 @@ void Optimization::init(CurveNet *_net)
     }
 
 	// symmetric
-	for (int i = 0; i < net->symmLines.size(); ++ i)
+	for (int i = 0; i < net->conSet->symmLines.size(); ++ i)
 	{
 	}
     numCons = cons.size();
@@ -335,16 +335,16 @@ void Optimization::generateDAT(string file)
 	}
 	fout << ";\n";
 
-    fout << "param RPN := " << (int)net->symmetricPlanes.size() - 1 << ";\n";
+    fout << "param RPN := " << (int)net->conSet->symmetricPlanes.size() - 1 << ";\n";
 
 	fout << "param init_symmetric_plane :=\n";
-	for (int i = 0; i < net->symmetricPlanes.size(); ++ i)
+	for (int i = 0; i < net->conSet->symmetricPlanes.size(); ++ i)
 	{
 		fout << "\t[" << i << ", *]";
-		fout << " 1 " << net->symmetricPlanes[i].n.x
-			 << " 2 " << net->symmetricPlanes[i].n.y
-			 << " 3 " << net->symmetricPlanes[i].n.z
-			 << " 4 " << net->symmetricPlanes[i].d
+		fout << " 1 " << net->conSet->symmetricPlanes[i].n.x
+			 << " 2 " << net->conSet->symmetricPlanes[i].n.y
+			 << " 3 " << net->conSet->symmetricPlanes[i].n.z
+			 << " 4 " << net->conSet->symmetricPlanes[i].d
 			 << "\n";
 	}
 	fout << ";\n";
@@ -896,9 +896,9 @@ string Optimization::generateSymmetryLine(int plane, std::pair<int, int> linepai
 		vec3d v2 = net->nodes[vars[x2].ni];
 		vec3d v3 = net->nodes[vars[x3].ni];
 		vec3d v4 = net->nodes[vars[x4].ni];
-		Plane p = net->symmetricPlanes[plane];
+		Plane p = net->conSet->symmetricPlanes[plane];
 		Plane tmp_p((v1 + v3) / 2, v1 - v3);
-		if (p.dist(tmp_p) > net->symmetryThr)
+		if (p.dist(tmp_p) > ConstraintDetector::symmetryThr)
 		{
 			swap(v3, v4);
 			swap(x3, x4);
@@ -932,9 +932,9 @@ string Optimization::generateSymmetryPoint(int plane, int u, int v)
 
 string Optimization::generateSelfSymmPoint(int plane, int n)
 {
-	int c = net->symmPoints[plane][n].n;
-	int l = net->symmPoints[plane][n].n1;
-	int r = net->symmPoints[plane][n].n2;
+	int c = net->conSet->symmPoints[plane][n].n;
+	int l = net->conSet->symmPoints[plane][n].n1;
+	int r = net->conSet->symmPoints[plane][n].n2;
 	c = curveIdx[c];
 	stringstream ss;
 	ss << "(sum{i in Dim3} ((sum{k in 0..CN[" << c << "]}coef[" << c << "," << l << ",k]*p[bidx[" << c << ",k],i]) - "
