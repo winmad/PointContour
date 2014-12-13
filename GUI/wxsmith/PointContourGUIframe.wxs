@@ -15,11 +15,12 @@
 			<orientation>vertical</orientation>
 			<pos>0,0</pos>
 			<size>1200,780</size>
-			<minsize>300,300</minsize>
+			<minsize>200,200</minsize>
 			<object class="wxGLCanvas" name="ID_GLCANVAS1" subclass="SketchGLCanvas" variable="m_openGLView" member="yes">
 				<mDepthSize>16</mDepthSize>
 				<pos>0,0</pos>
 				<size>800,780</size>
+				<focused>1</focused>
 				<bg>#FFFFFF</bg>
 				<style>wxTRANSPARENT_WINDOW</style>
 				<handler function="OnOpenGLViewKeyDown" entry="EVT_KEY_DOWN" />
@@ -53,6 +54,16 @@
 																<handler function="OnShowPointClick" entry="EVT_CHECKBOX" />
 															</object>
 															<flag>wxALL|wxALIGN_LEFT|wxALIGN_TOP</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="ID_CHECKBOX8" variable="HideDrawnPoints" member="yes">
+																<label>hide drawn points</label>
+																<checked>1</checked>
+																<handler function="OnHideDrawnPointsClick" entry="EVT_CHECKBOX" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 															<border>5</border>
 															<option>1</option>
 														</object>
@@ -177,6 +188,19 @@
 																</content>
 																<selection>0</selection>
 																<handler function="OnPatchesVisualSelect" entry="EVT_CHOICE" />
+															</object>
+															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+														<object class="sizeritem">
+															<object class="wxChoice" name="ID_CHOICE5" variable="PatchesDraw" member="yes">
+																<content>
+																	<item>Shaded</item>
+																	<item>Lines</item>
+																</content>
+																<selection>1</selection>
+																<handler function="OnPatchesDrawSelect" entry="EVT_CHOICE" />
 															</object>
 															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 															<border>5</border>

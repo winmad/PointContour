@@ -1,6 +1,9 @@
 #ifndef _ERRORS_H_
 #define _ERRORS_H_
 
+namespace DrT
+{
+
 #define OUTPUT_ERROR 0
 
 static enum ShapeType {
@@ -40,4 +43,7 @@ static void errors(int type, char * filename){
 	#endif
 	//exit(1);
 }
+
+}
+
 #endif

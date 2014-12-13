@@ -71,6 +71,16 @@ bool isSameCycle(std::vector<unsigned>& c1 , std::vector<unsigned>& c2)
     return true;
 }
 
+bool isSameCycleGroup(CycleGroup& c1 , CycleGroup& c2)
+{
+    if (c1.size() != c2.size()) return false;
+    for (int i = 0; i < c1.size(); i++)
+    {
+        if (!isSameCycle(c1[i] , c2[i])) return false;
+    }
+    return true;
+}
+
 void writeBMP(const char* filename , int w , int h ,
               unsigned char* rgb)
 {

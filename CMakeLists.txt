@@ -35,10 +35,12 @@ include_directories(
   ${OPENMP_INCLUDE_DIRS}
   ${wxWidgets_USE_FILE}
   include
+  coarseSuf/include
   src
   GUI
   external/include
   external/include/rapidxml
+  external/tetgen/include
   external/lib/wx/wx/include/osx_cocoa-unicode-static-3.0
   /Applications/MATLAB_R2014a.app/extern/include
   /Users/Winmad/wxWidgets-3.0.1/build-osx/lib/wx/include/osx_cocoa-unicode-static-3.0
@@ -51,6 +53,8 @@ link_directories(
   ${GLUT_LIBRARY_DIRS}
   ${GLEW_LIBRARY_DIRS}
   ${OPENMP_LIBRARY_DIRS}
+  /Users/Winmad/Projects/PointContour/external/tetgen/lib
+  /Users/Winmad/Projects/PointContour/external/lib
   /Users/Winmad/wxWidgets-3.0.1/build-osx/lib
   /Applications/MATLAB_R2014a.app/bin/maci64
   /Applications/MATLAB_R2014a.app/runtime/maci64
@@ -66,12 +70,14 @@ set(ALL_LIBS
   ${GLFW_LIBRARIES}
   libwx_osx_cocoau-3.0.a
   libwx_osx_cocoau_gl-3.0.a
+  libtet.a
+  libsuf.a
 )
 
 AUX_SOURCE_DIRECTORY(src/ CPP_SOURCES)
 AUX_SOURCE_DIRECTORY(GUI/ GUI_SOURCES)
-#AUX_SOURCE_DIRECTORY(matlab/cpp MATLAB_SOURCES)
-set(CPP_SOURCES ${CPP_SOURCES} ${GUI_SOURCES} ${MATLAB_SOURCES})
+
+set(CPP_SOURCES ${CPP_SOURCES} ${GUI_SOURCES})
 add_executable(PointContour ${CPP_SOURCES})
 set_target_properties(PointContour
   PROPERTIES LINK_FLAGS ${CMAKE_LINK_FLAGS}

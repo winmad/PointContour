@@ -3,6 +3,9 @@
 
 #include <iostream>
 
+namespace DrT
+{
+
 #define IZ_EPSILON 1e-16
 #define V3AE_EPSILON 1e-12
 
@@ -73,6 +76,8 @@ inline std::ostream& operator<<(std::ostream& os, const Vector3& v)
 {
     os << "(" << v[0] << ", " << v[1] << ", " << v[2] << ")";
     return os;
+}
+
 }
 
 #endif /* Vector3_h */

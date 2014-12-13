@@ -390,7 +390,45 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		isChangeView=true;
 	}
 
-    if (event.ControlDown())
+	if (event.ShiftDown())
+	{
+		if (event.ControlDown())
+			m_pcUtils->pcRenderer->isCtrlPress = true;
+		m_pcUtils->pcRenderer->pickedCurve = -1;
+		m_pcUtils->pcRenderer->pickedSavedCycle = -1;
+		lastKeyBoard = 3;
+		m_pcUtils->pcRenderer->isShiftPress = true;
+
+		m_pcUtils->pcRenderer->pickCycle(x , y , 0);
+		if (event.LeftIsDown())
+		{
+			if (!event.ControlDown())
+			{
+				m_pcUtils->pcRenderer->backup();
+				m_pcUtils->pcRenderer->pickCycle(x , y , 1);
+			}
+			else
+			{
+				m_pcUtils->pcRenderer->pickCycle(x , y , 3);
+			}
+			m_pcUtils->pcRenderer->pickedCycle = -1;
+		}
+		if (event.RightIsDown())
+		{
+			if (event.ControlDown())
+			{
+				m_pcUtils->pcRenderer->pickCycle(x , y , 4);
+			}
+			m_pcUtils->pcRenderer->pickedCycle = -1;
+		}
+		if (event.MiddleIsDown())
+		{
+			m_pcUtils->pcRenderer->backup();
+			m_pcUtils->pcRenderer->cycleGroupUpdate();
+		}
+		Render();
+	}
+    else if (event.ControlDown())
     {
         m_pcUtils->pcRenderer->pickedCurve = -1;
         m_pcUtils->pcRenderer->pickedCycle = -1;
@@ -450,38 +488,30 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
 		Render();
     }
-    else if (event.ShiftDown())
-    {
-        m_pcUtils->pcRenderer->pickedCurve = -1;
-        m_pcUtils->pcRenderer->pickedSavedCycle = -1;
-        lastKeyBoard = 3;
-        m_pcUtils->pcRenderer->isShiftPress = true;
 
-        m_pcUtils->pcRenderer->pickCycle(x , y , 0);
-        if (event.LeftIsDown())
-        {
-            m_pcUtils->pcRenderer->backup();
-            m_pcUtils->pcRenderer->pickCycle(x , y , 1);
-            m_pcUtils->pcRenderer->pickedCycle = -1;
-        }
-		if (event.RightIsDown())
+	if (!event.ShiftDown())
+	{
+		m_pcUtils->pcRenderer->isShiftPress = false;
+		if (!event.ControlDown())
 		{
-			m_pcUtils->pcRenderer->pickedCycle = -1;
+			for (int i = 0; i < m_pcUtils->pcRenderer->inGroup.size(); i++)
+				m_pcUtils->pcRenderer->inGroup[i] = false;
+			m_pcUtils->pcRenderer->group.clear();
 		}
-        Render();
-    }
-
+	}
 	if (!event.ControlDown())
 	{
 		m_pcUtils->pcRenderer->isCtrlPress = false;
+		if (!event.ShiftDown())
+		{
+			for (int i = 0; i < m_pcUtils->pcRenderer->inGroup.size(); i++)
+				m_pcUtils->pcRenderer->inGroup[i] = false;
+			m_pcUtils->pcRenderer->group.clear();
+		}
 	}
     if (!event.AltDown())
     {
         m_pcUtils->pcRenderer->isAltPress = false;
-    }
-    if (!event.ShiftDown())
-    {
-        m_pcUtils->pcRenderer->isShiftPress = false;
     }
 
 	if(!event.ControlDown()) {startDraw=false;}

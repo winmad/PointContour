@@ -299,6 +299,7 @@ public:
 	void calcPatchScores(std::vector<std::vector<std::vector<vec3d> > >& meshes ,
 		std::vector<double>& scores);
 
+	std::vector<vec3d> samplePointsFromPatch(std::vector<std::vector<vec3d> >& mesh);
 	void pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes);
 
     void loadCurveNet();

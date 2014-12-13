@@ -23,6 +23,7 @@ public:
     
 	bool isShowPointCloud;
 	bool isShowPoints;
+	bool isHideDrawnPoints;
 	bool isShowUniformGrid;
 	bool isShowAdaptiveGrid;
 	bool isShowHessian;
@@ -32,6 +33,7 @@ public:
     bool isShowCollinear;
     int constraintsVisual;
     int patchesVisual;
+	int patchesDraw;
     int bspIndex , curveIndex;
 
     void incBspCurveIndex();
@@ -113,18 +115,34 @@ public:
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
     int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
-    int cycleSelectionByRay(int mouseX , int mouseY , std::vector<vec3d>& cycleCenters);
+    int cycleSelectionByRay(int mouseX , int mouseY ,
+        std::vector<vec3d>& cycleCenters);
+    int cycleGroupSelectionByRay(int mouseX , int mouseY ,
+        std::vector<std::vector<vec3d> >& cycleCenters);
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
     bool pickCurve(int mouseX , int mouseY , int op);
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
-    void cycleStatusUpdate();
-	void cycleGroupUpdate();
     
+	void surfaceBuilding(// input
+		std::vector<int> &numPoints, std::vector<double*> &inCurves, std::vector<double*> &inNorms,
+		bool useDelaunay, bool useMinSet, bool useNormal, 
+		float areaWeight, float edgeWeight,	float dihedralWeight, float boundaryNormalWeight, 
+		// output
+		std::vector<std::vector<vec3d> > &mesh , std::vector<std::vector<vec3d> > &meshNormals
+		);
+
     void optUpdate();
     void cycleDisc();
+	void cycleStatusUpdate();
+
+    void surfacingUnsavedCycles();
+    void surfacingUnsavedCycleGroup();
+    void evalUnsavedCycles();
+	void cycleGroupUpdate();
+	
     void backup();
     void undo();
 public:
@@ -161,10 +179,15 @@ public:
     std::vector<std::vector<Path> > unsavedCyclePoints;
     std::vector<vec3d> unsavedCycleCenters;
 	std::vector<double> unsavedCycleScores;
+	std::vector<int> unsavedCycleScoreRanks;
 
 	std::vector<int> group;
 	std::vector<bool> inGroup;
 
+    std::vector<int> unsavedInCurveNums;
+    std::vector<double*> unsavedInCurvePoints;
+    std::vector<double*> unsavedInCurveNormals;
+    
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
     

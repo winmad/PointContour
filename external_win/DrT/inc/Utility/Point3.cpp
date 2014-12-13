@@ -3,6 +3,9 @@
 #include <math.h>
 #include <assert.h>
 
+namespace DrT
+{
+
 inline bool isZero(double in_d, double in_dEps = IZ_EPSILON)
 { 
     return (in_d < in_dEps && in_d > -in_dEps) ? true : false; 
@@ -111,4 +114,6 @@ bool Point3::approxEqual( const Point3 &p, double eps ) const
 void Point3::print() const
 {
     std::cout << x << " " << y << " " << z << "\n";
+}
+
 }

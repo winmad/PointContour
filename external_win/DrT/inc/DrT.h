@@ -16,6 +16,9 @@
 #include "MingCurve.h"
 #include <stdio.h>
 
+namespace DrT
+{
+
 using namespace std;
 
 //interface 1
@@ -168,5 +171,6 @@ int delaunayRestrictedTriangulation(const double* inCurve,const float* inNorm,co
 	return 1; // (1) correct results
 }
 
+}
 
 #endif

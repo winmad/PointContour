@@ -2,6 +2,9 @@
 #define _TRIANGLE_INFO_H_
 #include <float.h>
 
+namespace DrT
+{
+
 class TriangleInfo {
 public:
 	TriangleInfo();
@@ -16,5 +19,7 @@ public:
 	int getOptSize();
 private:
 };
+
+}
 
 #endif

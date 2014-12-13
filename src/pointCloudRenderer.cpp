@@ -5,6 +5,11 @@
 #include "pointCloudRenderer.h"
 #include "nvVector.h"
 #include "colormap.h"
+#include "CoarseSuf.h"
+
+#ifdef _WIN32
+	#include "SmoothPatch.h"
+#endif
 
 PointCloudRenderer::PointCloudRenderer()
 {
@@ -29,6 +34,7 @@ PointCloudRenderer::~PointCloudRenderer()
 
 void PointCloudRenderer::init()
 {
+	isHideDrawnPoints = true;
 	isShowPoints = false;
 	isShowUniformGrid = false;
 	isShowAdaptiveGrid = false;
@@ -131,6 +137,7 @@ void PointCloudRenderer::drawPoints()
 	{
 		if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
 		{
+			if (isHideDrawnPoints) continue;
 			int c = pcUtils->pcColor[i];
 			glColor3f(pcUtils->colors[c].r , pcUtils->colors[c].g , pcUtils->colors[c].b);
 		}
@@ -309,6 +316,8 @@ void PointCloudRenderer::callListSurfelDisc()
 
 	for (int i = 0; i < pcUtils->pcData.size(); i++)
 	{
+		if (isHideDrawnPoints && pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+			continue;
 		drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , discRenderRadiusScale , pcUtils->pcData[i].n);
 	}
 
@@ -327,8 +336,8 @@ void PointCloudRenderer::renderPoints()
 	glColor3f(0.f , 0.f , 0.f);
 	glPointSize(2.f);
 	
-	drawPoints();
-	//glCallList(LIST_POINTS);
+	//drawPoints();
+	glCallList(LIST_POINTS);
     
 	//callListPoints();
 }
@@ -340,6 +349,15 @@ void PointCloudRenderer::renderSurfelDisc()
 	glColor3f(0.5f , 0.539f , 0.527f);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	/*
+	for (int i = 0; i < pcUtils->pcData.size(); i++)
+	{
+		if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+			continue;
+
+		drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , discRenderRadiusScale , pcUtils->pcData[i].n);
+	}
+	*/
 	glCallList(LIST_SURFEL_DISC);
     //callListSurfelDisc();
 }
@@ -772,7 +790,10 @@ void PointCloudRenderer::renderPickedSavedCycle()
 
     for (int i = 0; i < dispCurveNet->cyclePoints[pickedSavedCycle].size(); i++)
     {
-        drawLines(dispCurveNet->cyclePoints[pickedSavedCycle][i]);
+        for (int j = 0; j < dispCurveNet->cyclePoints[pickedSavedCycle][i].size(); j++)
+        {
+            drawLines(dispCurveNet->cyclePoints[pickedSavedCycle][i][j]);
+        }
     }
 }
 
@@ -789,7 +810,10 @@ void PointCloudRenderer::renderSavedCycles()
         if (i == pickedSavedCycle) continue;
         for (int j = 0; j < dispCurveNet->cyclePoints[i].size(); j++)
         {
-            drawLines(dispCurveNet->cyclePoints[i][j]);
+            for (int k = 0; k < dispCurveNet->cyclePoints[i][j].size(); k++)
+            {
+                drawLines(dispCurveNet->cyclePoints[i][j][k]);
+            }
         }
     }
 }
@@ -805,9 +829,9 @@ void PointCloudRenderer::renderUnsavedMeshes()
 			glColor3f(0.f , 0.f , 1.f);
 		const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
-		if(false)
+		if (patchesDraw == 1)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		else
+		else if (patchesDraw == 0)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		drawPatch(triangleCycle , triangleCycleNormal);
@@ -823,9 +847,9 @@ void PointCloudRenderer::renderPickedMesh()
     glColor3f(0.f , 1.f , 0.f);
     const cycle::TriangleCycle &triangleCycle = unsavedMeshes[patchID];
     const cycle::TriangleCycle &triangleCycleNormal = unsavedNormals[patchID];
-    if(false)
+    if (patchesDraw == 1)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    else
+    else if (patchesDraw == 0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     drawPatch(triangleCycle , triangleCycleNormal);
@@ -839,9 +863,9 @@ void PointCloudRenderer::renderPickedSavedMesh()
     glColor3f(0.f , 1.f , 0.f);
     const cycle::TriangleCycle &triangleCycle = dispCurveNet->meshes[patchID];
     const cycle::TriangleCycle &triangleCycleNormal = dispCurveNet->meshNormals[patchID];
-    if(false)
+    if (patchesDraw == 1)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    else
+    else if (patchesDraw == 0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     drawPatch(triangleCycle , triangleCycleNormal);
@@ -859,14 +883,15 @@ void PointCloudRenderer::renderSavedMeshes()
 
         const cycle::TriangleCycle &triangleCycle = dispCurveNet->meshes[patchID];
 		const cycle::TriangleCycle &triangleCycleNormal = dispCurveNet->meshNormals[patchID];
-		if(false)
+		if (patchesDraw == 1)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		else
+		else if (patchesDraw == 0)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		drawPatch(triangleCycle , triangleCycleNormal);
 	}
 
+    /*
 	for (int i = 0; i < dispCurveNet->cycleGroups.size(); i++)
 	{
 		for (int j = 0; j < dispCurveNet->cycleGroups[i].size(); j++)
@@ -882,6 +907,7 @@ void PointCloudRenderer::renderSavedMeshes()
 			}
 		}
 	}
+    */
 }
 
 void PointCloudRenderer::render()
@@ -900,19 +926,18 @@ void PointCloudRenderer::render()
     renderCoplanarLines();
     renderOrthogonalLines();
     renderTangentLines();
-#ifdef _WIN32
+// #ifdef _WIN32
     renderUnsavedCycles();
     renderPickedMesh();
 	renderPickedCycle();
     renderPickedSavedMesh();
     renderSavedMeshes();
-	renderString();
-#else
-    renderUnsavedCycles();
-    renderPickedCycle();
-    renderPickedSavedCycle();
-    renderSavedCycles();
-#endif
+// #else
+    // renderUnsavedCycles();
+    // renderPickedCycle();
+    // renderPickedSavedCycle();
+    // renderSavedCycles();
+// #endif
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -944,6 +969,9 @@ void PointCloudRenderer::callListSelectionBuffer()
 
 	for (int i = 0; i < axisU.size(); i++)
 	{
+		if (isHideDrawnPoints && pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+			continue;
+
 		vec3uc& col = glObjColors[i];
 		glColor3ub(col.x , col.y , col.z);
 		drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , selectionOffset);
@@ -960,6 +988,17 @@ void PointCloudRenderer::updateSelectionBuffer()
 	
 	if (isNormalInfo)
 	{
+		/*
+		for (int i = 0; i < axisU.size(); i++)
+		{
+			if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
+				continue;
+
+			vec3uc& col = glObjColors[i];
+			glColor3ub(col.x , col.y , col.z);
+			drawCircle(pcUtils->pcData[i].pos , axisU[i] , axisV[i] , selectionOffset);
+		}
+		*/
 		glCallList(LIST_SELECTION_BUFFER);
         //callListSelectionBuffer();
 	}
@@ -1176,6 +1215,13 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
                 // find cycle
                 printf("start cycle discovery\n");
                 cycleDisc();
+
+#ifdef __APPLE__
+                // reconstruct surface
+                printf("surface reconstruction\n");
+                surfacingUnsavedCycles();
+#endif
+                evalUnsavedCycles();
             }
 
             // dispCurveNet->debugLog();
@@ -1222,12 +1268,32 @@ void PointCloudRenderer::optUpdate()
 void PointCloudRenderer::cycleDisc()
 {
     // std::vector<std::vector<vec3d> > inCurves;
-    // std::vector<std::vector<unsigned> > inCycleConstraints;
+    std::vector<std::vector<unsigned> > inCycleConstraints;
     if (dispCurveNet->numPolyLines > 0)
     {
         unsavedCycles.clear();
         unsavedMeshes.clear();
         unsavedNormals.clear();
+
+        for (int i = 0; i < dispCurveNet->cycles.size(); i++)
+        {
+            for (int j = 0; j < dispCurveNet->cycles[i].size(); j++)
+            {
+                inCycleConstraints.push_back(dispCurveNet->cycles[i][j]);
+            }
+        }
+
+        unsavedInCurveNums.clear();
+        for (int i = 0; i < unsavedInCurvePoints.size(); i++)
+        {
+            delete[] unsavedInCurvePoints[i];
+        }
+        for (int i = 0; i < unsavedInCurveNormals.size(); i++)
+        {
+            delete[] unsavedInCurveNormals[i];
+        }
+        unsavedInCurvePoints.clear();
+        unsavedInCurveNormals.clear();
         /*
         writeLog("====== inCycleConstraints %lu ======\n" , dispCurveNet->cycles.size());
         for (int i = 0; i < dispCurveNet->cycles.size(); i++)
@@ -1241,7 +1307,6 @@ void PointCloudRenderer::cycleDisc()
             }
             writeLog("\n");
         }
-		*/
         writeLog("*********** Input ***********\n");
         writeLog("%lu\n\n" , dispCurveNet->numPolyLines);
         for (int i = 0; i < dispCurveNet->numPolyLines; i++)
@@ -1254,7 +1319,7 @@ void PointCloudRenderer::cycleDisc()
             }
             writeLog("\n");
         }
-        
+        */
         // output to screen
         /*
         inCurves = dispCurveNet->polyLines;
@@ -1288,9 +1353,28 @@ void PointCloudRenderer::cycleDisc()
         cycle::cycleDiscovery(inCurves , inCycleConstraints ,
             unsavedCycles , unsavedMeshes , unsavedNormals);
         */
-        cycle::cycleDiscovery(dispCurveNet->polyLines , dispCurveNet->cycles ,
-            unsavedCycles , unsavedMeshes , unsavedNormals);
+        cycle::cycleDiscovery(dispCurveNet->polyLines , inCycleConstraints , unsavedCycles ,
+            unsavedInCurveNums , unsavedInCurvePoints , unsavedInCurveNormals ,
+            unsavedMeshes , unsavedNormals);
 
+        /*
+        for (int i = 0; i < unsavedInCurveNums.size(); i++)
+        {
+            writeLog("===== cycle %d =====\n" , i);
+            writeLog("---- position, %d ----\n" , unsavedInCurveNums[i]);
+            for (int j = 0; j < unsavedInCurveNums[i]; j++)
+            {
+                writeLog("%.6f %.6f %.6f\n" , unsavedInCurvePoints[i][3 * j] ,
+                    unsavedInCurvePoints[i][3 * j + 1] , unsavedInCurvePoints[i][3 * j + 2]);
+            }
+            writeLog("---- normal, %d ----\n" , unsavedInCurveNums[i]);
+            for (int j = 0; j < unsavedInCurveNums[i]; j++)
+            {
+                writeLog("%.6f %.6f %.6f\n" , unsavedInCurveNormals[i][3 * j] ,
+                    unsavedInCurveNormals[i][3 * j + 1] , unsavedInCurveNormals[i][3 * j + 2]);
+            }
+        }
+        */
         /*
         writeLog("!!!!!!!!!!! Output cycles !!!!!!!!!!\n");
         writeLog("%lu\n\n" , unsavedCycles.size());
@@ -1304,7 +1388,7 @@ void PointCloudRenderer::cycleDisc()
             writeLog("\n");
         }
         */
-        
+
         unsavedCyclePoints.clear();
         unsavedCycleCenters.clear();
         unsavedStatus.clear();
@@ -1335,21 +1419,74 @@ void PointCloudRenderer::cycleDisc()
 			}
 		}
 		*/
+    }
+}
 
-		printf("calculate cycle scores...\n");
-		pcUtils->timer.PushCurrentTime();
-		unsavedCycleScores.clear();
-		pcUtils->calcPatchScores(unsavedMeshes , unsavedCycleScores);
-		for (int i = 0; i < unsavedMeshes.size(); i++)
-		{
-			//unsavedCycleScores.push_back(pcUtils->calcPatchScore(unsavedMeshes[i]));
-			printf("cycle %d: (" , i);
-			for (int j = 0; j < unsavedCycles[i].size(); j++)
+void PointCloudRenderer::surfacingUnsavedCycles()
+{
+    for (int i = 0; i < unsavedCycles.size(); i++)
+    {
+        std::vector<int> numPoints;
+        std::vector<double*> inCurves;
+        std::vector<double*> inNorms;
+        numPoints.push_back(unsavedInCurveNums[i]);
+        inCurves.push_back(unsavedInCurvePoints[i]);
+        inNorms.push_back(unsavedInCurveNormals[i]);
+
+		std::vector<std::vector<vec3d> > mesh;
+		std::vector<std::vector<vec3d> > meshNorm;
+
+		surfaceBuilding(numPoints , inCurves , inNorms ,
+			true , true , true , 0.f , 0.f , 1.f , 1.f , 
+			mesh , meshNorm);
+        
+        unsavedMeshes.push_back(mesh);
+        unsavedNormals.push_back(meshNorm);
+        /*
+        printf("write inCurves...\n");
+        FILE *fout = fopen("inCurves.txt" , "w");
+        fprintf(fout , "%d\n" , inCurves.size());
+        for (int i = 0; i < inCurves.size(); i++)
+        {
+            fprintf(fout , "%d\n" , inCurves[i].size());
+            for (int j = 0; j < inCurves[i].size(); j++)
+            {
+                fprintf(fout , "%.6f %.6f %.6f\n" , inCurves[i][j].x ,
+                    inCurves[i][j].y , inCurves[i][j].z);
+            }
+        }
+        fclose(fout);
+        */
+    }
+}
+
+void PointCloudRenderer::evalUnsavedCycles()
+{
+    if (unsavedMeshes.size() > 0)
+    {
+        printf("calculate cycle scores...\n");
+        pcUtils->timer.PushCurrentTime();
+        unsavedCycleScores.clear();
+		unsavedCycleScoreRanks.clear();
+        pcUtils->calcPatchScores(unsavedMeshes , unsavedCycleScores);
+
+        for (int i = 0; i < unsavedMeshes.size(); i++)
+        {
+            //unsavedCycleScores.push_back(pcUtils->calcPatchScore(unsavedMeshes[i]));
+			int cnt = 0;
+			for (int j = 0; j < unsavedMeshes.size(); j++)
+			{
+				if (unsavedCycleScores[j] > unsavedCycleScores[i]) cnt++;
+			}
+			unsavedCycleScoreRanks.push_back(cnt + 1);
+
+            printf("cycle %d: (" , i);
+            for (int j = 0; j < unsavedCycles[i].size(); j++)
 				printf(" %d " , unsavedCycles[i][j]);
-			printf(")\n");
-			printf("score = %.6f\n" , unsavedCycleScores[i]);
-		}
-		pcUtils->timer.PopAndDisplayTime("\nCycle scoring time: %.6f\n");
+            printf(")\n");
+            printf("score = %.6f, rank = %d/%d\n" , unsavedCycleScores[i] , unsavedCycleScoreRanks[i] , unsavedMeshes.size());
+        }
+        pcUtils->timer.PopAndDisplayTime("\nCycle scoring time: %.6f\n");
     }
 }
 
@@ -1494,7 +1631,7 @@ int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY ,
 
 	for (int i = 0; i < cycleCenters.size(); i++)
     {
-		vec3d p = cycleCenters[i];
+        vec3d p = cycleCenters[i];
         double paramU = (
             ((p[0]-rayStr[0])*(rayEnd[0]-rayStr[0])) +
             ((p[1]-rayStr[1])*(rayEnd[1]-rayStr[1])) +
@@ -1514,6 +1651,43 @@ int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY ,
     return res;
 }
 
+int PointCloudRenderer::cycleGroupSelectionByRay(int mouseX , int mouseY ,
+    std::vector<std::vector<vec3d> >& cycleCenters)
+{
+    std::vector<vec3d> rays = getRay(mouseX , mouseY);
+    vec3d& rayStr = rays.front();
+    vec3d& rayEnd = rays.back();
+    
+    double minDistance = 1e20;
+    int res = -1;
+
+    double p0p1LenSquared = (rayEnd - rayStr).dot(rayEnd - rayStr);
+
+	for (int i = 0; i < cycleCenters.size(); i++)
+    {
+        for (int j = 0; j < cycleCenters[i].size(); j++)
+        {
+            vec3d p = cycleCenters[i][j];
+            double paramU = (
+                ((p[0]-rayStr[0])*(rayEnd[0]-rayStr[0])) +
+                ((p[1]-rayStr[1])*(rayEnd[1]-rayStr[1])) +
+                ((p[2]-rayStr[2])*(rayEnd[2]-rayStr[2])))/p0p1LenSquared;
+
+            vec3d lineP = rayStr + (rayEnd - rayStr) * paramU;
+            double distance = (lineP - p).length();
+            if (minDistance > distance)
+            {
+                minDistance = distance;
+                res = i;
+            }
+        }
+	}
+    
+    // printf("%d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    if (minDistance > 0.5) res = -1;
+    return res;
+}
+
 void PointCloudRenderer::cycleStatusUpdate()
 {
     unsavedStatus.resize(unsavedCycles.size());
@@ -1522,32 +1696,17 @@ void PointCloudRenderer::cycleStatusUpdate()
         bool flag = true;
         for (int j = 0; j < dispCurveNet->cycles.size(); j++)
         {
-            if (isSameCycle(unsavedCycles[i] , dispCurveNet->cycles[j]))
+            for (int k = 0; k < dispCurveNet->cycles[j].size(); k++)
             {
-                flag = false;
-                break;
+                if (isSameCycle(unsavedCycles[i] , dispCurveNet->cycles[j][k]))
+                {
+                    flag = false;
+                    break;
+                }
             }
         }
         unsavedStatus[i] = flag;
     }
-	for (int k = 0; k < unsavedCycles.size(); k++)
-	{
-		bool flag = true;
-		for (int i = 0; i < dispCurveNet->cycleGroups.size(); i++)
-		{
-			for (int j = 0; j < dispCurveNet->cycleGroups[i].size(); j++)
-			{
-				int cycleId = dispCurveNet->cycleGroups[i][j];
-				if (isSameCycle(unsavedCycles[k] , dispCurveNet->cycles[cycleId]))
-				{
-					flag = false;
-					break;
-				}
-			}
-		}
-		unsavedStatus[k] = flag;
-
-	}
 	/*
 	printf("cycle num = %d ? %d: " , unsavedCycles.size() , unsavedStatus.size());
 	for (int i = 0; i < unsavedStatus.size(); i++)
@@ -1566,7 +1725,8 @@ void PointCloudRenderer::pickCycle(int mouseX , int mouseY , int op)
 	if (pickedCycle != -1)
     {
 		char buf[128];
-		sprintf(buf , "cycle score = %.6f\n" , unsavedCycleScores[pickedCycle]);
+		sprintf(buf , "cycle score = %.6f, rank = %d/%d\n" , unsavedCycleScores[pickedCycle] ,
+			unsavedCycleScoreRanks[pickedCycle] , unsavedMeshes.size());
 		wxString str(buf);
 		pcUtils->statusBar->SetStatusText(str);
 
@@ -1575,11 +1735,11 @@ void PointCloudRenderer::pickCycle(int mouseX , int mouseY , int op)
             dispCurveNet->addCycle(unsavedCycles[pickedCycle] ,
 				unsavedCyclePoints[pickedCycle] ,
 				unsavedCycleCenters[pickedCycle]);
-#ifdef _WIN32
             dispCurveNet->meshes.push_back(unsavedMeshes[pickedCycle]);
             dispCurveNet->meshNormals.push_back(unsavedNormals[pickedCycle]);
-			pcUtils->pcSegmentByPatches(dispCurveNet->meshes);
-#endif
+
+            pcUtils->pcSegmentByPatches(dispCurveNet->meshes);
+
 			cycleStatusUpdate();
         }
 		else if (op == 3)
@@ -1636,28 +1796,47 @@ void PointCloudRenderer::cycleGroupUpdate()
 	std::vector<Cycle> unsavedCycleGroup;
 	std::vector<std::vector<Path> > unsavedCycleGroupPoints;
 	std::vector<vec3d> unsavedCycleGroupCenters;
+
+    std::vector<int> numPoints;
+    std::vector<double*> inCurves;
+    std::vector<double*> inNorms;
 	for (int i = 0; i < group.size(); i++)
 	{
 		unsavedCycleGroup.push_back(unsavedCycles[group[i]]);
 		unsavedCycleGroupPoints.push_back(unsavedCyclePoints[group[i]]);
 		unsavedCycleGroupCenters.push_back(unsavedCycleCenters[group[i]]);
+
+        numPoints.push_back(unsavedInCurveNums[group[i]]);
+        inCurves.push_back(unsavedInCurvePoints[group[i]]);
+        inNorms.push_back(unsavedInCurveNormals[group[i]]);
 	}
-	dispCurveNet->addCycleGroup(unsavedCycleGroup , unsavedCycleGroupPoints , unsavedCycleGroupCenters);
+
+	std::vector<std::vector<vec3d> > mesh;
+	std::vector<std::vector<vec3d> > meshNorm;
+    
+	surfaceBuilding(numPoints , inCurves , inNorms ,
+		true , true , true , 1.f , 0.f , 0.f , 0.f , mesh , meshNorm);
+
+    dispCurveNet->addCycleGroup(unsavedCycleGroup , unsavedCycleGroupPoints , unsavedCycleGroupCenters);
+    dispCurveNet->meshes.push_back(mesh);
+    dispCurveNet->meshNormals.push_back(meshNorm);
 	group.clear();
+
+	pcUtils->pcSegmentByPatches(dispCurveNet->meshes);
+
+	cycleStatusUpdate();
 }
 
 void PointCloudRenderer::pickSavedCycle(int mouseX , int mouseY , int op)
 {
-	pickedSavedCycle = cycleSelectionByRay(mouseX , mouseY , dispCurveNet->cycleCenters);
+	pickedSavedCycle = cycleGroupSelectionByRay(mouseX , mouseY , dispCurveNet->cycleCenters);
 	if (pickedSavedCycle != -1)
     {
         if (op == 2)
         {
             dispCurveNet->deleteCycle(pickedSavedCycle);
             cycleStatusUpdate();
-#ifdef _WIN32
 			pcUtils->pcSegmentByPatches(dispCurveNet->meshes);
-#endif
         }
         /*
         printf("===== cycle size = %lu =====\n" , dispCurveNet->cycles.size());
@@ -1673,6 +1852,122 @@ void PointCloudRenderer::pickSavedCycle(int mouseX , int mouseY , int op)
         */
         //dispCurveNet->debugLog();
     }
+}
+
+void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vector<double*> &inCurves, 
+	std::vector<double*> &inNorms, bool useDelaunay, bool useMinSet, bool useNormal, 
+	float areaWeight, float edgeWeight, float dihedralWeight, float boundaryNormalWeight, 
+	std::vector<std::vector<vec3d> > &mesh , std::vector<std::vector<vec3d> > &meshNormals)
+{
+	int numPositions , numFaces;
+	float *_pPositions;
+	float *_pNormals;
+	int *_pFaceIndices;
+	coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
+		true , true , true ,
+		1.f , 0.f , 0.f , 0.f , numPositions , numFaces ,
+		&_pPositions , &_pNormals , &_pFaceIndices);
+	mesh.clear();
+	meshNormals.clear();
+
+#ifdef _WIN32
+	SP::Mesh spMesh,outputMesh;
+	spMesh.allocateVertices(numPositions);
+	spMesh.allocateFaces(numFaces);
+
+	float *pPositions(spMesh.getPositions()),
+		*pNormals(spMesh.getNormals());
+
+	for(int i=0;i<numPositions;++i){
+		pPositions[3*i] = _pPositions[3*i];
+		pPositions[3*i+1] = _pPositions[3*i+1];
+		pPositions[3*i+2] = _pPositions[3*i+2];
+		pNormals[3*i] = _pNormals[3*i];
+		pNormals[3*i+1] = _pNormals[3*i+1];
+		pNormals[3*i+2] = _pNormals[3*i+2];
+	}
+
+	int *pFaceIndices(spMesh.getFaceIndices());
+	int nTempIndex(0);
+	for(int i=0; i<numFaces*3; i++){
+		pFaceIndices[i] = _pFaceIndices[i]; 
+	}	
+
+	SP::SmoothPatchSettings settings;
+	settings.mbConstrainNormals=false;
+	settings.mbRemesh=true;
+	settings.mfTension=0.0;
+	settings.mnNumSubdivisions=1;
+	settings.mnNumLaplacianSmooths=3;
+
+	for (int i = 0; i < numFaces; i++)
+	{
+		vec3i pi;
+		for (int j = 0; j < 3; j++)
+		{
+			pi[j] = pFaceIndices[3 * i + j];
+		}
+		writeLog("===== face (%d %d %d) =====\n" , pi.x , pi.y , pi.z);
+		for (int j = 0; j < 3; j++)
+		{
+			vec3d p;
+			int index = pi[j];
+			p.x = pPositions[3 * index];
+			p.y = pPositions[3 * index + 1];
+			p.z = pPositions[3 * index + 2];
+			writeLog("(%.6f , %.6f , %.6f)\n" , p.x , p.y , p.z);
+		}
+	}
+
+	SP::SmoothPatchBuilder smoothPatchBuilder;
+
+	smoothPatchBuilder.buildSmoothPatch(settings,spMesh,outputMesh);
+
+	int outFaceNum = outputMesh.getFaceCount();
+	
+	int *pInd = outputMesh.getFaceIndices();
+	float *pPoints=outputMesh.getPositions();
+	float *pNewNormals = outputMesh.getNormals();
+	for(int i=0; i<outFaceNum; i++){
+		std::vector<vec3d> tri;
+		std::vector<vec3d> triNorms;
+		for (int j=0;j<3;j++){
+			int pointID = pInd[i*3+j];
+			vec3d p(0.0) , n(0.0);
+			for(int k=0;k<3;k++){
+				p[k]=(double)pPoints[pointID*3+k];
+				if(useNormal)
+					n[k]=(double)pNewNormals[pointID*3+k];
+			}
+			tri.push_back(p);
+			triNorms.push_back(n);
+		}
+		mesh.push_back(tri);
+		if (useNormal)
+			meshNormals.push_back(triNorms);
+	}
+#else
+	for (int j = 0; j < numFaces; j++)
+	{
+		vec3i face(_pFaceIndices[3 * j] , _pFaceIndices[3 * j + 1] , _pFaceIndices[3 * j + 2]);
+		std::vector<vec3d> triPos;
+		std::vector<vec3d> triNorm;
+		for (int k = 0; k < 3; k++)
+		{
+			vec3d p , n;
+			p.x = _pPositions[3 * face[k]];
+			p.y = _pPositions[3 * face[k] + 1];
+			p.z = _pPositions[3 * face[k] + 2];
+			n.x = _pNormals[3 * face[k]];
+			n.y = _pNormals[3 * face[k] + 1];
+			n.z = _pNormals[3 * face[k] + 2];
+			triPos.push_back(p);
+			triNorm.push_back(n);
+		}
+		mesh.push_back(triPos);
+		meshNormals.push_back(triNorm);
+	}
+#endif
 }
 
 void PointCloudRenderer::cycleColorGenByRandom(std::vector<Cycle>& cycles , 

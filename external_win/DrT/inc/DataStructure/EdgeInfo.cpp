@@ -1,5 +1,8 @@
 #include "EdgeInfo.h"
 
+namespace DrT
+{
+
 EdgeInfo::EdgeInfo(){
 	leftsize = -1; rightsize = -1;
 }
@@ -16,4 +19,6 @@ int EdgeInfo::getSize(){
 	totalSize += leftsize*(sizeof(int)+sizeof(char));
 	totalSize += rightsize*(sizeof(int)+sizeof(char));
 	return totalSize;
+}
+
 }

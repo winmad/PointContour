@@ -1,5 +1,8 @@
 #include "TriangleInfo.h"
 
+namespace DrT
+{
+
 TriangleInfo::TriangleInfo(){
 	optCost[0] = optCost[1] = optCost[2] = FLT_MIN; 
 }
@@ -16,4 +19,6 @@ int TriangleInfo::getSize(){
 	return sizeof(optCost)+sizeof(optTile)
 		+sizeof(edgeIndex)+sizeof(triIndex);
 	//return 48; //?
+}
+
 }

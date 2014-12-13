@@ -1,5 +1,8 @@
 #include "MingCurve.h"
 
+namespace DrT
+{
+
 MingCurve::MingCurve(const char *file, int limit, bool hasNorm){
 	numofpoints = 0; PT_LIMIT = limit; EXPSTOP = false; withNorm = hasNorm;isDeGen=false; badInput=false;perturbNum=0;
 
@@ -614,4 +617,6 @@ void MingCurve::statistics(){
 		cout<<filename<<"\t"<<n_ratio<<"\t"
 			<<timeReadIn<<"\t"<<timeEdgeProtect<<"\t";
 	}
+}
+
 }

@@ -3,6 +3,9 @@
 
 #include "Errors.h"
 
+namespace DrT
+{
+
 #define DO_EXP false
 #define GO_CMD 1
 
@@ -20,5 +23,7 @@
 #define USEONLYWORSTBITRI 0
 
 #define SAVEOBJ 0
+
+}
 
 #endif

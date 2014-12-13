@@ -4,6 +4,9 @@
 #include "Vector3.h"
 #include <iostream>
 
+namespace DrT
+{
+
 #define IZ_EPSILON 1e-16
 #define P3AE_EPSILON 1e-12
 
@@ -60,6 +63,8 @@ inline std::ostream& operator<<(std::ostream& os, const Point3& p)
 {
     os << "(" << p[0] << ", " << p[1] << ", " << p[2] << ")";
     return os;
+}
+
 }
 
 #endif /* Point3_h */

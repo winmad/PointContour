@@ -81,7 +81,7 @@
     <ClInclude Include="include\textfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ConfigManager.h">
+    <ClInclude Include="include\RandGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -137,7 +137,7 @@
     <ClCompile Include="src\textfile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ConfigManager.cpp">
+    <ClCompile Include="src\RandGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

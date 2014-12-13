@@ -16,6 +16,7 @@ struct Edge;
 typedef std::vector<vec3d> Path;
 typedef std::vector<std::vector<Edge> > Graph;
 typedef std::vector<unsigned> Cycle;
+typedef std::vector<Cycle> CycleGroup;
 
 const double pow2[3] = {1.0 , 100.0 , 100.0 * 100.0};
 
@@ -32,6 +33,7 @@ bool isEqual(const vec3d& lhs , const vec3d& rhs);
 bool isValid(const vec3d& pos);
 void setNull(vec3d& pos);
 bool isSameCycle(std::vector<unsigned>& c1 , std::vector<unsigned>& c2);
+bool isSameCycleGroup(CycleGroup& c1 , CycleGroup& c2);
 
 template<typename T>
 bool allocate3(T*** &d , const vec3i& size)
