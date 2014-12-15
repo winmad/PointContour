@@ -814,10 +814,25 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
         {
             m_pcUtils->pcRenderer->patchesVisual = (m_pcUtils->pcRenderer->patchesVisual + 1) % 4;
         }
-        else
+        else if (event.GetWheelRotation() < 0)
         {
             m_pcUtils->pcRenderer->patchesVisual = (m_pcUtils->pcRenderer->patchesVisual + 3) % 4;
         }
+    }
+    else if (m_pcUtils->pcRenderer->isAltPress)
+    {
+        if (event.GetWheelRotation() != 0)
+            m_pcUtils->pcRenderer->dragPlaneNormalIndex = (m_pcUtils->pcRenderer->dragPlaneNormalIndex + 1) % 2;
+    }
+    else if (m_pcUtils->pcRenderer->isCtrlPress)
+    {
+        if (event.GetWheelRotation() != 0)
+            m_pcUtils->pcRenderer->drawMode = (m_pcUtils->pcRenderer->drawMode + 1) % 2;
+    }
+    else
+    {
+        if (event.GetWheelRotation() != 0)
+            m_pcUtils->pcRenderer->isShowCtrlNodes = !m_pcUtils->pcRenderer->isShowCtrlNodes;
     }
     m_openGLView->Render();
     m_openGLView->OnMouse(event);
@@ -957,7 +972,7 @@ void PointContourGUIFrame::OnAutoOptClick(wxCommandEvent& event)
     m_pcUtils->pcRenderer->isAutoOpt = (!m_pcUtils->pcRenderer->isAutoOpt);
     if (m_pcUtils->pcRenderer->isAutoOpt)
     {
-        m_pcUtils->pcRenderer->optUpdate();
+        m_pcUtils->pcRenderer->optUpdate(true);
     }
 }
 

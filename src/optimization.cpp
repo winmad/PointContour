@@ -15,6 +15,11 @@ Optimization::Optimization()
     */
 }
 
+Optimization::~Optimization()
+{
+    delete net;
+}
+
 void Optimization::init(CurveNet *_net)
 {
     net = _net;
@@ -752,6 +757,7 @@ void Optimization::run(CurveNet *net)
             printf("!!!!! (%lu , %lu) !!!!!\n" , net->bsplines[i].ctrlNodes.size() ,
             net->bsplines[i].knots.size());
         }
+        printf("curve id = %d, type = %d\n" , i , net->curveType[i]);
         resampleBsp(net->bsplines[i] , net->polyLines[i]);
     }
 	fin.close();

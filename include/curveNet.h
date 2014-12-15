@@ -43,8 +43,10 @@ public:
         bool addConstrants);
     void breakPath(const int& breakLine , const int& breakPoint ,
         bool addConstraints);
+    void updatePath(const int& bspIndex , const int& nodeIndex ,
+        const vec3d& newPos , bool addConstraints);
 
-	void calcDispCyclePoints(const Cycle& cycle ,
+    void calcDispCyclePoints(const Cycle& cycle ,
 		std::vector<Path>& cyclePts , vec3d& cycleCenter);
 	void addCycle(const Cycle& cycle , const std::vector<Path>& cyclePts , 
 		const vec3d& cycleCenter);
@@ -64,6 +66,8 @@ public:
     bool linkNoEdges(const int& ni);
 
     void addCurveType(int bspIndex);
+    void updateConstraints(int bspIndex);
+    void refreshAllConstraints();
 
     void mapOrigin2polyLines(int bspIndex);
 

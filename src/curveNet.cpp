@@ -113,11 +113,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     addCurveType(numPolyLines - 1);
     if (addConstrants)
     {
-        conSet->addCollinearConstraint(numPolyLines - 1);
-        conSet->addParallelConstraint(numPolyLines - 1);
-        conSet->addCoplanarConstraint(numPolyLines - 1);
-        conSet->addJunctionConstraint(numPolyLines - 1);
-        conSet->addSymmetryConstraint(numPolyLines - 1);
+        updateConstraints(numPolyLines - 1);
     }
 }
 
@@ -204,11 +200,46 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
         addCurveType(bspIndex[t]);
         if (addConstrants)
         {
-            conSet->addCollinearConstraint(bspIndex[t]);
-            conSet->addParallelConstraint(bspIndex[t]);
-            conSet->addCoplanarConstraint(bspIndex[t]);
-            conSet->addJunctionConstraint(bspIndex[t]);
-            conSet->addSymmetryConstraint(bspIndex[t]);
+            updateConstraints(bspIndex[t]);
+        }
+    }
+}
+
+void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
+    const vec3d& newPos , bool addConstraints)
+{
+    std::vector<int> modifiedBsp;
+    vec3d pos = bsplines[bspIndex].ctrlNodes[nodeIndex];
+    bsplines[bspIndex].updateBSpline(nodeIndex , newPos);
+    resampleBsp(bsplines[bspIndex] , polyLines[bspIndex]);
+    modifiedBsp.push_back(bspIndex);
+    if (nodeIndex == 0 || nodeIndex == (int)bsplines[bspIndex].ctrlNodes.size() - 1)
+    {
+        int ni = getNodeIndex(pos);
+        // printf("pos = (%.6f,%.6f,%.6f), ni = %d\n" , pos.x , pos.y , pos.z , ni);
+        nodes[ni] = newPos;
+        for (int i = 0; i < edges[ni].size(); i++)
+        {
+            int pli = edges[ni][i].pli;
+            if (isEqual(bsplines[pli].ctrlNodes.front() , pos))
+            {
+                bsplines[pli].updateBSpline(0 , newPos);
+            }
+            else if (isEqual(bsplines[pli].ctrlNodes.back() , pos))
+            {
+                bsplines[pli].updateBSpline((int)bsplines[pli].ctrlNodes.size() - 1 , newPos);
+            }
+            resampleBsp(bsplines[pli] , polyLines[pli]);
+            modifiedBsp.push_back(pli);
+        }
+    }
+    
+    for (int i = 0; i < modifiedBsp.size(); i++)
+    {
+        addCurveType(modifiedBsp[i]);
+        if (addConstraints)
+        {
+            updateConstraints(modifiedBsp[i]);
         }
     }
 }
@@ -358,6 +389,28 @@ void CurveNet::cycle2boundary(CycleGroup& cycleGroup ,
     }
 }
 
+void CurveNet::updateConstraints(int bspIndex)
+{
+    conSet->addCollinearConstraint(bspIndex);
+    conSet->addParallelConstraint(bspIndex);
+    conSet->addCoplanarConstraint(bspIndex);
+    conSet->addJunctionConstraint(bspIndex);
+    conSet->addSymmetryConstraint(bspIndex);
+}
+
+void CurveNet::refreshAllConstraints()
+{
+    conSet->clear();
+    int tmp = numPolyLines;
+    numPolyLines = 0;
+    for (int i = 0; i < bsplines.size(); i++)
+    {
+        numPolyLines++;
+        if (curveType[i] == -1) continue;
+        updateConstraints(i);
+    }
+}
+
 int CurveNet::getNodeIndex(const vec3d& pos)
 {
     for (int i = 0; i < numNodes; i++)
@@ -386,7 +439,7 @@ void CurveNet::addCurveType(int bspIndex)
     {
         curveType[numPolyLines - 1] = 3;
     }
-    printf("curve type %d: %d\n" , bspIndex , curveType[bspIndex]);
+    // printf("curve type %d: %d\n" , bspIndex , curveType[bspIndex]);
 }
 
 void CurveNet::mapOrigin2polyLines(int bspIndex)
@@ -593,6 +646,17 @@ void CurveNet::debugLog()
         {
             writeLog("(%d -> %d), poly line index = %d\n" , i ,
                      edges[i][j].link , edges[i][j].pli);
+        }
+    }
+    writeLog("======== ctrl nodes list ============\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        if (curveType[i] == -1) continue;
+        writeLog("------------------------------\n");
+        writeLog("bspline %d:\n" , i);
+        for (int j = 0; j < bsplines[i].ctrlNodes.size(); j++)
+        {
+            writeLog("(%.6f,%.6f,%.6f)\n" , bsplines[i].ctrlNodes[j].x , bsplines[i].ctrlNodes[j].y , bsplines[i].ctrlNodes[j].z);
         }
     }
     writeLog("*************** End *****************\n");

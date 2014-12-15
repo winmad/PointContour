@@ -52,6 +52,7 @@ class Optimization
 {
 public:
     Optimization();
+    ~Optimization();
     void init(CurveNet *net);
 	void generateDAT(std::string file);
 	void generateMOD(std::string file);

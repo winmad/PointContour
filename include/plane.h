@@ -12,6 +12,7 @@ public:
 	Plane(double weight = 1) {this->weight = weight;}
 	Plane(const vec3d& p, const vec3d& n, double weight = 1)
 	{
+        this->p = p;
 		this->n = n;
 		d = -p.dot(n);
 		this->weight = weight;
@@ -59,7 +60,15 @@ public:
 	{
 		return p + 2 * (-d - p.dot(n)) * n;
 	}
+    vec3d intersect(vec3d& start , vec3d& dir)
+    {
+        double denom = n.dot(dir);
+        double numer = -n.dot(start) - d;
+        if (std::abs(denom) < 1e-6) printf("intersect denom = 0\n");
+        return start + dir * (numer / denom);
+    }
 
+    vec3d p;
 	vec3d n;
 	double d;
 	double weight;

@@ -64,6 +64,7 @@ private:
 
 	bool m_initialized;
 
+    int chosenBsp , chosenCtrlNode;
 	wxCoord m_lastx;
 	wxCoord m_lasty;
 	wxCoord m_selectx;
@@ -71,6 +72,7 @@ private:
 	std::vector<std::pair<int,int> > vts;
 	int lastKeyBoard;
 	bool isDrag;
+    bool isEditSpline;
 
 	int m_width;
 	int m_height;

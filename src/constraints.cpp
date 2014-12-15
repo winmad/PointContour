@@ -1,11 +1,11 @@
 #include "constraints.h"
 #include "curveNet.h"
 
-const double ConstraintDetector::collinearThr = 0.05;
+const double ConstraintDetector::collinearThr = 0.01;
 const double ConstraintDetector::coplanarThr = 0.1;
 const double ConstraintDetector::parallelThr = 0.05;
 const double ConstraintDetector::orthoThr = 0.1;
-const double ConstraintDetector::tangentThr = 0.05;
+const double ConstraintDetector::tangentThr = 0.01;
 const double ConstraintDetector::symmetryThr = 0.1;
 const double ConstraintDetector::ratioThr = 0.05;
 const double ConstraintDetector::planeDiffThr = 0.1;
@@ -42,12 +42,20 @@ bool ConstraintDetector::collinearTest(Path& path , BSpline& bsp)
         bsp.ctrlNodes.push_back(x1);
         bsp.ctrlNodes.push_back(x2);
         v = x2 - x1;
-        v.normalize();
+
+        double totLen = 0;
+        bsp.t.push_back(0);
+        for (int i = 1; i < path.size(); i++)
+        {
+            double len = (path[i] - path[i - 1]).length();
+            totLen += len;
+            bsp.t.push_back(totLen);
+        }
+        for (int i = 0; i < path.size(); i++) bsp.t[i] /= totLen;
+
         for (int i = 1; i < (int)path.size() - 1; i++)
         {
-            vec3d u = path[i] - x1;
-            double proj = u.dot(v);
-            path[i] = x1 + v * proj;
+            path[i] = x1 + v * bsp.t[i];
         }
         return true;
     }

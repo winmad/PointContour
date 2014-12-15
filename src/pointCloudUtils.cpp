@@ -1613,7 +1613,7 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 		DistQuery q;
 		q.maxSqrDis = 1e30;
 		patchPointTree.searchKnn(0 , pcData[i].pos , q);
-		if (q.maxSqrDis < 0.002)
+		if (q.maxSqrDis < 0.005)
 		{
 			pcColor[i] = q.patchId;
 		}
