@@ -521,7 +521,6 @@ void PointCloudRenderer::renderSelectedPoints()
 
 void PointCloudRenderer::renderCurrentPath()
 {
-    if (isShowCollinear) return;
     if (constraintsVisual != 0) return;
     
 	glColor3f(0.f , 0.f , 1.f);
@@ -534,7 +533,6 @@ void PointCloudRenderer::renderCurrentPath()
 void PointCloudRenderer::renderStoredPaths()
 {
     if (dispCurveNet == NULL) return;
-    if (isShowCollinear) return;
     if (constraintsVisual != 0) return;
     
 	glColor3f(0.f , 0.f , 1.f);
@@ -1336,14 +1334,17 @@ void PointCloudRenderer::optUpdate(bool isRefreshConst)
         dispCurveNet->refreshAllConstraints();
     pcUtils->opt.init(dispCurveNet);
     pcUtils->opt.run(dispCurveNet);
-    vec3d stPos = dispCurveNet->polyLines[dispCurveNet->numPolyLines - 1][0];
-    pcUtils->addPointToGraph(stPos);
-    int sti = pcUtils->point2Index[point2double(stPos)];
-    if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
-    {
-        pcUtils->dijkstra(pcUtils->pointGraph , sti , pcUtils->pointGraphInfo);
-    }
-    lastDispPoint = stPos;
+	if (dispCurveNet->numPolyLines > 0)
+	{
+		vec3d stPos = dispCurveNet->polyLines[dispCurveNet->numPolyLines - 1][0];
+		pcUtils->addPointToGraph(stPos);
+		int sti = pcUtils->point2Index[point2double(stPos)];
+		if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+		{
+			pcUtils->dijkstra(pcUtils->pointGraph , sti , pcUtils->pointGraphInfo);
+		}
+		lastDispPoint = stPos;
+	}
 }
 
 void PointCloudRenderer::cycleDisc()
@@ -1972,13 +1973,16 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	float *_pNormals;
 	int *_pFaceIndices;
 	coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
-		true , true , true ,
-		1.f , 0.f , 0.f , 0.f , numPositions , numFaces ,
+		true , true , false ,
+		0.f , 0.f , 0.f , 1.f , numPositions , numFaces ,
 		&_pPositions , &_pNormals , &_pFaceIndices);
 	mesh.clear();
 	meshNormals.clear();
 
 #ifdef _WIN32
+	if (false)
+	{
+
 	SP::Mesh spMesh,outputMesh;
 	spMesh.allocateVertices(numPositions);
 	spMesh.allocateFaces(numFaces);
@@ -2053,6 +2057,31 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 		mesh.push_back(tri);
 		if (useNormal)
 			meshNormals.push_back(triNorms);
+	}
+
+	}
+	else
+	{
+		for (int j = 0; j < numFaces; j++)
+		{
+			vec3i face(_pFaceIndices[3 * j] , _pFaceIndices[3 * j + 1] , _pFaceIndices[3 * j + 2]);
+			std::vector<vec3d> triPos;
+			std::vector<vec3d> triNorm;
+			for (int k = 0; k < 3; k++)
+			{
+				vec3d p , n;
+				p.x = _pPositions[3 * face[k]];
+				p.y = _pPositions[3 * face[k] + 1];
+				p.z = _pPositions[3 * face[k] + 2];
+				n.x = _pNormals[3 * face[k]];
+				n.y = _pNormals[3 * face[k] + 1];
+				n.z = _pNormals[3 * face[k] + 2];
+				triPos.push_back(p);
+				triNorm.push_back(n);
+			}
+			mesh.push_back(triPos);
+			meshNormals.push_back(triNorm);
+		}
 	}
 #else
 	for (int j = 0; j < numFaces; j++)
