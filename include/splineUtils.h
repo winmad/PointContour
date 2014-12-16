@@ -9,6 +9,7 @@ public:
     int K , N;
     std::vector<double> knots;
     std::vector<vec3d> ctrlNodes;
+    std::vector<double> t; // range [0,1]
     double **coefs;
 
     BSpline()
@@ -32,6 +33,7 @@ public:
         N = bsp.N;
         knots = bsp.knots;
         ctrlNodes = bsp.ctrlNodes;
+        t = bsp.t;
         if (bsp.coefs != NULL)
         {
             newCoefs();
@@ -53,6 +55,7 @@ public:
             N = bsp.N;
             knots = bsp.knots;
             ctrlNodes = bsp.ctrlNodes;
+            t = bsp.t;
             if (bsp.coefs != NULL)
             {
                 newCoefs();
@@ -76,6 +79,7 @@ public:
         }
         knots.clear();
         ctrlNodes.clear();
+        t.clear();
     }
 
     void newCoefs()
@@ -96,6 +100,7 @@ public:
 		N = bsp.N;
 		knots = bsp.knots;
 		ctrlNodes = bsp.ctrlNodes;
+        t = bsp.t;
 		newCoefs();
 		for (int i = 0; i < N; ++ i)
 			for (int j = 0; j < K; ++ j)
@@ -103,9 +108,12 @@ public:
 	}
 
     void calcCoefs();
+    int getCtrlNodeIndex(const vec3d& pos);
+    void updateBSpline(int index , const vec3d& newPos);
 };
 
 void convert2Spline(Path& path , BSpline& bsp);
 void resampleBsp(BSpline& bsp , Path& path);
+void convert2Line(Path& path , BSpline& bsp);
 
 #endif

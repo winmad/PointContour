@@ -26,6 +26,7 @@ SketchGLCanvas::SketchGLCanvas(	wxWindow *parent, wxWindowID id,
     startDraw=false;
     lastKeyBoard=-1;
     isDrag=false;
+    isEditSpline=false;
     isChangeView=true;
     m_rotationTimes=1;
 	m_rotationCount=0;
@@ -47,6 +48,7 @@ void SketchGLCanvas::Initialize()
     GetClientSize( &m_width, &m_height );
     //printf("w=%d, h=%d\n" , m_width , m_height);
     m_initialized = true;
+    chosenBsp = chosenCtrlNode = -1;
 
     m_Eye[0] = 0.0f; m_Eye[1] = 0.0f; m_Eye[2] = -2.0f; //Actual code
     m_PerspectiveAngleDegrees = 45.0f;
@@ -333,7 +335,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     //printf("mouse pos = (%d,%d)\n" , x , y);
 
 	SetFocus();
-	//for curve network;
 	if ((event.Dragging()||event.GetWheelRotation()!=0) && !event.ControlDown() && !event.ShiftDown()&& !event.AltDown())
     {
 		if (event.LeftIsDown())
@@ -371,7 +372,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 			glPopMatrix();
 		}
 		else if (event.RightIsDown()) {
-			// translate the screen, z axis gives the idea of zooming in and out
+			// z axis gives the idea of zooming in and out
 			if(event.Dragging())
 				m_Eye[2] -= (m_lasty - y) * 0.05; // here I multiply by a 0.05 factor to slow down the zoom
 			else{
@@ -383,6 +384,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 			}
 		}
 		else if (event.MiddleIsDown()) {
+            // change eye position
 			m_Eye[0] -= (m_lastx - x) * 0.01f;
 			m_Eye[1] += (m_lasty - y) * 0.01f;
 		}
@@ -390,7 +392,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		isChangeView=true;
 	}
 
-	if (event.ShiftDown())
+	if (event.ShiftDown()) // cycle operation
 	{
 		if (event.ControlDown())
 			m_pcUtils->pcRenderer->isCtrlPress = true;
@@ -404,11 +406,13 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		{
 			if (!event.ControlDown())
 			{
+                // save a candidate cycle
 				m_pcUtils->pcRenderer->backup();
 				m_pcUtils->pcRenderer->pickCycle(x , y , 1);
 			}
 			else
 			{
+                // add a candidate cycle to cycle group
 				m_pcUtils->pcRenderer->pickCycle(x , y , 3);
 			}
 			m_pcUtils->pcRenderer->pickedCycle = -1;
@@ -417,18 +421,20 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		{
 			if (event.ControlDown())
 			{
+                // remove a candidate cycle from cycle group
 				m_pcUtils->pcRenderer->pickCycle(x , y , 4);
 			}
 			m_pcUtils->pcRenderer->pickedCycle = -1;
 		}
 		if (event.MiddleIsDown())
 		{
+            // confirm a cycle group
 			m_pcUtils->pcRenderer->backup();
 			m_pcUtils->pcRenderer->cycleGroupUpdate();
 		}
 		Render();
 	}
-    else if (event.ControlDown())
+    else if (event.ControlDown()) // curve operation
     {
         m_pcUtils->pcRenderer->pickedCurve = -1;
         m_pcUtils->pcRenderer->pickedCycle = -1;
@@ -445,11 +451,13 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
 		if (event.LeftIsDown())
 		{
+            // extend path by adding a new point
             m_pcUtils->pcRenderer->backup();
 			m_pcUtils->pcRenderer->pickPoint(x , y , 1);
 		}
 		if (event.RightIsDown())
 		{
+            // cancel path extension
 			m_pcUtils->pcRenderer->pathVertex.clear();
             m_pcUtils->pcRenderer->bsp.clear();
 			setNull(m_pcUtils->pcRenderer->lastDispPoint);
@@ -458,7 +466,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		Render();
 
 	}
-    else if (event.AltDown())
+    else if (event.AltDown()) // edit operation
     {
         m_pcUtils->pcRenderer->pickedCycle = -1;
         lastKeyBoard = 2;
@@ -469,23 +477,65 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         setNull(m_pcUtils->pcRenderer->lastDispPoint);
         
 		bool curvePicked = m_pcUtils->pcRenderer->pickCurve(x , y , 0);
+        bool ctrlNodePicked = m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 0);
         if (!curvePicked)
         {
             m_pcUtils->pcRenderer->pickSavedCycle(x , y , 0);
         }
-		if (event.LeftIsDown())
+        if (event.LeftIsDown()) // update
+        {
+            if (ctrlNodePicked)
+            {
+                if (!isEditSpline)
+                {
+                    isEditSpline = true;
+                    chosenBsp = m_pcUtils->pcRenderer->pickedBsp;
+                    chosenCtrlNode = m_pcUtils->pcRenderer->pickedCtrlNode;
+                    m_pcUtils->pcRenderer->dragStartPoint = m_pcUtils->pcRenderer->dispCurveNet->bsplines[chosenBsp].ctrlNodes[chosenCtrlNode];
+                    Plane& plane = m_pcUtils->pcRenderer->dragPlane;
+                    std::vector<vec3d> rays = computeRay(x , y);
+                    plane.p = m_pcUtils->pcRenderer->dragStartPoint;
+                    plane.n = rays.back() - rays.front();
+                    plane.n.normalize();
+                    plane.d = -plane.p.dot(plane.n);
+                    m_pcUtils->pcRenderer->backup();
+                }
+            }
+
+            if (isEditSpline)
+            {
+                m_pcUtils->pcRenderer->pickedBsp = chosenBsp;
+                m_pcUtils->pcRenderer->pickedCtrlNode = chosenCtrlNode;
+            }
+            m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 1);
+        }
+		else if (event.RightIsDown()) // delete
 		{
             m_pcUtils->pcRenderer->backup();
             if (curvePicked)
             {
+                // delete curve
                 m_pcUtils->pcRenderer->pickCurve(x , y , 2);
             }
 			else
             {
+                // delete cycle and surface
                 m_pcUtils->pcRenderer->pickSavedCycle(x , y , 2);
             }
 		}
 
+        if (!event.LeftIsDown())
+        {
+            if (isEditSpline && chosenBsp != -1 && m_pcUtils->pcRenderer->isAutoOpt)
+            {
+                m_pcUtils->pcRenderer->dispCurveNet->updateConstraints(chosenBsp);
+                m_pcUtils->pcRenderer->optUpdate(false);
+            }
+            chosenBsp = chosenCtrlNode = -1;
+            setNull(m_pcUtils->pcRenderer->dragStartPoint);
+            setNull(m_pcUtils->pcRenderer->dragPlane.n);
+            isEditSpline = false;
+        }
 		Render();
     }
 
@@ -512,6 +562,8 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     if (!event.AltDown())
     {
         m_pcUtils->pcRenderer->isAltPress = false;
+        m_pcUtils->pcRenderer->pickedBsp = -1;
+        m_pcUtils->pcRenderer->pickedCtrlNode = -1;
     }
 
 	if(!event.ControlDown()) {startDraw=false;}
