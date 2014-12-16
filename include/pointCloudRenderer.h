@@ -31,7 +31,6 @@ public:
 	bool isShowMetric;
 	bool isShowPath;
     bool isShowCtrlNodes;
-    bool isShowCollinear;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
