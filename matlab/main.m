@@ -17,6 +17,7 @@ for i = 1 : N
     %pts = [x(2:len-1); y(2:len-1); z(2:len-1)];
     pts = [x(1:len); y(1:len); z(1:len)];
     [bs , val] = convert2Spline(pts);
+    %[bs , val] = convert2Nurbs(pts);
     fnplt(bs , 'r');
     polyBs = bs.coefs;
     plot3(polyBs(1,:) , polyBs(2,:) , polyBs(3,:) , 'b');

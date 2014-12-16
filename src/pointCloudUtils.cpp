@@ -104,6 +104,8 @@ void PointCloudUtils::init()
     initialized = true;
 	getBBox();
 
+    for (int i = 0; i < pcData.size(); i++)
+        pcData[i].index = i;
 	pcColor.resize(pcData.size());
 	for (int i = 0; i < pcColor.size(); i++)
 		pcColor[i] = -1;
@@ -137,7 +139,14 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
     allocateMemory(gridRes , extNum);
 
 	// phase 1
-	calcDistField();
+    if (access(static_cast<const char*>(m_cacheName.c_str()) , 0) == -1)
+    {
+        calcDistField();
+    }
+    else
+    {
+        loadDistField();
+    }
 
 	// phase 2
 	gaussianSmooth(originF , f , _filterRadius / 3.0);
@@ -249,6 +258,50 @@ void PointCloudUtils::calcDistField()
 	}
 
 	timer.PopAndDisplayTime("\nCalculate distance field: %.6lf\n");
+
+    FILE *fp = fopen(static_cast<const char*>(m_cacheName.c_str()) , "w");
+	for (int i = 0; i < sizeOriginF.x; i++)
+    {
+		for (int j = 0; j < sizeOriginF.y; j++)
+        {
+			for (int k = 0; k < sizeOriginF.z; k++)
+				fprintf(fp , "%.6lf\n" , originF[i][j][k]);
+            fprintf(fp , "\n");
+        }
+	}
+    fclose(fp);
+	//extXval.clear(); extYval.clear(); extZval.clear();
+}
+
+void PointCloudUtils::loadDistField()
+{
+	timer.PushCurrentTime();
+
+	sizeOriginF = gridResx + vec3i(extNum , extNum , extNum) * 2;
+	extXval.resize(sizeOriginF.x); extYval.resize(sizeOriginF.y); extZval.resize(sizeOriginF.z);
+	extXval[0] = box.lb.x - extNum * gridSize.x;
+	extYval[0] = box.lb.y - extNum * gridSize.y;
+	extZval[0] = box.lb.z - extNum * gridSize.z;
+	for (int i = 1; i < sizeOriginF.x; i++)
+		extXval[i] = extXval[i - 1] + gridSize.x;
+	for (int i = 1; i < sizeOriginF.y; i++)
+		extYval[i] = extYval[i - 1] + gridSize.y;
+	for (int i = 1; i < sizeOriginF.z; i++)
+		extZval[i] = extZval[i - 1] + gridSize.z;
+
+    FILE *fp = fopen(static_cast<const char*>(m_cacheName.c_str()) , "r");
+	for (int i = 0; i < sizeOriginF.x; i++)
+	{
+		for (int j = 0; j < sizeOriginF.y; j++)
+		{
+			for (int k = 0; k < sizeOriginF.z; k++)
+			{
+				fscanf(fp , "%lf" , &originF[i][j][k]);
+			}
+		}
+	}
+    fclose(fp);
+	timer.PopAndDisplayTime("\nLoad distance field: %.6lf\n");
 	/*
 	for (int i = 0; i < sizeOriginF.x; i++)
 		for (int j = 0; j < sizeOriginF.y; j++)
@@ -1399,9 +1452,10 @@ void PointCloudUtils::optimizeJunction(CurveNet* cn , const vec3d& pos)
         //printf("prev = (%.6f,%.6f,%.6f), now = (%.6f,%.6f,%.6f)\n" , pos.x , pos.y , pos.z ,
         //p.x , p.y , p.z);
     }
-    cn->nodes[ni] = p;
+    // cn->nodes[ni] = p;
     for (int i = 0; i < cn->edges[ni].size(); i++)
     {
+        /*
         Path& path = cn->polyLines[cn->edges[ni][i].pli];
         if (path.size() <= 2) continue;
         if (isEqual(pos , path[0]))
@@ -1412,6 +1466,20 @@ void PointCloudUtils::optimizeJunction(CurveNet* cn , const vec3d& pos)
         {
             path[path.size() - 1] = p;
         }
+        */
+        int pli = cn->edges[ni][i].pli;
+        if (cn->curveType[pli] == -1) continue;
+        int ctrlNodeIndex = -1;
+        if (isEqual(pos , cn->bsplines[pli].ctrlNodes.front()))
+        {
+            ctrlNodeIndex = 0;
+        }
+        else if (isEqual(pos , cn->bsplines[pli].ctrlNodes.back()))
+        {
+            ctrlNodeIndex = (int)cn->bsplines[pli].ctrlNodes.size() - 1;
+        }
+        cn->updatePath(pli , ctrlNodeIndex , p , pcRenderer->isAutoOpt);
+        break;
     }
     // double f = calcJuncF(pos , tsj , pts , ts);
     // printf("===================\n");
@@ -1516,23 +1584,30 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 	for (int i = 0; i < meshes.size(); i++)
 	{
 		double numer = 0 , denom = 0;
-		for (int j = 0; j < meshes[i].size(); j++)
-		{
-			for (int k = 0; k < meshes[i][j].size(); k++)
-			{
-				vec3d pos = meshes[i][j][k];
-				DistQuery q;
-				q.maxSqrDis = 1e30;
-				tree->searchKnn(0 , pos , q);
-				pos = q.nearest;
-				q.maxSqrDis = 1e30;
-				patchPointTree.searchKnn(0 , pos , q);
+        std::vector<vec3d> samples;
+		samples = samplePointsFromPatch(meshes[i]);
 
-				if (q.patchId == i)
-					numer += 1.0;
-				denom += 1.0;
-			}
-		}
+		for (int j = 0; j < samples.size(); j++)
+        {
+            vec3d pos = samples[j];
+            DistQuery q;
+            q.maxSqrDis = 1e30;
+            tree->searchKnn(0 , pos , q);
+
+            if (pcColor[q.pointIndex] != -1)
+            {
+                // denom += 1.0;
+                continue;
+            }
+
+            pos = q.nearest;
+            q.maxSqrDis = 1e30;
+            patchPointTree.searchKnn(0 , pos , q);
+
+            if (q.patchId == i)
+                numer += 1.0;
+            denom += 1.0;
+        }
 		printf("cycle %d: %.2f / %.2f\n" , i , numer , denom);
 		if (denom > 0)
 			scores[i] = numer / denom;
@@ -1604,7 +1679,7 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 		DistQuery q;
 		q.maxSqrDis = 1e30;
 		patchPointTree.searchKnn(0 , pcData[i].pos , q);
-		if (q.maxSqrDis < 0.002)
+		if (q.maxSqrDis < 0.005)
 		{
 			pcColor[i] = q.patchId;
 		}
@@ -1624,28 +1699,4 @@ void PointCloudUtils::pcSegmentByPatches(std::vector<std::vector<std::vector<vec
 	pcRenderer->callListSurfelDisc();
 	pcRenderer->callListSelectionBuffer();
 	timer.PopAndDisplayTime("\nUpdate callLists: %.6f\n");
-}
-
-void PointCloudUtils::loadCurveNet()
-{
-}
-
-void PointCloudUtils::saveCurveNet()
-{
-    char* fileName = new char[strlen(m_fileName) + 20];
-	strcpy(fileName , m_fileName);
-	for (int i = strlen(fileName) - 1; i >= 0; i--)
-    {
-		if (fileName[i] == '.')
-		{
-			fileName[i]='\0';
-			break;
-		}
-	}
-	wxFileName dirname;
-	if(!dirname.DirExists(wxString(fileName)))
-		dirname.Mkdir(wxString(fileName));
-
-	strcat(fileName,"/curve.txt");
-	printf("save curve file name = %s\n" , fileName);
 }
