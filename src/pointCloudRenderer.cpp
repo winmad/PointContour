@@ -74,7 +74,7 @@ void PointCloudRenderer::init()
     isAltPress = false;
 	isShiftPress = false;
 
-	isAutoOpt = true;
+	isAutoOpt = false;
     
 	if (pcUtils == NULL)
 		return;
@@ -642,12 +642,15 @@ void PointCloudRenderer::renderDragPlane()
 	glLineWidth(2.5f);
 	glEnable(GL_LINE_STIPPLE);
 	glLineStipple(2, 0xffff);
-    drawLine(dragStartPoint , dragPlane.p);
+    drawLine(dragStartPoint , dragCurPoint);
+    // double ratio = 0.1;
+    // drawLine(dragStartPoint - dragPlane.n * ratio , dragStartPoint + dragPlane.n * ratio);
     glDisable(GL_LINE_STIPPLE);
     
-    glColor4f(1.f , 99.f / 255.f , 71.f / 255.f , 0.7f);
-    drawPlane(dragPlane , 1);
+    // glColor4f(1.f , 99.f / 255.f , 71.f / 255.f , 0.7f);
     glColor4f(176.f / 255.f , 226.f / 255.f , 1.f , 0.7f);
+    drawPlane(dragPlane , 1);
+    /*
     Plane np = dragPlane;
     if (dragPlaneNormalIndex == 0)
     {
@@ -658,6 +661,7 @@ void PointCloudRenderer::renderDragPlane()
         np.n = vec3d(0 , 1 , 0);
     }
     drawPlane(np , 0.3);
+    */
 }
 
 void PointCloudRenderer::renderCollinearLines()
@@ -911,6 +915,7 @@ void PointCloudRenderer::renderPickedMesh()
 {
     if (patchesVisual != 0 && patchesVisual != 2) return;
     if (pickedCycle == -1) return;
+    if (!toBeSurfacing[pickedCycle] || !unsavedStatus[pickedCycle]) return;
 	if (isCtrlPress) return;
 	int patchID = pickedCycle;
     glColor3f(0.f , 1.f , 0.f);
@@ -1270,6 +1275,8 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
                     newNode , bsp , pathForComp[0] , isAutoOpt);
 
+                // pcUtils->optimizeJunction(dispCurveNet , lastDispPoint);
+
                 printf("start optimization\n");
                 if (isAutoOpt)
                 {
@@ -1283,7 +1290,6 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
                 // dispCurveNet->orthoSet.printLog();
                 // dispCurveNet->collinearSet.printLog();
                 // dispCurveNet->collinearSet.test();
-                // pcUtils->optimizeJunction(dispCurveNet , lastDisp);
 
                 // find cycle
                 printf("start cycle discovery\n");
@@ -1344,6 +1350,7 @@ void PointCloudRenderer::cycleDisc()
 {
     // std::vector<std::vector<vec3d> > inCurves;
     std::vector<std::vector<unsigned> > inCycleConstraints;
+    std::vector<bool> inCycleToBeRemoved;
     if (dispCurveNet->numPolyLines > 0)
     {
         unsavedCycles.clear();
@@ -1355,6 +1362,14 @@ void PointCloudRenderer::cycleDisc()
             for (int j = 0; j < dispCurveNet->cycles[i].size(); j++)
             {
                 inCycleConstraints.push_back(dispCurveNet->cycles[i][j]);
+                if (dispCurveNet->cycles[i].size() > 1)
+                {
+                    inCycleToBeRemoved.push_back(false);
+                }
+                else
+                {
+                    inCycleToBeRemoved.push_back(true);
+                }
             }
         }
 
@@ -1428,7 +1443,8 @@ void PointCloudRenderer::cycleDisc()
         cycle::cycleDiscovery(inCurves , inCycleConstraints ,
             unsavedCycles , unsavedMeshes , unsavedNormals);
         */
-        cycle::cycleDiscovery(dispCurveNet->polyLines , inCycleConstraints , unsavedCycles ,
+        cycle::cycleDiscovery(dispCurveNet->polyLines , inCycleConstraints ,
+            inCycleToBeRemoved, unsavedCycles , toBeSurfacing ,
             unsavedInCurveNums , unsavedInCurvePoints , unsavedInCurveNormals ,
             unsavedMeshes , unsavedNormals);
 
@@ -1501,15 +1517,21 @@ void PointCloudRenderer::surfacingUnsavedCycles()
 {
     for (int i = 0; i < unsavedCycles.size(); i++)
     {
+        std::vector<std::vector<vec3d> > mesh;
+		std::vector<std::vector<vec3d> > meshNorm;
+        if (!toBeSurfacing[i])
+        {
+            unsavedMeshes.push_back(mesh);
+            unsavedNormals.push_back(meshNorm);
+            continue;
+        }
+        
         std::vector<int> numPoints;
         std::vector<double*> inCurves;
         std::vector<double*> inNorms;
         numPoints.push_back(unsavedInCurveNums[i]);
         inCurves.push_back(unsavedInCurvePoints[i]);
         inNorms.push_back(unsavedInCurveNormals[i]);
-
-		std::vector<std::vector<vec3d> > mesh;
-		std::vector<std::vector<vec3d> > meshNorm;
 
 		surfaceBuilding(numPoints , inCurves , inNorms ,
 			true , true , true , 0.f , 0.f , 1.f , 1.f , 
@@ -1770,18 +1792,28 @@ void PointCloudRenderer::cycleStatusUpdate()
     for (int i = 0; i < unsavedCycles.size(); i++)
     {
         bool flag = true;
+        bool surfacingFlag = true;
         for (int j = 0; j < dispCurveNet->cycles.size(); j++)
         {
             for (int k = 0; k < dispCurveNet->cycles[j].size(); k++)
             {
                 if (isSameCycle(unsavedCycles[i] , dispCurveNet->cycles[j][k]))
                 {
-                    flag = false;
+                    if (dispCurveNet->cycles[j].size() == 1)
+                    {
+                        flag = false;
+                    }
+                    else
+                    {
+                        flag = true;
+                        surfacingFlag = false;
+                    }
                     break;
                 }
             }
         }
         unsavedStatus[i] = flag;
+        toBeSurfacing[i] = surfacingFlag;
     }
 	/*
 	printf("cycle num = %d ? %d: " , unsavedCycles.size() , unsavedStatus.size());
@@ -2091,12 +2123,21 @@ bool PointCloudRenderer::pickCtrlNode(int mouseX , int mouseY , int lastX , int 
         // choose tangent plane
         double dx = std::abs(mouseX - lastX);
         double dy = std::abs(mouseY - lastY);
-        dragPlane.p = pos;
+        /*
+        dragPlane.p = dragStartPoint;
+        dragPlane.n = dir;
         if (dragPlaneNormalIndex == 0)
             dragPlane.n = vec3d(0.0 , 1.0 , 0.0);
         else
             dragPlane.n = vec3d(0.0 , 0.0 , 1.0);
         dragPlane.d = -pos.dot(dragPlane.n);
+        */
+        dragCurPoint = pos;
+        /*
+        printf("p=(%.6f,%.6f,%.6f), n=(%.6f,%.6f,%.6f)\n" ,
+            dragPlane.p.x , dragPlane.p.y , dragPlane.p.z , dragPlane.n.x , dragPlane.n.y ,
+            dragPlane.n.z);
+        */
         vec3d newPos = dragPlane.intersect(rays.front() , dir);
         // printf("newPos = (%.6f, %.6f, %.6f)\n", newPos.x , newPos.y , newPos.z);
         dispCurveNet->updatePath(pickedBsp , pickedCtrlNode , newPos , false);

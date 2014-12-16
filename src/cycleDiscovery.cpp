@@ -37,7 +37,9 @@ typedef std::pair<int, int> Edge;
 
 void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 					std::vector<std::vector<unsigned> > &inCycleConstraint,
+                    std::vector<bool> &inCycleToBeRemoved,
 					std::vector<std::vector<unsigned> > &outCycles,
+                    std::vector<bool> &outCycleToBeSurfacing,
                     std::vector<int> &inCurveNums,
                     std::vector<double*> &inCurvePoints,
                     std::vector<double*> &inCurveNormals,
@@ -98,7 +100,8 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
     {
         for (int j = 0; j < outCycles.size(); j++)
         {
-            if (isSameCycle(inCycleConstraint[i] , outCycles[j]))
+            if (isSameCycle(inCycleConstraint[i] , outCycles[j]) &&
+                inCycleToBeRemoved[i])
             {
                 outCycles.erase(outCycles.begin() + j);
                 deleteSeq.push_back(j);
@@ -116,7 +119,22 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
         delete[] inCurveNormals[j];
         inCurveNormals.erase(inCurveNormals.begin() + j);
     }
-    
+
+    outCycleToBeSurfacing.clear();
+    for (int i = 0; i < outCycles.size(); i++)
+    {
+        bool flag = true;
+        for (int j = 0; j < inCycleConstraint.size(); j++)
+        {
+            if (isSameCycle(inCycleConstraint[j] , outCycles[i]) &&
+                !inCycleToBeRemoved[j])
+            {
+                flag = false;
+                break;
+            }
+        }
+        outCycleToBeSurfacing.push_back(flag);
+    }
 #ifdef _WIN32
 	outMeshes.swap(m_cycleUtil->m_triangleSurface);
 	outNormals.swap(m_cycleUtil->m_triangleSurfaceNormal);
@@ -137,7 +155,9 @@ void cycleTest()
 {
     std::vector<std::vector<vec3d> > curves;
     std::vector<std::vector<unsigned> > inCycleCons;
+    std::vector<bool> inCycleToBeRemoved;
     std::vector<std::vector<unsigned> > cycles;
+    std::vector<bool> toBeSurfacing;
     std::vector<int> inCurveNums;
     std::vector<double*> inCurvePoints;
     std::vector<double*> inCurveNormals;
@@ -192,7 +212,7 @@ void cycleTest()
 		curves.push_back(curve);
 	}
 
-    cycle::cycleDiscovery(curves , inCycleCons , cycles ,
+    cycle::cycleDiscovery(curves , inCycleCons , inCycleToBeRemoved , cycles , toBeSurfacing ,
         inCurveNums , inCurvePoints , inCurveNormals , outMeshes , outNormals);
     for (int i = 0; i < cycles.size(); i++)
     {

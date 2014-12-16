@@ -17,6 +17,11 @@
 #include <wx/statusbr.h>
 #include <ctime>
 #include <Eigen/Dense>
+#ifdef __APPLE__
+    #include <sys/uio.h>
+#else
+    #include <io.h>
+#endif
 
 using namespace Eigen;
 
@@ -236,6 +241,8 @@ public:
 	TimeManager timer;
 
 	wxString m_fileName;
+    wxString m_cacheName;
+    std::string name;
 	wxStatusBar *statusBar;
 
     // visualization
@@ -248,7 +255,7 @@ public:
 	std::vector<Colormap::color> colors;
 
     std::string matlabFilesPath;
-    
+    std::string dataCurvePath;
 public:
 	PointCloudUtils();
 	~PointCloudUtils();
@@ -267,6 +274,7 @@ public:
 	void deallocateMemory(vec3i resol , int extra);
 
 	void calcDistField();
+    void loadDistField();
 
 	// filter diameter \approx stddev * 6 
 	void gaussianSmooth(double***& origin , double*** &f , double stddev);
@@ -304,9 +312,6 @@ public:
 
 	std::vector<vec3d> samplePointsFromPatch(std::vector<std::vector<vec3d> >& mesh);
 	void pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes);
-
-    void loadCurveNet();
-    void saveCurveNet();
 };
 
 #endif

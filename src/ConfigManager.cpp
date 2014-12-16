@@ -45,6 +45,13 @@ void ConfigManager::load(const string &configFilePath)
         printf("ampl_result_path: %s\n" , pathStr.c_str());
         pcUtils->opt.amplResultPath = pathStr;
     }
+
+    if (nodeConfig->first_node("data_curve"))
+    {
+        pathStr = getPath(nodeConfig->first_node("data_curve"));
+        printf("data_curve_path: %s\n" , pathStr.c_str());
+        pcUtils->dataCurvePath = pathStr;
+    }
     /*
 	if (nodeConfig->first_node("useGPU"))
 	{

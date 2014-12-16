@@ -178,7 +178,7 @@ public:
     int pickedSavedCycle;
     int pickedBsp , pickedCtrlNode;
     Plane dragPlane;
-    vec3d dragStartPoint;
+    vec3d dragStartPoint , dragCurPoint;
     bool snapToCurve;
     bool snapToNode;
 
@@ -188,6 +188,7 @@ public:
     int drawMode;
 
     std::vector<Cycle> unsavedCycles;
+    std::vector<bool> toBeSurfacing;
     std::vector<std::vector<Path> > unsavedCyclePoints;
     std::vector<vec3d> unsavedCycleCenters;
 	std::vector<double> unsavedCycleScores;

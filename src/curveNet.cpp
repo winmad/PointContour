@@ -675,3 +675,196 @@ void CurveNet::outputPolyLines()
         }
     }
 }
+
+void CurveNet::saveCurveNet(const char* fileName)
+{
+    FILE *fp = fopen(fileName , "w");
+    fprintf(fp , "%d %d\n" , numNodes , numPolyLines);
+    for (int i = 0; i < numNodes; i++)
+    {
+        fprintf(fp , "%.6lf %.6lf %.6lf\n" , nodes[i].x , nodes[i].y , nodes[i].z);
+    }
+    fprintf(fp , "\n");
+    for (int i = 0; i < numNodes; i++)
+    {
+        fprintf(fp , "%d " , (int)nodesStat[i]);
+    }
+    fprintf(fp , "\n\n");
+    for (int i = 0; i < numNodes; i++)
+    {
+        fprintf(fp , "%lu\n" , edges[i].size());
+        for (int j = 0; j < edges[i].size(); j++)
+        {
+            fprintf(fp , "%d %d\n" , edges[i][j].link , edges[i][j].pli);
+        }
+    }
+    fprintf(fp , "\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fprintf(fp , "%lu\n" , originPolyLines[i].size());
+        for (int j = 0; j < originPolyLines[i].size(); j++)
+        {
+            fprintf(fp , "%.6lf %.6lf %.6lf\n" , originPolyLines[i][j].x ,
+                originPolyLines[i][j].y , originPolyLines[i][j].z);
+        }
+        fprintf(fp , "\n");
+    }
+    fprintf(fp , "\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fprintf(fp , "%lu\n" , polyLines[i].size());
+        for (int j = 0; j < polyLines[i].size(); j++)
+        {
+            fprintf(fp , "%.6lf %.6lf %.6lf\n" , polyLines[i][j].x ,
+                polyLines[i][j].y , polyLines[i][j].z);
+        }
+        fprintf(fp , "\n");
+    }
+    fprintf(fp , "\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fprintf(fp , "%lu\n", bsplines[i].ctrlNodes.size());
+        for (int j = 0; j < bsplines[i].ctrlNodes.size(); j++)
+        {
+            fprintf(fp , "%.6lf %.6lf %.6lf\n" , bsplines[i].ctrlNodes[j].x ,
+                bsplines[i].ctrlNodes[j].y , bsplines[i].ctrlNodes[j].z);
+        }
+        fprintf(fp , "%lu\n" , bsplines[i].t.size());
+        for (int j = 0; j < bsplines[i].t.size(); j++)
+        {
+            fprintf(fp , "%.6lf " , bsplines[i].t[j]);
+        }
+        fprintf(fp , "\n");
+        if (bsplines[i].ctrlNodes.size() > 2)
+        {
+            fprintf(fp , "%lu\n" , bsplines[i].knots.size());
+            for (int j = 0; j < bsplines[i].knots.size(); j++)
+            {
+                fprintf(fp , "%.6lf " , bsplines[i].knots[j]);
+            }
+            fprintf(fp , "\n");
+            fprintf(fp , "%d %d\n" , bsplines[i].N , bsplines[i].K);
+            for (int j = 0; j < bsplines[i].N; j++)
+            {
+                for (int k = 0; k < bsplines[i].K; k++)
+                {
+                    fprintf(fp , "%.6lf " , bsplines[i].coefs[j][k]);
+                }
+                fprintf(fp , "\n");
+            }
+        }
+    }
+    fprintf(fp , "\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fprintf(fp , "%d %d %d %d\n", polyLinesIndex[i].ni[0] , polyLinesIndex[i].ei[0] ,
+            polyLinesIndex[i].ni[1] , polyLinesIndex[i].ei[1]);
+    }
+    fprintf(fp , "\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fprintf(fp , "%d " , curveType[i]);
+    }
+    fprintf(fp , "\n");
+    fclose(fp);
+    printf("Curve saved!\n");
+}
+
+void CurveNet::loadCurveNet(const char* fileName)
+{
+    FILE *fp = fopen(fileName , "r");
+    vec3d p;
+    int tp;
+    clear();
+    fscanf(fp , "%d %d" , &numNodes , &numPolyLines);
+    for (int i = 0; i < numNodes; i++)
+    {
+        fscanf(fp , "%lf %lf %lf" , &p.x , &p.y , &p.z);
+        nodes.push_back(p);
+    }
+    for (int i = 0; i < numNodes; i++)
+    {
+        fscanf(fp , "%d " , &tp);
+        nodesStat.push_back((tp == 1));
+    }
+    edges.resize(numNodes);
+    for (int i = 0; i < numNodes; i++)
+    {
+        fscanf(fp , "%d" , &tp);
+        for (int j = 0; j < tp; j++)
+        {
+            int link , pli;
+            fscanf(fp , "%d %d" , &link , &pli);
+            edges[i].push_back(CurveEdge(link , pli));
+        }
+    }
+    originPolyLines.resize(numPolyLines);
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fscanf(fp , "%d" , &tp);
+        for (int j = 0; j < tp; j++)
+        {
+            fscanf(fp , "%lf %lf %lf" , &p.x , &p.y , &p.z);
+            originPolyLines[i].push_back(p);
+        }
+    }
+    polyLines.resize(numPolyLines);
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fscanf(fp , "%d" , &tp);
+        for (int j = 0; j < tp; j++)
+        {
+            fscanf(fp , "%lf %lf %lf" , &p.x , &p.y , &p.z);
+            polyLines[i].push_back(p);
+        }
+    }
+    bsplines.resize(numPolyLines);
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fscanf(fp , "%d" , &tp);
+        for (int j = 0; j < tp; j++)
+        {
+            fscanf(fp , "%lf %lf %lf" , &p.x , &p.y , &p.z);
+            bsplines[i].ctrlNodes.push_back(p);
+        }
+        fscanf(fp , "%d" , &tp);
+        for (int j = 0; j < tp; j++)
+        {
+            fscanf(fp , "%lf " , &p.x);
+            bsplines[i].t.push_back(p.x);
+        }
+        if (bsplines[i].ctrlNodes.size() > 2)
+        {
+            fscanf(fp , "%d" , &tp);
+            for (int j = 0; j < tp; j++)
+            {
+                fscanf(fp , "%lf " , &p.x);
+                bsplines[i].knots.push_back(p.x);
+            }
+            fscanf(fp , "%d %d" , &bsplines[i].N , &bsplines[i].K);
+            bsplines[i].coefs = NULL;
+            bsplines[i].newCoefs();
+            for (int j = 0; j < bsplines[i].N; j++)
+            {
+                for (int k = 0; k < bsplines[i].K; k++)
+                {
+                    fscanf(fp , "%lf " , &bsplines[i].coefs[j][k]);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        int ni0 , ei0 , ni1 , ei1;
+        fscanf(fp , "%d %d %d %d" , &ni0 , &ei0 , &ni1 , &ei1);
+        polyLinesIndex.push_back(PolyLineIndex(ni0 , ei0 , ni1 , ei1));
+    }
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fscanf(fp , "%d" , &tp);
+        curveType.push_back(tp);
+    }
+    fclose(fp);
+    printf("Curve loaded!\n");
+    refreshAllConstraints();
+}

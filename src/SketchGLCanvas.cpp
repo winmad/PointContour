@@ -475,7 +475,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         m_pcUtils->pcRenderer->pathVertex.clear();
         m_pcUtils->pcRenderer->bsp.clear();
         setNull(m_pcUtils->pcRenderer->lastDispPoint);
-        setNull(m_pcUtils->pcRenderer->dragPlane.n);
         
 		bool curvePicked = m_pcUtils->pcRenderer->pickCurve(x , y , 0);
         bool ctrlNodePicked = m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 0);
@@ -493,6 +492,12 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                     chosenBsp = m_pcUtils->pcRenderer->pickedBsp;
                     chosenCtrlNode = m_pcUtils->pcRenderer->pickedCtrlNode;
                     m_pcUtils->pcRenderer->dragStartPoint = m_pcUtils->pcRenderer->dispCurveNet->bsplines[chosenBsp].ctrlNodes[chosenCtrlNode];
+                    Plane& plane = m_pcUtils->pcRenderer->dragPlane;
+                    std::vector<vec3d> rays = computeRay(x , y);
+                    plane.p = m_pcUtils->pcRenderer->dragStartPoint;
+                    plane.n = rays.back() - rays.front();
+                    plane.n.normalize();
+                    plane.d = -plane.p.dot(plane.n);
                     m_pcUtils->pcRenderer->backup();
                 }
             }
@@ -528,6 +533,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             }
             chosenBsp = chosenCtrlNode = -1;
             setNull(m_pcUtils->pcRenderer->dragStartPoint);
+            setNull(m_pcUtils->pcRenderer->dragPlane.n);
             isEditSpline = false;
         }
 		Render();
@@ -556,6 +562,8 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     if (!event.AltDown())
     {
         m_pcUtils->pcRenderer->isAltPress = false;
+        m_pcUtils->pcRenderer->pickedBsp = -1;
+        m_pcUtils->pcRenderer->pickedCtrlNode = -1;
     }
 
 	if(!event.ControlDown()) {startDraw=false;}

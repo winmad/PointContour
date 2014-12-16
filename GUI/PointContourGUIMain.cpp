@@ -75,10 +75,15 @@ const long PointContourGUIFrame::ID_CHECKBOX4 = wxNewId();
 const long PointContourGUIFrame::ID_SLIDER3 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX5 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX6 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT18 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE3 = wxNewId();
 const long PointContourGUIFrame::ID_CHECKBOX7 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT19 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE4 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT20 = wxNewId();
 const long PointContourGUIFrame::ID_CHOICE5 = wxNewId();
+const long PointContourGUIFrame::ID_STATICTEXT21 = wxNewId();
+const long PointContourGUIFrame::ID_CHOICE6 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT7 = wxNewId();
 const long PointContourGUIFrame::ID_TEXTCTRL7 = wxNewId();
 const long PointContourGUIFrame::ID_STATICTEXT8 = wxNewId();
@@ -143,6 +148,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     //(*Initialize(PointContourGUIFrame)
     wxStaticBoxSizer* StaticBoxSizer2;
     wxFlexGridSizer* FlexGridSizer4;
+    wxFlexGridSizer* FlexGridSizer16;
     wxMenuItem* MenuItem2;
     wxStaticBoxSizer* StaticBoxSizer4;
     wxFlexGridSizer* FlexGridSizer10;
@@ -156,7 +162,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer7;
     wxStaticBoxSizer* StaticBoxSizer3;
     wxStaticBoxSizer* StaticBoxSizer6;
+    wxFlexGridSizer* FlexGridSizer15;
     wxFlexGridSizer* FlexGridSizer8;
+    wxFlexGridSizer* FlexGridSizer14;
     wxFlexGridSizer* FlexGridSizer13;
     wxFlexGridSizer* FlexGridSizer12;
     wxMenuBar* MenuBar1;
@@ -164,6 +172,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer1;
     wxFlexGridSizer* FlexGridSizer1;
     wxFlexGridSizer* FlexGridSizer11;
+    wxFlexGridSizer* FlexGridSizer17;
     wxMenu* Menu2;
     wxStaticBoxSizer* StaticBoxSizer5;
 
@@ -171,7 +180,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     SetClientSize(wxSize(1200,800));
     Move(wxPoint(50,20));
     SplitterWindow1 = new wxSplitterWindow(this, ID_SPLITTERWINDOW1, wxPoint(0,0), wxSize(1200,780), wxSP_3D, _T("ID_SPLITTERWINDOW1"));
-    SplitterWindow1->SetMinSize(wxSize(200,200));
+    SplitterWindow1->SetMinSize(wxSize(300,300));
     SplitterWindow1->SetMinimumPaneSize(300);
     SplitterWindow1->SetSashGravity(1);
     int GLCanvasAttributes_1[] = {
@@ -220,6 +229,9 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     ShowCtrlPoints = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX6, _("show B-Spline Ctrl Points"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX6"));
     ShowCtrlPoints->SetValue(false);
     FlexGridSizer2->Add(ShowCtrlPoints, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer14 = new wxFlexGridSizer(0, 3, 0, 0);
+    StaticText18 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT18, _("constraints"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT18"));
+    FlexGridSizer14->Add(StaticText18, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     ConstraintsVisual = new wxChoice(ScrolledWindow2, ID_CHOICE3, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE3"));
     ConstraintsVisual->SetSelection( ConstraintsVisual->Append(_("none")) );
     ConstraintsVisual->Append(_("collinear"));
@@ -227,20 +239,37 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     ConstraintsVisual->Append(_("coplanar"));
     ConstraintsVisual->Append(_("orthogonal"));
     ConstraintsVisual->Append(_("tangent"));
-    FlexGridSizer2->Add(ConstraintsVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer14->Add(ConstraintsVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer2->Add(FlexGridSizer14, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     AutoOpt = new wxCheckBox(ScrolledWindow2, ID_CHECKBOX7, _("Auto Optimization"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX7"));
     AutoOpt->SetValue(true);
     FlexGridSizer2->Add(AutoOpt, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer15 = new wxFlexGridSizer(0, 3, 0, 0);
+    StaticText19 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT19, _("cycles"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT19"));
+    FlexGridSizer15->Add(StaticText19, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     PatchesVisual = new wxChoice(ScrolledWindow2, ID_CHOICE4, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE4"));
     PatchesVisual->SetSelection( PatchesVisual->Append(_("all patches")) );
     PatchesVisual->Append(_("stored patches"));
     PatchesVisual->Append(_("temp patches"));
     PatchesVisual->Append(_("none"));
-    FlexGridSizer2->Add(PatchesVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer15->Add(PatchesVisual, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer2->Add(FlexGridSizer15, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer16 = new wxFlexGridSizer(0, 3, 0, 0);
+    StaticText20 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT20, _("patch style"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT20"));
+    FlexGridSizer16->Add(StaticText20, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     PatchesDraw = new wxChoice(ScrolledWindow2, ID_CHOICE5, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE5"));
-    PatchesDraw->Append(_("Shaded"));
-    PatchesDraw->SetSelection( PatchesDraw->Append(_("Lines")) );
-    FlexGridSizer2->Add(PatchesDraw, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    PatchesDraw->SetSelection( PatchesDraw->Append(_("Shaded")) );
+    PatchesDraw->Append(_("Lines"));
+    FlexGridSizer16->Add(PatchesDraw, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer2->Add(FlexGridSizer16, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer17 = new wxFlexGridSizer(0, 3, 0, 0);
+    StaticText21 = new wxStaticText(ScrolledWindow2, ID_STATICTEXT21, _("draw mode"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT21"));
+    FlexGridSizer17->Add(StaticText21, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    DrawMode = new wxChoice(ScrolledWindow2, ID_CHOICE6, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE6"));
+    DrawMode->SetSelection( DrawMode->Append(_("shortest path")) );
+    DrawMode->Append(_("straight line"));
+    FlexGridSizer17->Add(DrawMode, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer2->Add(FlexGridSizer17, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, ScrolledWindow2, _("Debug"));
@@ -374,7 +403,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     MenuItem3 = new wxMenu();
     OpenPointCloud = new wxMenuItem(MenuItem3, ID_MENUITEM2, _("Point Cloud\tCtrl-F"), wxEmptyString, wxITEM_NORMAL);
     MenuItem3->Append(OpenPointCloud);
-    OpenCurveNetwork = new wxMenuItem(MenuItem3, ID_MENUITEM4, _("Curve Network\tCtrl-C"), wxEmptyString, wxITEM_NORMAL);
+    OpenCurveNetwork = new wxMenuItem(MenuItem3, ID_MENUITEM4, _("Curve Network\tCtrl-O"), wxEmptyString, wxITEM_NORMAL);
     MenuItem3->Append(OpenCurveNetwork);
     Menu1->Append(ID_MENUITEM1, _("Open"), MenuItem3, wxEmptyString);
     SaveCurveNetwork = new wxMenuItem(Menu1, ID_MENUITEM3, _("Save curve network\tCtrl-S"), wxEmptyString, wxITEM_NORMAL);
@@ -416,6 +445,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_CHECKBOX7,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&PointContourGUIFrame::OnAutoOptClick);
     Connect(ID_CHOICE4,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnPatchesVisualSelect);
     Connect(ID_CHOICE5,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnPatchesDrawSelect);
+    Connect(ID_CHOICE6,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnDrawModeSelect);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosXText);
     Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosYText);
     Connect(ID_TEXTCTRL9,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&PointContourGUIFrame::OnPosZText);
@@ -496,6 +526,35 @@ void PointContourGUIFrame::resetFrame()
 void PointContourGUIFrame::constructPointCloud(const char* fileName , const char* fileType)
 {
 	m_pcUtils->m_fileName = fileName;
+    char cacheName[256];
+    strcpy(cacheName , fileName);
+    for (int i = strlen(cacheName) - 1; i >= 0; i--)
+    {
+        if (cacheName[i] == '.')
+        {
+            cacheName[i] = '\0';
+            break;
+        }
+    }
+    m_pcUtils->name.clear();
+    int pos;
+    for (int i = strlen(cacheName) - 1; i >= 0; i--)
+    {
+        if (cacheName[i] == '/' || cacheName[i] == '\\')
+        {
+            pos = i + 1;
+            break;
+        }
+    }
+    for (int i = pos; i < strlen(cacheName); i++)
+    {
+        m_pcUtils->name.push_back(cacheName[i]);
+    }
+    strcat(cacheName , ".cache");
+    m_pcUtils->m_cacheName = cacheName;
+    printf("fileName = %s\n" , static_cast<const char*>(m_pcUtils->m_fileName.c_str()));
+    printf("dirName = %s\n" , static_cast<const char*>(m_pcUtils->m_cacheName.c_str()));
+    printf("idName = %s\n" , m_pcUtils->name.c_str());
 	resetAll();
 
 	FileIOHelper* fileIOHelper = new FileIOHelper();
@@ -818,6 +877,7 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
         {
             m_pcUtils->pcRenderer->patchesVisual = (m_pcUtils->pcRenderer->patchesVisual + 3) % 4;
         }
+        PatchesVisual->SetSelection(m_pcUtils->pcRenderer->patchesVisual);
     }
     else if (m_pcUtils->pcRenderer->isAltPress)
     {
@@ -828,11 +888,15 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
     {
         if (event.GetWheelRotation() != 0)
             m_pcUtils->pcRenderer->drawMode = (m_pcUtils->pcRenderer->drawMode + 1) % 2;
+        DrawMode->SetSelection(m_pcUtils->pcRenderer->drawMode);
     }
     else
     {
         if (event.GetWheelRotation() != 0)
+        {
             m_pcUtils->pcRenderer->isShowCtrlNodes = !m_pcUtils->pcRenderer->isShowCtrlNodes;
+            ShowCtrlPoints->SetValue(m_pcUtils->pcRenderer->isShowCtrlNodes);
+        }
     }
     m_openGLView->Render();
     m_openGLView->OnMouse(event);
@@ -846,7 +910,12 @@ void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 			exit(0);
         case WXK_SPACE:
             // m_pcUtils->pcRenderer->optUpdate();
-            m_pcUtils->pcRenderer->dispCurveNet->debugLog();
+
+            // m_pcUtils->pcRenderer->dispCurveNet->debugLog();
+
+            m_pcUtils->pcRenderer->cycleDisc();
+            m_pcUtils->pcRenderer->surfacingUnsavedCycles();
+            m_pcUtils->pcRenderer->evalUnsavedCycles();
             break;
         case WXK_UP:
             m_pcUtils->pcRenderer->incBspCurveIndex();
@@ -974,14 +1043,24 @@ void PointContourGUIFrame::OnAutoOptClick(wxCommandEvent& event)
     {
         m_pcUtils->pcRenderer->optUpdate(true);
     }
+    m_openGLView->Render();
 }
 
 void PointContourGUIFrame::OnOpenCurveNetworkSelected(wxCommandEvent& event)
 {
+    std::string fileName = m_pcUtils->dataCurvePath + m_pcUtils->name + ".curve";
+    m_pcUtils->curveNet->loadCurveNet(fileName.c_str());
+    for (int i = 0; i < m_pcUtils->curveNet->nodes.size(); i++)
+    {
+        m_pcUtils->addPointToGraph(m_pcUtils->curveNet->nodes[i]);
+    }
+    m_openGLView->Render();
 }
 
 void PointContourGUIFrame::OnSaveCurveNetworkSelected(wxCommandEvent& event)
 {
+    std::string fileName = m_pcUtils->dataCurvePath + m_pcUtils->name + ".curve";
+    m_pcUtils->curveNet->saveCurveNet(fileName.c_str());
 }
 
 void PointContourGUIFrame::OnNumStartPointsTextEnter(wxCommandEvent& event)
@@ -1032,4 +1111,9 @@ void PointContourGUIFrame::OnHideDrawnPointsClick(wxCommandEvent& event)
 {
 	m_pcUtils->pcRenderer->isHideDrawnPoints = !m_pcUtils->pcRenderer->isHideDrawnPoints;
 	m_openGLView->Render();
+}
+
+void PointContourGUIFrame::OnDrawModeSelect(wxCommandEvent& event)
+{
+    m_pcUtils->pcRenderer->drawMode = event.GetSelection();
 }

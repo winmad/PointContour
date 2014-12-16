@@ -75,6 +75,8 @@ public:
     void debugPrint();
     void debugLog();
     void outputPolyLines();
+    void saveCurveNet(const char* fileName);
+    void loadCurveNet(const char* fileName);
     
     int numNodes , numPolyLines;
     std::vector<vec3d> nodes;
