@@ -596,7 +596,7 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= smallBound;\n";
+		fout << " <= 0.001;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -604,7 +604,7 @@ void Optimization::generateMOD(string file)
 		{
 			fout << "subject to coplanar" << i << "_" << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
-				 << " <= smallBound;\n";
+				 << " <= 0.001;\n";
 		}
 	}
     /*
