@@ -890,7 +890,8 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
             m_pcUtils->pcRenderer->drawMode = (m_pcUtils->pcRenderer->drawMode + 1) % 2;
         DrawMode->SetSelection(m_pcUtils->pcRenderer->drawMode);
     }
-    else
+    else if (!m_pcUtils->pcRenderer->isShiftPress && !m_pcUtils->pcRenderer->isCtrlPress &&
+        !m_pcUtils->pcRenderer->isAltPress)
     {
         if (event.GetWheelRotation() != 0)
         {
@@ -1053,6 +1054,10 @@ void PointContourGUIFrame::OnOpenCurveNetworkSelected(wxCommandEvent& event)
     for (int i = 0; i < m_pcUtils->curveNet->nodes.size(); i++)
     {
         m_pcUtils->addPointToGraph(m_pcUtils->curveNet->nodes[i]);
+    }
+    if (m_pcUtils->pcRenderer->isAutoOpt)
+    {
+        m_pcUtils->curveNet->refreshAllConstraints();
     }
     m_openGLView->Render();
 }

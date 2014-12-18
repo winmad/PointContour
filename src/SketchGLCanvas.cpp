@@ -475,6 +475,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         m_pcUtils->pcRenderer->pathVertex.clear();
         m_pcUtils->pcRenderer->bsp.clear();
         setNull(m_pcUtils->pcRenderer->lastDispPoint);
+        setNull(m_pcUtils->pcRenderer->dragPlane.p);
         
 		bool curvePicked = m_pcUtils->pcRenderer->pickCurve(x , y , 0);
         bool ctrlNodePicked = m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 0);
@@ -506,6 +507,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             {
                 m_pcUtils->pcRenderer->pickedBsp = chosenBsp;
                 m_pcUtils->pcRenderer->pickedCtrlNode = chosenCtrlNode;
+                m_pcUtils->pcRenderer->dragPlane.p = m_pcUtils->pcRenderer->dragStartPoint;
             }
             m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 1);
         }
@@ -533,7 +535,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             }
             chosenBsp = chosenCtrlNode = -1;
             setNull(m_pcUtils->pcRenderer->dragStartPoint);
-            setNull(m_pcUtils->pcRenderer->dragPlane.n);
+            setNull(m_pcUtils->pcRenderer->dragPlane.p);
             isEditSpline = false;
         }
 		Render();

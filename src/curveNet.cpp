@@ -866,5 +866,4 @@ void CurveNet::loadCurveNet(const char* fileName)
     }
     fclose(fp);
     printf("Curve loaded!\n");
-    refreshAllConstraints();
 }

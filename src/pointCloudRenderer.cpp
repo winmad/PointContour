@@ -630,7 +630,7 @@ void PointCloudRenderer::renderCtrlNodes()
 void PointCloudRenderer::renderDragPlane()
 {
     if (!isShowCtrlNodes) return;
-    if (!isValid(dragPlane.n)) return;
+    if (!isValid(dragPlane.p)) return;
     
     glPointSize(12.f);
     glColor4f(0.f , 0.f , 0.f , 0.7f);
@@ -1979,86 +1979,92 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	mesh.clear();
 	meshNormals.clear();
 
+    bool smoothing;
 #ifdef _WIN32
-	if (false)
+    smoothing = false;
+#else
+    smoothing = false;
+#endif
+
+    if (smoothing)
 	{
+#ifdef _WIN32
+        SP::Mesh spMesh,outputMesh;
+        spMesh.allocateVertices(numPositions);
+        spMesh.allocateFaces(numFaces);
 
-	SP::Mesh spMesh,outputMesh;
-	spMesh.allocateVertices(numPositions);
-	spMesh.allocateFaces(numFaces);
+        float *pPositions(spMesh.getPositions()),
+            *pNormals(spMesh.getNormals());
 
-	float *pPositions(spMesh.getPositions()),
-		*pNormals(spMesh.getNormals());
+        for(int i=0;i<numPositions;++i){
+            pPositions[3*i] = _pPositions[3*i];
+            pPositions[3*i+1] = _pPositions[3*i+1];
+            pPositions[3*i+2] = _pPositions[3*i+2];
+            pNormals[3*i] = _pNormals[3*i];
+            pNormals[3*i+1] = _pNormals[3*i+1];
+            pNormals[3*i+2] = _pNormals[3*i+2];
+        }
 
-	for(int i=0;i<numPositions;++i){
-		pPositions[3*i] = _pPositions[3*i];
-		pPositions[3*i+1] = _pPositions[3*i+1];
-		pPositions[3*i+2] = _pPositions[3*i+2];
-		pNormals[3*i] = _pNormals[3*i];
-		pNormals[3*i+1] = _pNormals[3*i+1];
-		pNormals[3*i+2] = _pNormals[3*i+2];
-	}
+        int *pFaceIndices(spMesh.getFaceIndices());
+        int nTempIndex(0);
+        for(int i=0; i<numFaces*3; i++){
+            pFaceIndices[i] = _pFaceIndices[i]; 
+        }	
 
-	int *pFaceIndices(spMesh.getFaceIndices());
-	int nTempIndex(0);
-	for(int i=0; i<numFaces*3; i++){
-		pFaceIndices[i] = _pFaceIndices[i]; 
-	}	
+        SP::SmoothPatchSettings settings;
+        settings.mbConstrainNormals=false;
+        settings.mbRemesh=true;
+        settings.mfTension=0.0;
+        settings.mnNumSubdivisions=1;
+        settings.mnNumLaplacianSmooths=3;
 
-	SP::SmoothPatchSettings settings;
-	settings.mbConstrainNormals=false;
-	settings.mbRemesh=true;
-	settings.mfTension=0.0;
-	settings.mnNumSubdivisions=1;
-	settings.mnNumLaplacianSmooths=3;
+        for (int i = 0; i < numFaces; i++)
+        {
+            vec3i pi;
+            for (int j = 0; j < 3; j++)
+            {
+                pi[j] = pFaceIndices[3 * i + j];
+            }
+            writeLog("===== face (%d %d %d) =====\n" , pi.x , pi.y , pi.z);
+            for (int j = 0; j < 3; j++)
+            {
+                vec3d p;
+                int index = pi[j];
+                p.x = pPositions[3 * index];
+                p.y = pPositions[3 * index + 1];
+                p.z = pPositions[3 * index + 2];
+                writeLog("(%.6f , %.6f , %.6f)\n" , p.x , p.y , p.z);
+            }
+        }
 
-	for (int i = 0; i < numFaces; i++)
-	{
-		vec3i pi;
-		for (int j = 0; j < 3; j++)
-		{
-			pi[j] = pFaceIndices[3 * i + j];
-		}
-		writeLog("===== face (%d %d %d) =====\n" , pi.x , pi.y , pi.z);
-		for (int j = 0; j < 3; j++)
-		{
-			vec3d p;
-			int index = pi[j];
-			p.x = pPositions[3 * index];
-			p.y = pPositions[3 * index + 1];
-			p.z = pPositions[3 * index + 2];
-			writeLog("(%.6f , %.6f , %.6f)\n" , p.x , p.y , p.z);
-		}
-	}
+        SP::SmoothPatchBuilder smoothPatchBuilder;
 
-	SP::SmoothPatchBuilder smoothPatchBuilder;
+        smoothPatchBuilder.buildSmoothPatch(settings,spMesh,outputMesh);
 
-	smoothPatchBuilder.buildSmoothPatch(settings,spMesh,outputMesh);
-
-	int outFaceNum = outputMesh.getFaceCount();
+        int outFaceNum = outputMesh.getFaceCount();
 	
-	int *pInd = outputMesh.getFaceIndices();
-	float *pPoints=outputMesh.getPositions();
-	float *pNewNormals = outputMesh.getNormals();
-	for(int i=0; i<outFaceNum; i++){
-		std::vector<vec3d> tri;
-		std::vector<vec3d> triNorms;
-		for (int j=0;j<3;j++){
-			int pointID = pInd[i*3+j];
-			vec3d p(0.0) , n(0.0);
-			for(int k=0;k<3;k++){
-				p[k]=(double)pPoints[pointID*3+k];
-				if(useNormal)
+        int *pInd = outputMesh.getFaceIndices();
+        float *pPoints=outputMesh.getPositions();
+        float *pNewNormals = outputMesh.getNormals();
+        for(int i=0; i<outFaceNum; i++){
+            std::vector<vec3d> tri;
+            std::vector<vec3d> triNorms;
+            for (int j=0;j<3;j++){
+                int pointID = pInd[i*3+j];
+                vec3d p(0.0) , n(0.0);
+                for(int k=0;k<3;k++){
+                    p[k]=(double)pPoints[pointID*3+k];
+                    if(useNormal)
 					n[k]=(double)pNewNormals[pointID*3+k];
-			}
-			tri.push_back(p);
-			triNorms.push_back(n);
-		}
-		mesh.push_back(tri);
-		if (useNormal)
+                }
+                tri.push_back(p);
+                triNorms.push_back(n);
+            }
+            mesh.push_back(tri);
+            if (useNormal)
 			meshNormals.push_back(triNorms);
-	}
-
+        }
+#endif
 	}
 	else
 	{
@@ -2083,28 +2089,6 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 			meshNormals.push_back(triNorm);
 		}
 	}
-#else
-	for (int j = 0; j < numFaces; j++)
-	{
-		vec3i face(_pFaceIndices[3 * j] , _pFaceIndices[3 * j + 1] , _pFaceIndices[3 * j + 2]);
-		std::vector<vec3d> triPos;
-		std::vector<vec3d> triNorm;
-		for (int k = 0; k < 3; k++)
-		{
-			vec3d p , n;
-			p.x = _pPositions[3 * face[k]];
-			p.y = _pPositions[3 * face[k] + 1];
-			p.z = _pPositions[3 * face[k] + 2];
-			n.x = _pNormals[3 * face[k]];
-			n.y = _pNormals[3 * face[k] + 1];
-			n.z = _pNormals[3 * face[k] + 2];
-			triPos.push_back(p);
-			triNorm.push_back(n);
-		}
-		mesh.push_back(triPos);
-		meshNormals.push_back(triNorm);
-	}
-#endif
 }
 
 int PointCloudRenderer::ctrlNodeSelectionByRay(int mouseX , int mouseY , int& nodeIndex)
