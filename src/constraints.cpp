@@ -1,11 +1,11 @@
 #include "constraints.h"
 #include "curveNet.h"
 
-const double ConstraintDetector::collinearThr = 0.01;
+const double ConstraintDetector::collinearThr = 0.05;
 const double ConstraintDetector::coplanarThr = 0.1;
 const double ConstraintDetector::parallelThr = 0.05;
 const double ConstraintDetector::orthoThr = 0.1;
-const double ConstraintDetector::tangentThr = 0.01;
+const double ConstraintDetector::tangentThr = 0.05;
 const double ConstraintDetector::symmetryThr = 0.1;
 const double ConstraintDetector::ratioThr = 0.05;
 const double ConstraintDetector::planeDiffThr = 0.1;
@@ -322,8 +322,10 @@ void ConstraintSet::addJunctionConstraint(int bspIndex)
     {
         orthoSet.newCurve(bspIndex , i);
     }
-    for (int i = 0; i < numCtrlCurves; i++)
+	int candidates[2] = {0 , numCtrlCurves - 1};
+    for (int candi = 0; candi < 2; candi++)
     {
+		int i = candidates[candi];
         if (i - 1 >= 0)
         {
             if (ConstraintDetector::checkOrtho(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
@@ -350,8 +352,8 @@ void ConstraintSet::addJunctionConstraint(int bspIndex)
             {
                 int ei = net->edges[ni][j].pli;
                 if (ei == -1 || ei == bspIndex) continue;
-                printf("(%d , %d)'s next: node = %d, line = %d\n" , bspIndex ,
-                       i , net->edges[ni][j].link , net->edges[ni][j].pli);
+                //printf("(%d , %d)'s next: node = %d, line = %d\n" , bspIndex ,
+                //       i , net->edges[ni][j].link , net->edges[ni][j].pli);
                 
                 int nodeIndex = (int)net->bsplines[ei].ctrlNodes.size() - 2;
                 if (isEqual(bsp.ctrlNodes[0] , net->bsplines[ei].ctrlNodes[0])) nodeIndex = 1;
@@ -398,8 +400,8 @@ void ConstraintSet::addJunctionConstraint(int bspIndex)
             {
                 int ei = net->edges[ni][j].pli;
                 if (ei == -1 || ei == bspIndex) continue;
-                printf("(%d , %d)'s next: node = %d, line = %d\n" , net->numPolyLines - 1 ,
-                       i , net->edges[ni][j].link , net->edges[ni][j].pli);
+                //printf("(%d , %d)'s next: node = %d, line = %d\n" , net->numPolyLines - 1 ,
+                //       i , net->edges[ni][j].link , net->edges[ni][j].pli);
                 
                 int nodeIndex = (int)net->bsplines[ei].ctrlNodes.size() - 2;
                 if (isEqual(bsp.ctrlNodes[i + 1] , net->bsplines[ei].ctrlNodes[0])) nodeIndex = 1;

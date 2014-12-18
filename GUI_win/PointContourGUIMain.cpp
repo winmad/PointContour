@@ -21,6 +21,8 @@
 //(*InternalHeaders(PointContourGUIFrame)
 #include <wx/intl.h>
 #include <wx/string.h>
+#include <wx/wxchar.h>
+#include <wx/unichar.h>
 //*)
 
 int getInt(const wxString& str)
@@ -905,25 +907,44 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
 
 void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 {
-    switch (event.GetKeyCode())
+	wxChar uc = event.GetUnicodeKey();
+	if (uc != WXK_NONE && uc >= 32)
 	{
-		case WXK_ESCAPE:
-			exit(0);
-        case WXK_SPACE:
-            // m_pcUtils->pcRenderer->optUpdate();
+		if (uc == 'J')
+		{
+			m_pcUtils->pcRenderer->incBspCurveIndex();
+		}
+		else if (uc == 'K')
+		{
+			m_pcUtils->pcRenderer->decBspCurveIndex();
+		}
+		else if (uc == 'P')
+		{
+			m_pcUtils->curveNet->conSet->collinearSet.printLog();
+		}
+	}
+	else
+	{
+		switch (event.GetKeyCode())
+		{
+			case WXK_ESCAPE:
+				exit(0);
+			case WXK_SPACE:
+				// m_pcUtils->pcRenderer->optUpdate();
 
-            // m_pcUtils->pcRenderer->dispCurveNet->debugLog();
+				// m_pcUtils->pcRenderer->dispCurveNet->debugLog();
 
-            m_pcUtils->pcRenderer->cycleDisc();
-            m_pcUtils->pcRenderer->surfacingUnsavedCycles();
-            m_pcUtils->pcRenderer->evalUnsavedCycles();
-            break;
-        case WXK_UP:
-            m_pcUtils->pcRenderer->incBspCurveIndex();
-            break;
-        case WXK_DOWN:
-            m_pcUtils->pcRenderer->decBspCurveIndex();
-            break;
+				m_pcUtils->pcRenderer->cycleDisc();
+				m_pcUtils->pcRenderer->surfacingUnsavedCycles();
+				m_pcUtils->pcRenderer->evalUnsavedCycles();
+				break;
+			case WXK_UP:
+				m_pcUtils->pcRenderer->incBspCurveIndex();
+				break;
+			case WXK_DOWN:
+				m_pcUtils->pcRenderer->decBspCurveIndex();
+				break;
+		}
 	}
 	m_openGLView->OnKeyDown(event);
 	m_openGLView->Render();

@@ -45,7 +45,7 @@ void PointCloudRenderer::init()
     constraintsVisual = 0;
     patchesVisual = 0;
     bspIndex = 0; curveIndex = 0;
-    setNull(dragPlane.n);
+    setNull(dragPlane.p);
     dragPlaneNormalIndex = 0;
     drawMode = 0;
 
@@ -74,7 +74,7 @@ void PointCloudRenderer::init()
     isAltPress = false;
 	isShiftPress = false;
 
-	isAutoOpt = false;
+	isAutoOpt = true;
     
 	if (pcUtils == NULL)
 		return;
@@ -594,6 +594,7 @@ void PointCloudRenderer::renderCtrlNodes()
     
     for (int i = 0; i < dispCurveNet->bsplines.size(); i++)
     {
+		if (pickedBsp != -1 && pickedBsp != i) continue;
         drawLines(dispCurveNet->bsplines[i].ctrlNodes);
     }
     drawLines(bsp.ctrlNodes);
@@ -601,6 +602,7 @@ void PointCloudRenderer::renderCtrlNodes()
     glPointSize(12.f);
     for (int i = 0; i < dispCurveNet->bsplines.size(); i++)
     {
+		if (pickedBsp != -1 && pickedBsp != i) continue;
         for (int j = 0; j < dispCurveNet->bsplines[i].ctrlNodes.size(); j++)
         {
             if (pickedBsp != -1 && pickedCtrlNode != -1 &&
@@ -674,16 +676,16 @@ void PointCloudRenderer::renderCollinearLines()
     drawLine(dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex] ,
         dispCurveNet->bsplines[bspIndex].ctrlNodes[curveIndex + 1]);
 
+	if (dispCurveNet->curveType[bspIndex] != 1) return;
+
     glColor3f(0.f , 0.f , 1.f);
     for (int i = 0; i < dispCurveNet->numPolyLines; i++)
     {
-        for (int j = 0; j < (int)dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
-        {
-            if (i == bspIndex && j == curveIndex) continue;
-            if (!dispCurveNet->conSet->collinearSet.sameRoot(bspIndex , curveIndex , i , j)) continue;
-            drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
-                dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
-        }
+		if (i == bspIndex) continue;
+		if (dispCurveNet->curveType[i] != 1) continue;
+        if (!dispCurveNet->conSet->collinearSet.sameRoot(bspIndex , 0 , i , 0)) continue;
+        drawLine(dispCurveNet->bsplines[i].ctrlNodes[0] ,
+            dispCurveNet->bsplines[i].ctrlNodes[1]);
     }
 }
 

@@ -24,6 +24,11 @@ void Optimization::init(CurveNet *_net)
 {
     net = _net;
 
+	// for debug
+	largeBound = smallBound = 50;
+	numStartPoints = 20;
+	maxRealTime = 4;
+
     numVars = 0;
     vars.clear();
     double2vi.clear();

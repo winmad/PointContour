@@ -221,6 +221,7 @@ void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
         for (int i = 0; i < edges[ni].size(); i++)
         {
             int pli = edges[ni][i].pli;
+			if (curveType[pli] == -1) continue;
             if (isEqual(bsplines[pli].ctrlNodes.front() , pos))
             {
                 bsplines[pli].updateBSpline(0 , newPos);
