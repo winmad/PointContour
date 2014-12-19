@@ -649,24 +649,67 @@ void SketchGLCanvas::OnSize ( wxSizeEvent &event )
 
 void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 {
-	int keycode = event.m_keyCode;
-    // delete
-	if (keycode == 127){
-        m_pcUtils->pcRenderer->clearPaths();
-        /*
-		if(lastKeyBoard==0){
-			lastKeyBoard=-1;
+    wxChar uc = event.GetUnicodeKey();
+	if (uc != WXK_NONE && uc >= 32)
+	{
+		if (uc == 'J')
+		{
+			m_pcUtils->pcRenderer->incBspCurveIndex();
 		}
-		else if(lastKeyBoard==1){
-			lastKeyBoard=-1;
+		else if (uc == 'K')
+		{
+			m_pcUtils->pcRenderer->decBspCurveIndex();
 		}
-		else if(lastKeyBoard==2){
-			//lastKeyBoard=-1;
+		else if (uc == 'P')
+		{
+			//m_pcUtils->curveNet->conSet->collinearSet.printLog();
+            //m_pcUtils->curveNet->conSet->orthoSet.printLog();
+			m_pcUtils->curveNet->debugLog();
 		}
-        */
-		Render();
+        else if (uc == 'O')
+        {
+            m_pcUtils->pcRenderer->optUpdate(true);
+        }
+        else if (uc == 'C')
+        {
+            m_pcUtils->pcRenderer->dispCurveNet->refreshAllConstraints();
+			//m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet);
+        }
+		else if (uc == 'V')
+		{
+			m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet);
+		}
+		else if (uc == 'H')
+		{
+			m_pcUtils->pcRenderer->isShowCoplanes = !m_pcUtils->pcRenderer->isShowCoplanes;
+		}
 	}
+	else
+	{
+        switch (event.GetKeyCode())
+        {
+            case WXK_ESCAPE:
+                exit(0);
+            case WXK_SPACE:
+                // m_pcUtils->pcRenderer->optUpdate();
 
+                // m_pcUtils->pcRenderer->dispCurveNet->debugLog();
+
+                m_pcUtils->pcRenderer->cycleDisc();
+                m_pcUtils->pcRenderer->surfacingUnsavedCycles();
+                m_pcUtils->pcRenderer->evalUnsavedCycles();
+                break;
+            case WXK_UP:
+                m_pcUtils->pcRenderer->incBspCurveIndex();
+                break;
+            case WXK_DOWN:
+                m_pcUtils->pcRenderer->decBspCurveIndex();
+                break;
+            case WXK_DELETE:
+                m_pcUtils->pcRenderer->clearPaths();
+                break;
+        }
+    }
 /*
 	if( keycode == 'C'){
 		m_cycleUtils->pushLastCurveNetworkOriginal(*(m_cycleUtils->getCurveNetworkOriginal()));

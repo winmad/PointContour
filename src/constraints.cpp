@@ -2,7 +2,7 @@
 #include "curveNet.h"
 
 const double ConstraintDetector::collinearThr = 0.05;
-const double ConstraintDetector::coplanarThr = 0.1;
+const double ConstraintDetector::coplanarThr = 0.05;
 const double ConstraintDetector::parallelThr = 0.05;
 const double ConstraintDetector::orthoThr = 0.1;
 const double ConstraintDetector::tangentThr = 0.05;
@@ -62,6 +62,41 @@ bool ConstraintDetector::collinearTest(Path& path , BSpline& bsp)
     return false;
 }
 
+bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& threshold)
+{
+	double res = 0.0 , totWeight = 0.0;
+	for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
+	{
+		for (int j = i + 1; j < (int)bsp.ctrlNodes.size() - 1; j++)
+		{
+			vec3d x1 = bsp.ctrlNodes[i] , y1 = bsp.ctrlNodes[i + 1];
+			vec3d x2 = bsp.ctrlNodes[j] , y2 = bsp.ctrlNodes[j + 1];
+			if (checkParallel(x1 , y1 , x2 , y2 , parallelThr))
+			{
+				continue;
+			}
+			vec3d n = (y1 - x1).cross(y2 - x2);
+			n.normalize();
+			vec3d p = (x1 + y1 + x2 + y2) * 0.25;
+
+			double score = 0.0 , weight;
+			weight = (x1 - y1).length() * (x2 - y2).length();
+			vec3d d = (x2 + y2) * 0.5 - p;
+			d.normalize();
+			score += std::abs(d.dot(n));
+			d = (x1 + y1) * 0.5 - p;
+			d.normalize();
+			score += std::abs(d.dot(n));
+			res += score * 0.5 * weight;
+			totWeight += weight;
+		}
+	}
+	res /= totWeight;
+	//printf("%.8f\n" , res);
+	if (res < threshold) return true;
+	return false;
+}
+
 bool ConstraintDetector::checkParallel(const vec3d& x1 , const vec3d& y1 ,
                              const vec3d& x2 , const vec3d& y2 , const double& threshold)
 {
@@ -105,33 +140,6 @@ bool ConstraintDetector::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
     return true;
 }
 
-bool ConstraintDetector::checkCoplanar(const BSpline& bsp , const double& threshold)
-{
-    double sum = 0.0;
-    double denom = 0.0;
-    for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
-    {
-        for (int j = i + 1; j < (int)bsp.ctrlNodes.size() - 1; j++)
-        {
-            denom += 1.0;
-            vec3d x1 = bsp.ctrlNodes[i] , y1 = bsp.ctrlNodes[i + 1];
-            vec3d x2 = bsp.ctrlNodes[j] , y2 = bsp.ctrlNodes[j + 1];
-            if (checkParallel(x1 , y1 , x2 , y2 , parallelThr))
-            {
-                continue;
-            }
-            vec3d n = (y1 - x1).cross(y2 - x2);
-            n.normalize();
-            vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
-            d.normalize();
-            sum += std::abs(d.dot(n));
-        }
-    }
-    //printf("%.8f\n" , sum / denom);
-    if (sum / denom < threshold) return true;
-    return false;
-}
-
 bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2 ,
                              const double& threshold)
 {
@@ -141,18 +149,20 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
     {
         for (int j = 0; j < (int)bsp2.ctrlNodes.size() - 1; j++)
         {
-            denom += 1.0;
             vec3d x1 = bsp1.ctrlNodes[i] , y1 = bsp1.ctrlNodes[i + 1];
             vec3d x2 = bsp2.ctrlNodes[j] , y2 = bsp2.ctrlNodes[j + 1];
             if (checkParallel(x1 , y1 , x2 , y2 , parallelThr))
             {
                 continue;
             }
+			double weight = (y1 - x1).length() * (y2 - x2).length();
             vec3d n = (y1 - x1).cross(y2 - x2);
             n.normalize();
             vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
             d.normalize();
-            sum += std::abs(d.dot(n));
+			double tp = std::abs(d.dot(n));
+            sum += tp * weight;
+			denom += weight;
         }
     }
     //printf("%.8f\n" , sum / denom);
@@ -326,24 +336,7 @@ void ConstraintSet::addJunctionConstraint(int bspIndex)
     for (int candi = 0; candi < 2; candi++)
     {
 		int i = candidates[candi];
-        if (i - 1 >= 0)
-        {
-            if (ConstraintDetector::checkOrtho(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
-                    bsp.ctrlNodes[i - 1] , ConstraintDetector::orthoThr))
-            {
-                printf("orthogonal: (%d , %d) , (%d , %d)\n" , bspIndex , i ,
-                       bspIndex , i - 1);
-                orthoSet.connect(bspIndex , i , bspIndex , i - 1 , 1);
-            }
-            else if (ConstraintDetector::checkTangent(bsp.ctrlNodes[i] , bsp.ctrlNodes[i + 1] ,
-                    bsp.ctrlNodes[i - 1] , ConstraintDetector::tangentThr))
-            {
-                printf("tangent: (%d , %d) , (%d , %d)\n" , bspIndex , i ,
-                       bspIndex , i - 1);
-                orthoSet.connect(bspIndex , i , bspIndex , i - 1 , 2);
-            }
-        }
-        else
+        if (candi == 0)
         {
             // printf("bsp.ctrlNodes[0] = (%.6f,%.6f,%.6f)\n" , bsp.ctrlNodes[0].x ,
             // bsp.ctrlNodes[0].y , bsp.ctrlNodes[0].z);
@@ -351,9 +344,9 @@ void ConstraintSet::addJunctionConstraint(int bspIndex)
             for (int j = 0; j < net->edges[ni].size(); j++)
             {
                 int ei = net->edges[ni][j].pli;
-                if (ei == -1 || ei == bspIndex) continue;
-                //printf("(%d , %d)'s next: node = %d, line = %d\n" , bspIndex ,
-                //       i , net->edges[ni][j].link , net->edges[ni][j].pli);
+                if (ei == -1 || ei >= bspIndex) continue;
+                // printf("(%d , %d)'s next: node = %d, line = %d\n" , bspIndex ,
+                      // i , net->edges[ni][j].link , net->edges[ni][j].pli);
                 
                 int nodeIndex = (int)net->bsplines[ei].ctrlNodes.size() - 2;
                 if (isEqual(bsp.ctrlNodes[0] , net->bsplines[ei].ctrlNodes[0])) nodeIndex = 1;
@@ -375,33 +368,15 @@ void ConstraintSet::addJunctionConstraint(int bspIndex)
                 }
             }
         }
-        
-        if (i + 1 < (int)bsp.ctrlNodes.size() - 1)
-        {
-            if (ConstraintDetector::checkOrtho(bsp.ctrlNodes[i + 1] , bsp.ctrlNodes[i] ,
-                    bsp.ctrlNodes[i + 2] , ConstraintDetector::orthoThr))
-            {
-                printf("orthogonal: (%d , %d) , (%d , %d)\n" , bspIndex , i ,
-                       bspIndex , i + 1);
-                orthoSet.connect(bspIndex , i , bspIndex , i + 1 , 1);
-            }
-            else if (ConstraintDetector::checkTangent(bsp.ctrlNodes[i + 1] , bsp.ctrlNodes[i] ,
-                    bsp.ctrlNodes[i + 2] , ConstraintDetector::tangentThr))
-            {
-                printf("tangent: (%d , %d) , (%d , %d)\n" , bspIndex , i ,
-                       bspIndex , i + 1);
-                orthoSet.connect(bspIndex , i , bspIndex , i + 1 , 2);
-            }
-        }
         else
         {
             int ni = net->getNodeIndex(bsp.ctrlNodes[i + 1]);
             for (int j = 0; j < net->edges[ni].size(); j++)
             {
                 int ei = net->edges[ni][j].pli;
-                if (ei == -1 || ei == bspIndex) continue;
-                //printf("(%d , %d)'s next: node = %d, line = %d\n" , net->numPolyLines - 1 ,
-                //       i , net->edges[ni][j].link , net->edges[ni][j].pli);
+                if (ei == -1 || ei >= bspIndex) continue;
+                // printf("(%d , %d)'s next: node = %d, line = %d\n" , bspIndex ,
+                      // i , net->edges[ni][j].link , net->edges[ni][j].pli);
                 
                 int nodeIndex = (int)net->bsplines[ei].ctrlNodes.size() - 2;
                 if (isEqual(bsp.ctrlNodes[i + 1] , net->bsplines[ei].ctrlNodes[0])) nodeIndex = 1;

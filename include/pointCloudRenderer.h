@@ -31,6 +31,7 @@ public:
 	bool isShowMetric;
 	bool isShowPath;
     bool isShowCtrlNodes;
+	bool isShowCoplanes;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
@@ -89,6 +90,7 @@ public:
     void renderPathForComp();
     void renderCtrlNodes();
     void renderDragPlane();
+	void renderCoplanes();
     void renderCollinearLines();
     void renderParallelLines();
     void renderCoplanarLines();
@@ -202,7 +204,7 @@ public:
     
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
-    
+
     // true: if not be picked
     std::vector<bool> unsavedStatus;
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshes; */

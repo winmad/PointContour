@@ -18,6 +18,7 @@ void CurveNet::clear()
     nodes.clear();
     nodesStat.clear();
     edges.clear();
+	originPolyLines.clear();
     polyLines.clear();
     bsplines.clear();
     polyLinesIndex.clear();
@@ -110,7 +111,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     if (bsp.ctrlNodes.size() == 0) return;
 
     printf("===== path extend =====\n");
-    addCurveType(numPolyLines - 1);
+    //addCurveType(numPolyLines - 1);
     if (addConstrants)
     {
         updateConstraints(numPolyLines - 1);
@@ -197,7 +198,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
     int bspIndex[2] = {numPolyLines - 1 , breakLine};
     for (int t = 0; t < 2; t++)
     {
-        addCurveType(bspIndex[t]);
+        //addCurveType(bspIndex[t]);
         if (addConstrants)
         {
             updateConstraints(bspIndex[t]);
@@ -237,7 +238,7 @@ void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
     
     for (int i = 0; i < modifiedBsp.size(); i++)
     {
-        addCurveType(modifiedBsp[i]);
+        //addCurveType(modifiedBsp[i]);
         if (addConstraints)
         {
             updateConstraints(modifiedBsp[i]);
@@ -392,11 +393,12 @@ void CurveNet::cycle2boundary(CycleGroup& cycleGroup ,
 
 void CurveNet::updateConstraints(int bspIndex)
 {
+	addCurveType(bspIndex);
     conSet->addCollinearConstraint(bspIndex);
     conSet->addParallelConstraint(bspIndex);
     conSet->addCoplanarConstraint(bspIndex);
     conSet->addJunctionConstraint(bspIndex);
-    conSet->addSymmetryConstraint(bspIndex);
+    //conSet->addSymmetryConstraint(bspIndex);
 }
 
 void CurveNet::refreshAllConstraints()
@@ -436,7 +438,7 @@ void CurveNet::addCurveType(int bspIndex)
     {
         curveType[numPolyLines - 1] = 1;
     }
-    else if (ConstraintDetector::checkCoplanar(bsp , ConstraintDetector::coplanarThr))
+    else if (ConstraintDetector::coplanarTest(bsp , ConstraintDetector::coplanarThr))
     {
         curveType[numPolyLines - 1] = 3;
     }
@@ -843,7 +845,6 @@ void CurveNet::loadCurveNet(const char* fileName)
                 bsplines[i].knots.push_back(p.x);
             }
             fscanf(fp , "%d %d" , &bsplines[i].N , &bsplines[i].K);
-            bsplines[i].coefs = NULL;
             bsplines[i].newCoefs();
             for (int j = 0; j < bsplines[i].N; j++)
             {

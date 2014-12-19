@@ -907,45 +907,6 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
 
 void PointContourGUIFrame::OnOpenGLViewKeyDown(wxKeyEvent& event)
 {
-	wxChar uc = event.GetUnicodeKey();
-	if (uc != WXK_NONE && uc >= 32)
-	{
-		if (uc == 'J')
-		{
-			m_pcUtils->pcRenderer->incBspCurveIndex();
-		}
-		else if (uc == 'K')
-		{
-			m_pcUtils->pcRenderer->decBspCurveIndex();
-		}
-		else if (uc == 'P')
-		{
-			m_pcUtils->curveNet->conSet->collinearSet.printLog();
-		}
-	}
-	else
-	{
-		switch (event.GetKeyCode())
-		{
-			case WXK_ESCAPE:
-				exit(0);
-			case WXK_SPACE:
-				// m_pcUtils->pcRenderer->optUpdate();
-
-				// m_pcUtils->pcRenderer->dispCurveNet->debugLog();
-
-				m_pcUtils->pcRenderer->cycleDisc();
-				m_pcUtils->pcRenderer->surfacingUnsavedCycles();
-				m_pcUtils->pcRenderer->evalUnsavedCycles();
-				break;
-			case WXK_UP:
-				m_pcUtils->pcRenderer->incBspCurveIndex();
-				break;
-			case WXK_DOWN:
-				m_pcUtils->pcRenderer->decBspCurveIndex();
-				break;
-		}
-	}
 	m_openGLView->OnKeyDown(event);
 	m_openGLView->Render();
 }
@@ -1136,6 +1097,9 @@ void PointContourGUIFrame::OnPatchesDrawSelect(wxCommandEvent& event)
 void PointContourGUIFrame::OnHideDrawnPointsClick(wxCommandEvent& event)
 {
 	m_pcUtils->pcRenderer->isHideDrawnPoints = !m_pcUtils->pcRenderer->isHideDrawnPoints;
+	m_pcUtils->pcRenderer->callListPoints();
+	m_pcUtils->pcRenderer->callListSurfelDisc();
+	m_pcUtils->pcRenderer->callListSelectionBuffer();
 	m_openGLView->Render();
 }
 

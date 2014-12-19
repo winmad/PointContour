@@ -42,6 +42,7 @@ void PointCloudRenderer::init()
 	isShowMetric = false;
 	isShowPointCloud = true;
     isShowCtrlNodes = false;
+	isShowCoplanes = false;
     constraintsVisual = 0;
     patchesVisual = 0;
     bspIndex = 0; curveIndex = 0;
@@ -664,6 +665,16 @@ void PointCloudRenderer::renderDragPlane()
     */
 }
 
+void PointCloudRenderer::renderCoplanes()
+{
+	if (!isShowCoplanes) return;
+	glColor4f(1.f , 99.f / 255.f , 71.f / 255.f , 0.7f);
+	for (int i = 0; i < dispCurveNet->coplanes.size(); i++)
+	{
+		drawPlane(dispCurveNet->coplanes[i] , 1);
+	}
+}
+
 void PointCloudRenderer::renderCollinearLines()
 {
     if (constraintsVisual != 1) return;
@@ -769,6 +780,8 @@ void PointCloudRenderer::renderOrthogonalLines()
         {
             if (i == bspIndex && j == curveIndex) continue;
             if (dispCurveNet->conSet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 1) continue;
+            printf("ortho: (%d , %d) <==> (%d , %d), %d\n" , bspIndex , curveIndex , i , j ,
+                dispCurveNet->conSet->orthoSet.getMark(bspIndex , curveIndex , i , j));
             drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
                 dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
         }
@@ -995,6 +1008,7 @@ void PointCloudRenderer::render()
     renderPickedCurve();
     renderCtrlNodes();
     renderDragPlane();
+	renderCoplanes();
     //renderPathForComp();
     renderCollinearLines();
     renderParallelLines();

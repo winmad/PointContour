@@ -14,51 +14,58 @@ public:
 	{
         this->p = p;
 		this->n = n;
+		this->n.normalize();
 		d = -p.dot(n);
 		this->weight = weight;
-		normalize();
 	}
 	void normalize()
 	{
-		d /= n.length();
+		p /= weight;
+		n /= weight;
 		n.normalize();
+		d = -p.dot(n);
 	}
-	double dist(Plane &p)
+	double dist(Plane &plane)
 	{
-		if (n.dot(p.n) < 0)
+		vec3d norm = plane.n;
+		if (n.dot(plane.n) < 0)
 		{
-			p.n = -p.n;
-			p.d = -p.d;
+			norm = -plane.n;
+			//plane.n = -plane.n;
+			//plane.d = -plane.d;
 		}
-		return sqrt(SQR((n - p.n).length()) + SQR(d - p.d));
+		//return sqrt(SQR((n - p.n).length()) + SQR(d - p.d));
+		if (1 - std::abs(n.dot(plane.n)) > 0.05) return 1e10;
+		norm = (n + norm) * 0.5;
+		return std::abs((p - plane.p).dot(norm));
 	}
-	void add(Plane &p)
+	void add(Plane &plane)
 	{
-		if (n.dot(p.n) < 0)
+		vec3d norm = plane.n;
+		if (n.dot(plane.n) < 0)
 		{
-			p.n = -p.n;
-			p.d = -p.d;
+			norm = -plane.n;
 		}
-		n = n * weight + p.n * p.weight;
-		d = d * weight + p.d * p.weight;
-		weight += p.weight;
+		p = p * weight + plane.p * plane.weight;
+		n = n * weight + norm * plane.weight;
+		weight += plane.weight;
 		normalize();
 	}
-	void remove(Plane &p)
+	void remove(Plane &plane)
 	{
-		if (n.dot(p.n) < 0)
+		vec3d norm = plane.n;
+		if (n.dot(plane.n) < 0)
 		{
-			p.n = -p.n;
-			p.d = -p.d;
+			norm = -plane.n;
 		}
-		n = n * weight - p.n * p.weight;
-		d = d * weight - p.d * p.weight;
-		weight -= p.weight;
+		p = p * weight - plane.p * plane.weight;
+		n = n * weight - norm * plane.weight;
+		weight -= plane.weight;
 		normalize();
 	}
-	vec3d reflect(vec3d &p)
+	vec3d reflect(vec3d &pos)
 	{
-		return p + 2 * (-d - p.dot(n)) * n;
+		return pos + 2 * (-d - pos.dot(n)) * n;
 	}
     vec3d intersect(vec3d& start , vec3d& dir)
     {
