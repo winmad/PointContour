@@ -26,7 +26,7 @@ void Optimization::init(CurveNet *_net)
 
 	// for debug
 	largeBound = smallBound = 0.05;
-	numStartPoints = 12;
+	numStartPoints = 16;
 	//maxRealTime = 5;
 
     numVars = 0;
@@ -498,15 +498,15 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "500 * (sum {i in 0..N, t in Dim3} "
+	fout << "5 * (sum {i in 0..N, t in Dim3} "
 		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
-	fout << "+100 * (sum{i in 0..SN}(sum{j in 0..SPN[i]}"
+	fout << "+2 * (sum{i in 0..SN}(sum{j in 0..SPN[i]}"
 		 << "sum{t in Dim3}("
 		 << "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
 		 << "-(sp[i,j,t]-p[sidx[i,2],t])"
 		 << ")^2"
 		 << ")/SPN[i])\n";
-	fout << "+100 * (sum{i in 0..BN}(sum{j in 0..BPN[i]}"
+	fout << "+2 * (sum{i in 0..BN}(sum{j in 0..BPN[i]}"
 		 << "sum{t in Dim3}("
 		 << "bp[i,j,t]-sum{k in 0..CN[i]}coef[i,j,k]*p[bidx[i,k],t]"
 		 << ")^2"
@@ -602,7 +602,7 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= 0.001;\n";
+		fout << " <= 0.005;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -610,7 +610,7 @@ void Optimization::generateMOD(string file)
 		{
 			fout << "subject to coplanar" << i << "_" << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
-				 << " <= 0.001;\n";
+				 << " <= 0.005;\n";
 		}
 	}
     /*
@@ -661,7 +661,7 @@ void Optimization::generateRUN(string file)
 		 << "option solver knitroampl;\n"
 		 << "option knitro_options \"alg=0 bar_feasible=1 honorbnds=1 ms_enable=1 ms_maxsolves="
          << numStartPoints
-         << " par_numthreads=6 ma_maxtime_real="
+         << " par_numthreads=8 ma_maxtime_real="
          << maxRealTime
          << "\";\n\n"
 		 << "model test.mod;\n"
@@ -983,13 +983,14 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 		return;
 
 	Plane plane((pos[0]+pos[1]+pos[2]+pos[3])*0.25, n,
-		(pos[0]-pos[1]).length()*(pos[2]-pos[3]).length());
+		(pos[0]-pos[1]).length()*(pos[2]-pos[3]).length()*
+		((pos[0]+pos[1])*0.5-(pos[2]+pos[3])*0.5).length());
 	//printf("plane p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f)\n" ,
 	//	plane.p.x , plane.p.y , plane.p.z ,
 	//	plane.n.x , plane.n.y , plane.n.z);
 	//net->coplanes.push_back(plane);
 	bool exist = false;
-	double planeDistThr = 0.02;
+	double planeDistThr = 0.07;
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
 		if (coplanes[i].dist(plane) < planeDistThr)

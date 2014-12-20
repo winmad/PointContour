@@ -80,19 +80,18 @@ bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& thresho
 			vec3d p = (x1 + y1 + x2 + y2) * 0.25;
 
 			double score = 0.0 , weight;
-			weight = (x1 - y1).length() * (x2 - y2).length();
+			weight = (x1 - y1).length() * (x2 - y2).length() * 
+				weightBetweenSegs(x1 , y1 , x2 , y2);
 			vec3d d = (x2 + y2) * 0.5 - p;
-			d.normalize();
 			score += std::abs(d.dot(n));
 			d = (x1 + y1) * 0.5 - p;
-			d.normalize();
 			score += std::abs(d.dot(n));
 			res += score * 0.5 * weight;
 			totWeight += weight;
 		}
 	}
 	res /= totWeight;
-	//printf("%.8f\n" , res);
+	printf("coplanar test score = %.8f\n" , res);
 	if (res < threshold) return true;
 	return false;
 }
@@ -155,17 +154,18 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
             {
                 continue;
             }
-			double weight = (y1 - x1).length() * (y2 - x2).length();
+			double weight = (y1 - x1).length() * (y2 - x2).length() *
+				weightBetweenSegs(x1 , y1 , x2 , y2);
             vec3d n = (y1 - x1).cross(y2 - x2);
             n.normalize();
             vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
-            d.normalize();
 			double tp = std::abs(d.dot(n));
             sum += tp * weight;
 			denom += weight;
         }
     }
-    //printf("%.8f\n" , sum / denom);
+	if (denom < EPS) return true;
+    printf("between coplanar = %.8f\n" , sum / denom);
     if (sum / denom < threshold) return true;
     return false;
 }

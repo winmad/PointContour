@@ -35,6 +35,9 @@ void setNull(vec3d& pos);
 bool isSameCycle(std::vector<unsigned>& c1 , std::vector<unsigned>& c2);
 bool isSameCycleGroup(CycleGroup& c1 , CycleGroup& c2);
 
+double weightBetweenSegs(const vec3d& x1 , const vec3d& y1 , 
+	const vec3d& x2 , const vec3d& y2);
+
 template<typename T>
 bool allocate3(T*** &d , const vec3i& size)
 {

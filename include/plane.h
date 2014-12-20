@@ -35,9 +35,11 @@ public:
 			//plane.d = -plane.d;
 		}
 		//return sqrt(SQR((n - p.n).length()) + SQR(d - p.d));
-		if (1 - std::abs(n.dot(plane.n)) > 0.05) return 1e10;
 		norm = (n + norm) * 0.5;
-		return std::abs((p - plane.p).dot(norm));
+		double angleDist = 1 - std::abs(n.dot(plane.n));
+		double posDist = std::abs((p - plane.p).dot(norm));
+		if (angleDist > 0.1) return 1e10;
+		return posDist;
 	}
 	void add(Plane &plane)
 	{

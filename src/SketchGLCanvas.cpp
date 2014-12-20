@@ -664,7 +664,14 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 		{
 			//m_pcUtils->curveNet->conSet->collinearSet.printLog();
             //m_pcUtils->curveNet->conSet->orthoSet.printLog();
-			m_pcUtils->curveNet->debugLog();
+			//m_pcUtils->curveNet->debugLog();
+			for (int i = 0; i < m_pcUtils->curveNet->coplanes.size(); i++)
+			{
+				Plane& plane = m_pcUtils->curveNet->coplanes[i];
+				printf("plane %d = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f)\n" , i ,
+					plane.p.x , plane.p.y , plane.p.z ,
+					plane.n.x , plane.n.y , plane.n.z);
+			}
 		}
         else if (uc == 'O')
         {

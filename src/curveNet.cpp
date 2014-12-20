@@ -438,7 +438,7 @@ void CurveNet::addCurveType(int bspIndex)
     {
         curveType[numPolyLines - 1] = 1;
     }
-    else if (ConstraintDetector::coplanarTest(bsp , ConstraintDetector::coplanarThr))
+    else if (ConstraintDetector::coplanarTest(bsp , 0.02))
     {
         curveType[numPolyLines - 1] = 3;
     }
