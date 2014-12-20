@@ -1619,8 +1619,11 @@ void PointCloudRenderer::undo()
     tmp.copyFrom(*dispCurveNet);
     dispCurveNet->copyFrom(backupCurveNet);
     backupCurveNet.copyFrom(tmp);
-
-    dispCurveNet->debugLog();
+	if (isAutoOpt)
+	{
+		dispCurveNet->refreshAllConstraints();
+	}
+    //dispCurveNet->debugLog();
     clearTemp();
 }
 

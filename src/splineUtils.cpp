@@ -153,7 +153,7 @@ void resampleBsp(BSpline& bsp , Path& path)
         vec3d x2 = bsp.ctrlNodes[1];
         vec3d v = x2 - x1;
         double len = v.length();
-        v /= len;
+        //v /= len;
         // printf("path size = %lu, t size = %lu\n" , path.size() , bsp.t.size());
         path[0] = x1;
         path[(int)path.size() - 1] = x2;
@@ -165,7 +165,7 @@ void resampleBsp(BSpline& bsp , Path& path)
             proj = std::min(std::max(proj , 1e-5) , len - 1e-5);
             path[j] = x1 + v * proj;
             */
-            path[j] = x1 + v * len * bsp.t[j];
+            path[j] = x1 + v * bsp.t[j];
         }
         return;
     }

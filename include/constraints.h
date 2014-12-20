@@ -27,8 +27,8 @@ public:
         const vec3d& x2 , const vec3d& y2 , const double& threshold);
     static bool checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2 ,
         const double& threshold);
-    static bool checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
-        const vec3d& x2 , const vec3d& y2 , const double& threshold);
+    //static bool checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
+    //    const vec3d& x2 , const vec3d& y2 , const double& threshold);
     static bool checkOrtho(const vec3d& x0 , const vec3d& x1 ,
         const vec3d& x2 , const double& threshold);
     static bool checkTangent(const vec3d& x0 , const vec3d& x1 ,

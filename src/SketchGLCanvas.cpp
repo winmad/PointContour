@@ -652,7 +652,11 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
     wxChar uc = event.GetUnicodeKey();
 	if (uc != WXK_NONE && uc >= 32)
 	{
-		if (uc == 'J')
+		if (uc == 127)
+		{
+			m_pcUtils->pcRenderer->clearPaths();
+		}
+		else if (uc == 'J')
 		{
 			m_pcUtils->pcRenderer->incBspCurveIndex();
 		}
@@ -711,9 +715,6 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
                 break;
             case WXK_DOWN:
                 m_pcUtils->pcRenderer->decBspCurveIndex();
-                break;
-            case WXK_DELETE:
-                m_pcUtils->pcRenderer->clearPaths();
                 break;
         }
     }

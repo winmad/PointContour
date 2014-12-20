@@ -25,9 +25,10 @@ void Optimization::init(CurveNet *_net)
     net = _net;
 
 	// for debug
-	largeBound = smallBound = 0.05;
-	numStartPoints = 16;
-	//maxRealTime = 5;
+	largeBound = 10;
+	smallBound = 5;
+	numStartPoints = 24;
+	maxRealTime = 0.2;
 
     numVars = 0;
     vars.clear();
@@ -415,7 +416,6 @@ void Optimization::generateDAT(string file)
 		}
 	}
 	fout << ";\n";
-
 	fout << "param BPN :=\n";
 	for (int i = 0; i < bsplines.size(); ++ i)
 	{
@@ -488,30 +488,29 @@ void Optimization::generateMOD(string file)
 	
 	fout << "\n# variables\n";
 	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - p_bound[i], <= init_p[i, t] + p_bound[i], := init_p[i, t];\n";
-	// fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - largeBound, <= init_plane[i, t] + largeBound, := init_plane[i, t];\n";
-    fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - 0.05, <= init_plane[i, t] + 0.05, := init_plane[i, t];\n";
+	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - largeBound, <= init_plane[i, t] + largeBound, := init_plane[i, t];\n";
+    //fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - 0.05, <= init_plane[i, t] + 0.05, := init_plane[i, t];\n";
     fout << "var symmetric_plane {i in 0..RPN, t in Dim4} >= init_symmetric_plane[i, t] - largeBound, <= init_symmetric_plane[i, t] + largeBound, := init_symmetric_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
-	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 1], t] - p[sidx[i, 2], t])"
+	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 2], t] - p[sidx[i, 1], t])"
 		 << " / sqrt(sum{j in Dim3} (p[sidx[i, 1], j] - p[sidx[i, 2], j]) ^ 2);\n";
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "5 * (sum {i in 0..N, t in Dim3} "
+	fout << "500 * (sum {i in 0..N, t in Dim3} "
 		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
-	fout << "+2 * (sum{i in 0..SN}(sum{j in 0..SPN[i]}"
-		 << "sum{t in Dim3}("
-		 << "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
-		 << "-(sp[i,j,t]-p[sidx[i,2],t])"
-		 << ")^2"
-		 << ")/SPN[i])\n";
-	fout << "+2 * (sum{i in 0..BN}(sum{j in 0..BPN[i]}"
+	fout << "+ 50 * (sum{i in 0..SN}(sum{j in 0..SPN[i]}"
+		<< "sum{t in Dim3}("
+		<< "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
+		<< "-(sp[i,j,t]-p[sidx[i,2],t])"
+		<< ")^2"
+		<< ")/SPN[i])\n";
+	fout << "+ 50 * (sum{i in 0..BN}(sum{j in 0..BPN[i]}"
 		 << "sum{t in Dim3}("
 		 << "bp[i,j,t]-sum{k in 0..CN[i]}coef[i,j,k]*p[bidx[i,k],t]"
 		 << ")^2"
 		 << ")/BPN[i])\n";
-	
 	for (int i = 0; i < numCons; ++ i)
 	{
 		fout << "+";
@@ -602,7 +601,7 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= 0.005;\n";
+		fout << " <= 0.03;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -610,7 +609,7 @@ void Optimization::generateMOD(string file)
 		{
 			fout << "subject to coplanar" << i << "_" << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
-				 << " <= 0.005;\n";
+				 << " <= 0.03;\n";
 		}
 	}
     /*
@@ -667,6 +666,10 @@ void Optimization::generateRUN(string file)
 		 << "model test.mod;\n"
 		 << "data test.dat;\n"
 		 << "solve;\n"
+		 << "printf \"%f\\n\", total_cost "
+		 << "> "
+		 << amplResultPath
+		 << "result.out;\n"
 		 << "printf {i in 0..N} \"%f %f %f\\n\", "
 		 << "p[i, 1], p[i, 2], p[i, 3] "
 		 << "> "
@@ -725,6 +728,14 @@ void Optimization::run(CurveNet *net)
 #endif
 	ifstream fin(fileroot + "result.out");
     // timer.PushCurrentTime();
+	double totError;
+	fin >> totError;
+	if (totError > 0.02 * vars.size()) 
+	{
+		fin.close();
+		printf("bad optimization result!\n");
+		return;
+	}
     std::vector<vec3d> varbuff;
     for (int i = 0; i < vars.size(); i++)
     {
@@ -768,7 +779,7 @@ void Optimization::run(CurveNet *net)
             printf("!!!!! (%lu , %lu) !!!!!\n" , net->bsplines[i].ctrlNodes.size() ,
             net->bsplines[i].knots.size());
         }
-        printf("curve id = %d, type = %d\n" , i , net->curveType[i]);
+        //printf("curve id = %d, type = %d\n" , i , net->curveType[i]);
         resampleBsp(net->bsplines[i] , net->polyLines[i]);
     }
 	fin.close();
@@ -976,7 +987,9 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 	else pos[2] = net->bsplines[vars[r].ni].ctrlNodes[vars[r].ci];
 	if (vars[s].type == 0) pos[3] = net->nodes[vars[s].ni];
 	else pos[3] = net->bsplines[vars[s].ni].ctrlNodes[vars[s].ci];
-    vec3d n = (pos[0]-pos[1]).cross(pos[2]-pos[3]);
+	vec3d x = (pos[0] - pos[1]) , y = (pos[2] - pos[3]);
+	x.normalize(); y.normalize();
+    vec3d n = x.cross(y);
 	// parallel
 	if (ConstraintDetector::checkParallel(pos[0] , pos[1] , pos[2] , pos[3] ,
 		ConstraintDetector::parallelThr))
@@ -984,7 +997,7 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 
 	Plane plane((pos[0]+pos[1]+pos[2]+pos[3])*0.25, n,
 		(pos[0]-pos[1]).length()*(pos[2]-pos[3]).length()*
-		((pos[0]+pos[1])*0.5-(pos[2]+pos[3])*0.5).length());
+		weightBetweenSegs(pos[0] , pos[1] , pos[2] , pos[3]));
 	//printf("plane p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f)\n" ,
 	//	plane.p.x , plane.p.y , plane.p.z ,
 	//	plane.n.x , plane.n.y , plane.n.z);

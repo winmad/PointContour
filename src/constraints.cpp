@@ -42,7 +42,6 @@ bool ConstraintDetector::collinearTest(Path& path , BSpline& bsp)
         bsp.ctrlNodes.push_back(x1);
         bsp.ctrlNodes.push_back(x2);
         v = x2 - x1;
-
         double totLen = 0;
         bsp.t.push_back(0);
         for (int i = 1; i < path.size(); i++)
@@ -144,6 +143,7 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
 {
     double sum = 0.0;
     double denom = 0.0;
+	bool isParallel = true;
     for (int i = 0; i < (int)bsp1.ctrlNodes.size() - 1; i++)
     {
         for (int j = 0; j < (int)bsp2.ctrlNodes.size() - 1; j++)
@@ -154,6 +154,7 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
             {
                 continue;
             }
+			if (isParallel) isParallel = false;
 			double weight = (y1 - x1).length() * (y2 - x2).length() *
 				weightBetweenSegs(x1 , y1 , x2 , y2);
             vec3d n = (y1 - x1).cross(y2 - x2);
@@ -164,12 +165,12 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
 			denom += weight;
         }
     }
-	if (denom < EPS) return true;
+	if (isParallel) return true;
     printf("between coplanar = %.8f\n" , sum / denom);
     if (sum / denom < threshold) return true;
     return false;
 }
-
+/*
 bool ConstraintDetector::checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
                              const vec3d& x2 , const vec3d& y2 , const double& threshold)
 {
@@ -182,7 +183,7 @@ bool ConstraintDetector::checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
     if (std::abs(d.dot(n)) < threshold) return true;
     return false;
 }
-
+*/
 bool ConstraintDetector::checkOrtho(const vec3d& x0 , const vec3d& x1 ,
                           const vec3d& x2 , const double& threshold)
 {
