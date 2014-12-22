@@ -74,7 +74,9 @@ bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& thresho
 			{
 				continue;
 			}
-			vec3d n = (y1 - x1).cross(y2 - x2);
+            vec3d u1 = y1 - x1 , u2 = y2 - x2;
+            u1.normalize(); u2.normalize();
+			vec3d n = u1.cross(u2);
 			n.normalize();
 			vec3d p = (x1 + y1 + x2 + y2) * 0.25;
 
@@ -90,7 +92,7 @@ bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& thresho
 		}
 	}
 	res /= totWeight;
-	printf("coplanar test score = %.8f\n" , res);
+	//printf("coplanar test score = %.8f\n" , res);
 	if (res < threshold) return true;
 	return false;
 }
@@ -114,19 +116,24 @@ bool ConstraintDetector::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
     
     vec3d v1 , v2;
     v1 = y1 - x1; v2 = x2 - x1;
-    double cosine = v1.dot(v2) / (v1.length() * v2.length());
+    v1.normalize(); v2.normalize();
+    double cosine = v1.dot(v2);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
-    v1 = y1 - x1; v2 = y2 - x1;
-    cosine = v1.dot(v2) / (v1.length() * v2.length());
+    //v1 = y1 - x1;
+    v2 = y2 - x1;
+    v2.normalize();
+    cosine = v1.dot(v2);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
     v1 = x2 - y1; v2 = y2 - y1;
-    cosine = v1.dot(v2) / (v1.length() * v2.length());
+    v1.normalize(); v2.normalize();
+    cosine = v1.dot(v2);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
     v1 = x2 - x1; v2 = y2 - x1;
-    cosine = v1.dot(v2) / (v1.length() * v2.length());
+    v1.normalize(); v2.normalize();
+    cosine = v1.dot(v2);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
     vec3d denom = (y1 - x1).cross(y2 - x2);
@@ -157,7 +164,9 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
 			if (isParallel) isParallel = false;
 			double weight = (y1 - x1).length() * (y2 - x2).length() *
 				weightBetweenSegs(x1 , y1 , x2 , y2);
-            vec3d n = (y1 - x1).cross(y2 - x2);
+            vec3d v1 = y1 - x1 , v2 = y2 - x2;
+            v1.normalize(); v2.normalize();
+            vec3d n = v1.cross(v2);
             n.normalize();
             vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
 			double tp = std::abs(d.dot(n));
@@ -166,7 +175,7 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
         }
     }
 	if (isParallel) return true;
-    printf("between coplanar = %.8f\n" , sum / denom);
+    //printf("between coplanar = %.8f\n" , sum / denom);
     if (sum / denom < threshold) return true;
     return false;
 }

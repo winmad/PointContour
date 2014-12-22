@@ -25,9 +25,9 @@ void Optimization::init(CurveNet *_net)
     net = _net;
 
 	// for debug
-	largeBound = 10;
-	smallBound = 5;
-	numStartPoints = 24;
+	largeBound = 3;
+    smallBound = 2;
+	numStartPoints = 16;
 	maxRealTime = 0.2;
 
     numVars = 0;
