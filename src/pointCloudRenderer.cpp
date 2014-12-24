@@ -132,7 +132,7 @@ void PointCloudRenderer::drawPoint(const vec3d& pos)
 
 void PointCloudRenderer::drawPoints()
 {
-	glBegin(GL_POINTS);
+	// glBegin(GL_POINTS);
 	for (int i = 0; i < pcUtils->pcData.size(); i++)
 	{
 		if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
@@ -145,10 +145,24 @@ void PointCloudRenderer::drawPoints()
 		{
 			glColor3f(0.f , 0.f , 0.f);
 		}
-		glNormal3f(pcUtils->pcData[i].n.x , pcUtils->pcData[i].n.y , pcUtils->pcData[i].n.z);
+
+        if (i < pcUtils->partSym.isSampled.size() &&
+            pcUtils->partSym.isSampled[i])
+        {
+            glColor3f(1.f , 0.f , 0.f);
+            glPointSize(10.f);
+        }
+        else
+        {
+            glPointSize(1.f);
+        }
+
+        glBegin(GL_POINTS);
+        glNormal3f(pcUtils->pcData[i].n.x , pcUtils->pcData[i].n.y , pcUtils->pcData[i].n.z);
 		glVertex3f(pcUtils->pcData[i].pos.x , pcUtils->pcData[i].pos.y , pcUtils->pcData[i].pos.z);
+        glEnd();
 	}
-	glEnd();
+	// glEnd();
 }
 
 void PointCloudRenderer::drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , 
@@ -347,8 +361,8 @@ void PointCloudRenderer::renderPoints()
 	glColor3f(0.f , 0.f , 0.f);
 	glPointSize(2.f);
 	
-	//drawPoints();
-	glCallList(LIST_POINTS);
+	drawPoints();
+	// glCallList(LIST_POINTS);
     
 	//callListPoints();
 }
@@ -997,6 +1011,27 @@ void PointCloudRenderer::renderSavedMeshes()
     */
 }
 
+void PointCloudRenderer::renderAutoGenPaths()
+{
+    if (dispCurveNet == NULL) return;
+    
+	glLineWidth(3.f);
+	glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    
+	for (int i = 0; i < autoGenPaths.size(); i++)
+	{
+        if (pickedAutoCurve != i)
+        	glColor3f(1.f , 0.5f , 36.f / 255.f);
+        else
+            glColor3f(1.f , 20.f / 255.f , 147.f / 255.f);
+
+		drawLines(autoGenPaths[i]);
+	}
+    
+    glDisable(GL_LINE_STIPPLE);
+}
+
 void PointCloudRenderer::render()
 {
 	renderPointCloud();
@@ -1015,6 +1050,7 @@ void PointCloudRenderer::render()
     renderCoplanarLines();
     renderOrthogonalLines();
     renderTangentLines();
+    renderAutoGenPaths();
 // #ifdef _WIN32
     renderUnsavedCycles();
     renderPickedMesh();
@@ -1151,10 +1187,40 @@ int PointCloudRenderer::selectionByColorMap(int mouseX , int mouseY)
 	return selectedObj;
 }
 
+void PointCloudRenderer::afterCurveNetUpdate()
+{
+    // pcUtils->optimizeJunction(dispCurveNet , lastDispPoint);
+
+    printf("start optimization\n");
+    if (isAutoOpt)
+    {
+        printf("opt init\n");
+        pcUtils->opt.init(dispCurveNet);
+        printf("opt run\n");
+        pcUtils->opt.run(dispCurveNet);
+        printf("after opt\n");
+    }
+    // dispCurveNet->orthoSet.printLog();
+    // dispCurveNet->collinearSet.printLog();
+    // dispCurveNet->collinearSet.test();
+
+    // find cycle
+    printf("start cycle discovery\n");
+    cycleDisc();
+
+#ifdef __APPLE__
+    // reconstruct surface
+    printf("surface reconstruction\n");
+    surfacingUnsavedCycles();
+#endif
+    evalUnsavedCycles();
+}
+
 void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
 {
     int ni = -1;
-    int selectedCurve = curveSelectionByRay(mouseX , mouseY , ni);
+    int selectedCurve = curveSelectionByRay(mouseX , mouseY , ni ,
+        dispCurveNet->polyLines);
     bool isSnap = false;
     if (selectedCurve != -1 && ni != -1) isSnap = true;
     
@@ -1176,19 +1242,6 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
         {
             breakLine = selectedCurve;
             breakPoint = ni;
-            dispPos = dispCurveNet->polyLines[breakLine][breakPoint];
-            if (pcUtils->point2Index.find(point2double(dispPos)) !=
-                pcUtils->point2Index.end())
-            {
-                pos = dispPos;
-                dispPosExists = true;
-            }
-            else
-            {
-                pos = dispCurveNet->originPolyLines[breakLine][breakPoint];
-            }
-            pickedDispPoint = dispCurveNet->polyLines[breakLine][breakPoint];
-
             if (breakPoint == 0 || breakPoint == dispCurveNet->polyLines[breakLine].size() - 1)
             {
                 snapToNode = true;
@@ -1199,6 +1252,31 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
                 snapToNode = false;
                 snapToCurve = true;
             }
+
+            dispPos = dispCurveNet->polyLines[breakLine][breakPoint];
+            if (pcUtils->point2Index.find(point2double(dispPos)) !=
+                pcUtils->point2Index.end())
+            {
+                pos = dispPos;
+                dispPosExists = true;
+            }
+            else
+            {
+                // pos = dispCurveNet->originPolyLines[breakLine][breakPoint];
+                if (snapToNode)
+                {
+                    pos = dispPos;
+                    pcUtils->addPointToGraph(dispPos);
+                    int start = pcUtils->point2Index[point2double(lastDispPoint)];
+                    if (pcUtils->graphType == PointCloudUtils::POINT_GRAPH)
+                    pcUtils->dijkstra(pcUtils->pointGraph , start , pcUtils->pointGraphInfo);
+                }
+                else
+                {
+                    pos = dispCurveNet->originPolyLines[breakLine][breakPoint];
+                }
+            }
+            pickedDispPoint = dispCurveNet->polyLines[breakLine][breakPoint];
         }
         else
         {
@@ -1289,32 +1367,11 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
                     newNode , bsp , pathForComp[0] , isAutoOpt);
 
-                // pcUtils->optimizeJunction(dispCurveNet , lastDispPoint);
-
-                printf("start optimization\n");
+                afterCurveNetUpdate();
                 if (isAutoOpt)
                 {
-                    printf("opt init\n");
-                    pcUtils->opt.init(dispCurveNet);
-                    printf("opt run\n");
-                    pcUtils->opt.run(dispCurveNet);
-                    printf("after opt\n");
                     dispPos = dispCurveNet->polyLines[dispCurveNet->numPolyLines - 1][0];
                 }
-                // dispCurveNet->orthoSet.printLog();
-                // dispCurveNet->collinearSet.printLog();
-                // dispCurveNet->collinearSet.test();
-
-                // find cycle
-                printf("start cycle discovery\n");
-                cycleDisc();
-
-#ifdef __APPLE__
-                // reconstruct surface
-                printf("surface reconstruction\n");
-                surfacingUnsavedCycles();
-#endif
-                evalUnsavedCycles();
             }
 
             // dispCurveNet->debugLog();
@@ -1335,6 +1392,8 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
 
             // lastPoint = &curveNet->nodes[curveNet->getNodeIndex(pos)];
             lastDispPoint = dispPos;
+
+            // autoGenBySymmetry();
 		}
 	}
 	else
@@ -1655,7 +1714,8 @@ std::vector<vec3d> getRay(int mouseX,int mouseY)
 	return ray;
 }
 
-int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex)
+int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex ,
+    std::vector<Path>& polyLines)
 {
     std::vector<vec3d> rays = getRay(mouseX , mouseY);
     vec3d& rayStr = rays.front();
@@ -1667,12 +1727,12 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 
     double p0p1LenSquared = (rayEnd - rayStr).dot(rayEnd - rayStr);
 
-	for (int i = 0; i < dispCurveNet->polyLines.size(); i++)
+	for (int i = 0; i < polyLines.size(); i++)
     {
-        if (dispCurveNet->curveType[i] == -1) continue;
-        for (int j = 0; j < dispCurveNet->polyLines[i].size(); j++)
+        //if (dispCurveNet->curveType[i] == -1) continue;
+        for (int j = 0; j < polyLines[i].size(); j++)
         {
-			vec3d p = dispCurveNet->polyLines[i][j];
+			vec3d p = polyLines[i][j];
 			double paramU = (
 				((p[0]-rayStr[0])*(rayEnd[0]-rayStr[0])) +
 				((p[1]-rayStr[1])*(rayEnd[1]-rayStr[1])) +
@@ -1701,7 +1761,8 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
 {
     int ni;
-	pickedCurve = curveSelectionByRay(mouseX , mouseY , ni);
+	pickedCurve = curveSelectionByRay(mouseX , mouseY , ni ,
+        dispCurveNet->polyLines);
 	if (pickedCurve != -1)
     {
         bool pickNode = (ni == 0 || ni == (int)dispCurveNet->polyLines[pickedCurve].size() - 1);
@@ -1729,6 +1790,34 @@ bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
                 int ni = dispCurveNet->getNodeIndex(pickedDispPoint);
                 dispCurveNet->deleteNode(ni);
             }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool PointCloudRenderer::pickAutoCurve(int mouseX , int mouseY , int op)
+{
+    int ni;
+	pickedAutoCurve = curveSelectionByRay(mouseX , mouseY , ni ,
+        autoGenPaths);
+    if (pickedAutoCurve != -1)
+    {
+        if (op == 1)
+        {
+            printf("begin store auto curve\n");
+            dispCurveNet->storeAutoPath(autoGenPaths[pickedAutoCurve] ,
+                autoGenBsp[pickedAutoCurve] , autoGenOriginPaths[pickedAutoCurve] ,
+                selectionOffset * 1.5 , isAutoOpt);
+            afterCurveNetUpdate();
+            vec3d pos = dispCurveNet->polyLines.back().front();
+            pcUtils->addPointToGraph(pos);
+            pos = dispCurveNet->polyLines.back().back();
+            pcUtils->addPointToGraph(pos);
+
+            autoGenOriginPaths.erase(autoGenOriginPaths.begin() + pickedAutoCurve);
+            autoGenPaths.erase(autoGenPaths.begin() + pickedAutoCurve);
+            autoGenBsp.erase(autoGenBsp.begin() + pickedAutoCurve);
         }
         return true;
     }
@@ -2200,6 +2289,31 @@ bool PointCloudRenderer::pickCtrlNode(int mouseX , int mouseY , int lastX , int 
     else
     {
         return true;
+    }
+}
+
+void PointCloudRenderer::autoGenBySymmetry()
+{
+    autoGenOriginPaths.clear();
+    autoGenPaths.clear();
+    autoGenBsp.clear();
+    Path originPath , path;
+    BSpline bsp;
+    int bspIndex = dispCurveNet->numPolyLines - 1;
+    for (;;)
+    {
+        if (dispCurveNet->curveType[bspIndex] != -1) break;
+        bspIndex--;
+    }
+    for (int i = 0; i < pcUtils->partSym.symPlanes.size(); i++)
+    {
+        Plane& plane = pcUtils->partSym.symPlanes[i];
+        bool flag = dispCurveNet->reflSymPath(bspIndex , plane ,
+            originPath , path , bsp);
+        if (!flag) continue;
+        autoGenOriginPaths.push_back(originPath);
+        autoGenPaths.push_back(path);
+        autoGenBsp.push_back(bsp);
     }
 }
 

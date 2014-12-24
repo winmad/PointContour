@@ -1,4 +1,5 @@
 #include "curveNet.h"
+#include "splineUtils.h"
 #include "cycleDiscovery.h"
 
 CurveNet::CurveNet()
@@ -66,7 +67,7 @@ void CurveNet::startPath(const vec3d& st)
 
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     const Path& path , bool newNode , const BSpline& bsp , const Path& originPath ,
-    bool addConstrants)
+    bool addConstraints)
 {
     if (path.size() < 2)
     {
@@ -112,14 +113,14 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
 
     printf("===== path extend =====\n");
     //addCurveType(numPolyLines - 1);
-    if (addConstrants)
+    if (addConstraints)
     {
         updateConstraints(numPolyLines - 1);
     }
 }
 
 void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
-    bool addConstrants)
+    bool addConstraints)
 {
     PolyLineIndex index = polyLinesIndex[breakLine];
     int st_ni = index.ni[0] , st_ei = index.ei[0];
@@ -199,7 +200,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
     for (int t = 0; t < 2; t++)
     {
         //addCurveType(bspIndex[t]);
-        if (addConstrants)
+        if (addConstraints)
         {
             updateConstraints(bspIndex[t]);
         }
@@ -244,6 +245,100 @@ void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
             updateConstraints(modifiedBsp[i]);
         }
     }
+}
+
+void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
+    double offset , bool addConstraints)
+{
+    int st_ni , ed_ni;
+    bool isSnap = false;
+    st_ni = getNodeIndex(path.front() , offset);
+    if (st_ni == -1)
+    {
+        st_ni = numNodes;
+        nodes.push_back(path.front());
+        nodesStat.push_back(true);
+        numNodes++;
+        edges.resize(numNodes);
+        edges[numNodes - 1].clear();
+    }
+    else
+    {
+        isSnap = true;
+        path.front() = nodes[st_ni];
+    }
+    ed_ni = getNodeIndex(path.back() , offset);
+    if (ed_ni == -1)
+    {
+        ed_ni = numNodes;
+        nodes.push_back(path.back());
+        nodesStat.push_back(true);
+        numNodes++;
+        edges.resize(numNodes);
+        edges[numNodes - 1].clear();
+    }
+    else
+    {
+        isSnap = true;
+        path.back() = nodes[ed_ni];
+    }
+
+    if (isSnap)
+    {
+        if (!ConstraintDetector::collinearTest(path , bsp))
+        {
+            convert2Spline(path , bsp);
+        }
+    }
+    // polyLines
+    polyLines.push_back(path);
+    originPolyLines.push_back(originPath);
+    polyLinesIndex.push_back(PolyLineIndex(st_ni , edges[st_ni].size() ,
+            ed_ni , edges[ed_ni].size()));
+    // bsplines
+    bsplines.push_back(bsp);
+    if (isSnap)
+        bsplines[numPolyLines].calcCoefs();
+    // edges
+    edges[st_ni].push_back(CurveEdge(ed_ni , numPolyLines));
+    edges[ed_ni].push_back(CurveEdge(st_ni , numPolyLines));
+    numPolyLines++;
+    // type
+    curveType.push_back(2);
+
+    if (bsp.ctrlNodes.size() == 0) return;
+
+    printf("===== auto path store =====\n");
+    //addCurveType(numPolyLines - 1);
+    if (addConstraints)
+    {
+        updateConstraints(numPolyLines - 1);
+    }
+}
+
+bool CurveNet::reflSymPath(const int& bspIndex , const Plane& plane ,
+    Path& originPath , Path& path , BSpline& bsp)
+{
+    vec3d st = polyLines[bspIndex].front();
+    vec3d ed = polyLines[bspIndex].back();
+    if ((plane.calcValue(st) * plane.calcValue(ed) < 0) ||
+        ((std::abs(plane.calcValue(st)) < 1e-6 && std::abs(plane.calcValue(ed)) < 1e-6)))
+    {
+        return false;
+    }
+    originPath.clear();
+    path.clear();
+    for (int i = 0; i < originPolyLines[bspIndex].size(); i++)
+    {
+        originPath.push_back(plane.reflect(originPolyLines[bspIndex][i]));
+        path.push_back(plane.reflect(polyLines[bspIndex][i]));
+    }
+    bsp = bsplines[bspIndex];
+    for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+    {
+        bsp.ctrlNodes[i] = plane.reflect(bsplines[bspIndex].ctrlNodes[i]);
+    }
+    return true;
 }
 
 void CurveNet::deleteNode(const int& deleteNodeIndex)
@@ -420,6 +515,24 @@ int CurveNet::getNodeIndex(const vec3d& pos)
         if (nodesStat[i] && isEqual(pos , nodes[i]))
             return i;
     return -1;
+}
+
+int CurveNet::getNodeIndex(vec3d& pos , double offset)
+{
+    double minDist = 1e20;
+    int res = -1;
+    for (int i = 0; i < numNodes; i++)
+    {
+        if (!nodesStat[i]) continue;
+        double dist = (pos - nodes[i]).length();
+        if (minDist > dist)
+        {
+            minDist = dist;
+            res = i;
+        }
+    }
+    if (minDist > offset) res = -1;
+    return res;
 }
 
 bool CurveNet::linkNoEdges(const int& ni)

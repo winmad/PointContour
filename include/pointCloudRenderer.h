@@ -104,6 +104,7 @@ public:
     void renderPickedMesh();
     void renderPickedSavedMesh();
     void renderSavedMeshes();
+    void renderAutoGenPaths();
 
     void render();
 
@@ -116,7 +117,8 @@ public:
 	void initSelectionBuffer();
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
-    int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
+    int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex ,
+        std::vector<Path>& polyLines);
     int cycleSelectionByRay(int mouseX , int mouseY ,
         std::vector<vec3d>& cycleCenters);
     int cycleGroupSelectionByRay(int mouseX , int mouseY ,
@@ -125,6 +127,7 @@ public:
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
     bool pickCurve(int mouseX , int mouseY , int op);
+    bool pickAutoCurve(int mouseX , int mouseY , int op);
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
@@ -139,6 +142,7 @@ public:
 		std::vector<std::vector<vec3d> > &mesh , std::vector<std::vector<vec3d> > &meshNormals
 		);
 
+    void afterCurveNetUpdate();
     void optUpdate(bool isRefreshConst);
     void cycleDisc();
 	void cycleStatusUpdate();
@@ -147,7 +151,9 @@ public:
     void surfacingUnsavedCycleGroup();
     void evalUnsavedCycles();
 	void cycleGroupUpdate();
-	
+
+    void autoGenBySymmetry();
+    
     void backup();
     void undo();
 public:
@@ -180,6 +186,7 @@ public:
     int pickedBsp , pickedCtrlNode;
     Plane dragPlane;
     vec3d dragStartPoint , dragCurPoint;
+    int pickedAutoCurve;
     bool snapToCurve;
     bool snapToNode;
 
@@ -209,6 +216,11 @@ public:
     std::vector<bool> unsavedStatus;
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshes; */
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshNormals; */
+
+    std::vector<Path> autoGenOriginPaths;
+    std::vector<Path> autoGenPaths;
+    std::vector<BSpline> autoGenBsp;
+    std::vector<bool> autoPathStatus;
     
     std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;

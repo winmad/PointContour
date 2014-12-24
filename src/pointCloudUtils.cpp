@@ -163,6 +163,19 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 		calcPointTensor();
 		buildGraphFromPoints();
 	}
+
+    // phase 5
+    std::string votesFileName = dataVotesPath + name + ".planes";
+    if (access(votesFileName.c_str() , 0) == -1)
+    // if (false)
+    {
+        calcSymmetricPlanes();
+    }
+    else
+    {
+        loadSymmetricPlanes();
+        pcRenderer->dispCurveNet->coplanes = partSym.symPlanes;
+    }
 }
 
 void PointCloudUtils::getBBox()
@@ -852,19 +865,19 @@ void PointCloudUtils::calcPointTensor()
 
 		index2Point.push_back(pos);
 		point2Index[hashVal] = nodes;
-        
+        /*
 		Matrix3d hesMat;
 		hesMat = lerpHessian(pos);
-
-        /*
+        */
 		Tensor ts;
-		ts.hessian = hesMat;
+		ts.hessian = lerpHessian(pos);
 		calcTensorDecomposition(ts);
 		calcTensorMetric(ts);
-        */
+        
+        /*
         Tensor ts;
         ts.tensor = lerpTensor(pos);
-        
+        */
         /*
         writeLog("=================\n");
         for (int i = 0; i < 3; i++)
@@ -1009,6 +1022,41 @@ bool PointCloudUtils::addPointToGraph(const vec3d& pos)
     }
     printf("add new point (%.6f,%.6f,%.6f)\n" , pos.x , pos.y , pos.z);
     return true;
+}
+
+void PointCloudUtils::calcSymmetricPlanes()
+{
+    timer.PushCurrentTime();
+    partSym.init(this);
+    partSym.samplePointsUniform(500);
+    partSym.calcVotes();
+    timer.PopAndDisplayTime("\nCalculate symmetric planes: %.6f\n");
+}
+
+void PointCloudUtils::loadSymmetricPlanes()
+{
+    timer.PushCurrentTime();
+    partSym.symPlanes.clear();
+    std::string fileName = dataVotesPath + name + ".planes";
+    FILE *fp = fopen(fileName.c_str() , "r");
+    int n;
+    fscanf(fp , "%d" , &n);
+    for (int i = 0; i < n; i++)
+    {
+        double theta , phi , cosTheta , cosPhi , d;
+        fscanf(fp , "%lf %lf %lf" , &theta , &phi , &d);
+        cosTheta = std::cos(theta);
+        cosPhi = std::cos(phi);
+        partSym.symPlanes.push_back(Plane(cosTheta , cosPhi , d));
+    }
+    for (int i = 0; i < n; i++)
+    {
+        printf("plane %d: %.6f %.6f %.6f %.6f\n" , i ,
+            partSym.symPlanes[i].n.x , partSym.symPlanes[i].n.y ,
+            partSym.symPlanes[i].n.z , partSym.symPlanes[i].d);
+    }
+    fclose(fp);
+    timer.PopAndDisplayTime("\nLoad symmetric planes: %.6f\n");
 }
 
 bool PointCloudUtils::dijkstra(const Graph& g , const int& source ,

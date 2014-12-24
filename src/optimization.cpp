@@ -730,7 +730,7 @@ void Optimization::run(CurveNet *net)
     // timer.PushCurrentTime();
 	double totError;
 	fin >> totError;
-	if (totError > 0.02 * vars.size()) 
+	if (totError > 0.1 * vars.size()) 
 	{
 		fin.close();
 		printf("bad optimization result!\n");

@@ -436,9 +436,12 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 	}
     else if (event.ControlDown()) // curve operation
     {
+        if (event.AltDown())
+            m_pcUtils->pcRenderer->isAltPress = true;
         m_pcUtils->pcRenderer->pickedCurve = -1;
         m_pcUtils->pcRenderer->pickedCycle = -1;
         m_pcUtils->pcRenderer->pickedSavedCycle = -1;
+        m_pcUtils->pcRenderer->pickedAutoCurve = -1;
         lastKeyBoard=1;
 		m_pcUtils->pcRenderer->isCtrlPress = true;
 
@@ -446,14 +449,30 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 			renderSelectionBuffer();
 			isChangeView=false;
 		}
-
-		m_pcUtils->pcRenderer->pickPoint(x , y , 0);
-
+        if (event.AltDown())
+        {
+            m_pcUtils->pcRenderer->pathVertex.clear();
+            m_pcUtils->pcRenderer->bsp.clear();
+			setNull(m_pcUtils->pcRenderer->lastDispPoint);
+            setNull(m_pcUtils->pcRenderer->pickedDispPoint);
+            m_pcUtils->pcRenderer->pickAutoCurve(x , y , 0);
+        }
+        else
+        {
+            m_pcUtils->pcRenderer->pickPoint(x , y , 0);
+        }
 		if (event.LeftIsDown())
 		{
             // extend path by adding a new point
             m_pcUtils->pcRenderer->backup();
-			m_pcUtils->pcRenderer->pickPoint(x , y , 1);
+            if (event.AltDown())
+            {
+                m_pcUtils->pcRenderer->pickAutoCurve(x , y , 1);
+            }
+            else
+            {
+                m_pcUtils->pcRenderer->pickPoint(x , y , 1);
+            }
 		}
 		if (event.RightIsDown())
 		{
@@ -694,6 +713,10 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 		{
 			m_pcUtils->pcRenderer->isShowCoplanes = !m_pcUtils->pcRenderer->isShowCoplanes;
 		}
+        else if (uc == 'R')
+        {
+            m_pcUtils->pcRenderer->autoGenBySymmetry();
+        }
 	}
 	else
 	{
