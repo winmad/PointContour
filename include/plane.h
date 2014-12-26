@@ -73,6 +73,12 @@ public:
 		norm = (n + norm) * 0.5;
 		double angleDist = 1 - std::abs(n.dot(plane.n));
 		double posDist = std::abs((p - plane.p).dot(norm));
+
+        printf("angleDist = %.6f , posDist = %.6f\n" ,
+            angleDist , posDist);
+        printf("p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f) , w = %.6f\n" ,
+            p.x , p.y , p.z , n.x , n.y , n.z , weight);
+
 		if (angleDist > 0.1) return 1e10;
 		return posDist;
 	}

@@ -717,6 +717,10 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         {
             m_pcUtils->pcRenderer->autoGenBySymmetry();
         }
+        else if (uc == 'D')
+        {
+            m_pcUtils->pcRenderer->clearAutoGen();
+        }
 	}
 	else
 	{

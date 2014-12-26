@@ -70,6 +70,7 @@ void PointCloudRenderer::init()
     pickedCycle = -1;
     pickedSavedCycle = -1;
     pickedBsp = pickedCtrlNode = -1;
+    toExpandCurve = pickedAutoCurve = -1;
     
 	isCtrlPress = false;
     isAltPress = false;
@@ -1367,6 +1368,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
                     newNode , bsp , pathForComp[0] , isAutoOpt);
 
+                toExpandCurve = -1;
                 afterCurveNetUpdate();
                 if (isAutoOpt)
                 {
@@ -1776,6 +1778,7 @@ bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
         else
         {
             setNull(pickedDispPoint);
+            toExpandCurve = pickedCurve;
         }
         if (op == 2)
         {
@@ -1809,6 +1812,7 @@ bool PointCloudRenderer::pickAutoCurve(int mouseX , int mouseY , int op)
             dispCurveNet->storeAutoPath(autoGenPaths[pickedAutoCurve] ,
                 autoGenBsp[pickedAutoCurve] , autoGenOriginPaths[pickedAutoCurve] ,
                 selectionOffset * 1.5 , isAutoOpt);
+            toExpandCurve = -1;
             afterCurveNetUpdate();
             vec3d pos = dispCurveNet->polyLines.back().front();
             pcUtils->addPointToGraph(pos);
@@ -2299,12 +2303,21 @@ void PointCloudRenderer::autoGenBySymmetry()
     autoGenBsp.clear();
     Path originPath , path;
     BSpline bsp;
-    int bspIndex = dispCurveNet->numPolyLines - 1;
-    for (;;)
+    int bspIndex;
+    if (toExpandCurve != -1)
     {
-        if (dispCurveNet->curveType[bspIndex] != -1) break;
-        bspIndex--;
+        bspIndex = toExpandCurve;
     }
+    else
+    {
+        bspIndex = dispCurveNet->numPolyLines - 1;
+        for (;;)
+        {
+            if (bspIndex < 0 || dispCurveNet->curveType[bspIndex] != -1) break;
+            bspIndex--;
+        }
+    }
+    if (bspIndex < 0) return;
     for (int i = 0; i < pcUtils->partSym.symPlanes.size(); i++)
     {
         Plane& plane = pcUtils->partSym.symPlanes[i];
@@ -2315,6 +2328,13 @@ void PointCloudRenderer::autoGenBySymmetry()
         autoGenPaths.push_back(path);
         autoGenBsp.push_back(bsp);
     }
+}
+
+void PointCloudRenderer::clearAutoGen()
+{
+    autoGenPaths.clear();
+    autoGenOriginPaths.clear();
+    autoGenBsp.clear();
 }
 
 void PointCloudRenderer::cycleColorGenByRandom(std::vector<Cycle>& cycles , 

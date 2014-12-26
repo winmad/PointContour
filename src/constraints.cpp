@@ -31,12 +31,12 @@ bool ConstraintDetector::collinearTest(Path& path , BSpline& bsp)
         v = (path[i] - x1).cross(path[i] - x2);
         double numer = std::abs(v.length());
         double d = numer / denom;
-        if (d > denom * 0.1) return false;
+        if (d > denom * 0.05) return false;
         totDist += d;
     }
 
     //printf("--- %.6f ---\n" , totDist / (double)path.size());
-    if (totDist / (double)path.size() < denom * 0.05)
+    if (totDist / (double)path.size() < denom * 0.03)
     {
         bsp.clear();
         bsp.ctrlNodes.push_back(x1);
@@ -81,8 +81,8 @@ bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& thresho
 			vec3d p = (x1 + y1 + x2 + y2) * 0.25;
 
 			double score = 0.0 , weight;
-			weight = (x1 - y1).length() * (x2 - y2).length() * 
-				weightBetweenSegs(x1 , y1 , x2 , y2);
+			weight = (x1 - y1).length() * (x2 - y2).length();
+            // * weightBetweenSegs(x1 , y1 , x2 , y2);
 			vec3d d = (x2 + y2) * 0.5 - p;
 			score += std::abs(d.dot(n));
 			d = (x1 + y1) * 0.5 - p;
@@ -92,7 +92,7 @@ bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& thresho
 		}
 	}
 	res /= totWeight;
-	//printf("coplanar test score = %.8f\n" , res);
+	printf("coplanar test score = %.8f\n" , res);
 	if (res < threshold) return true;
 	return false;
 }

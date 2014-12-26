@@ -222,7 +222,7 @@ void Optimization::init(CurveNet *_net)
                         int u2 = getOptVarIndex(u.second);
                         int v1 = getOptVarIndex(v.first);
                         int v2 = getOptVarIndex(v.second);
-						//if (u1 == v1 || u1 == v2 || u2 == v1 || u2 == v2) continue;
+						if (u1 == v1 || u1 == v2 || u2 == v1 || u2 == v2) continue;
 						addCoplanar(u1, u2, v1, v2);
                         //cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_coplanar));
                     }
@@ -601,7 +601,7 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= 0.03;\n";
+		fout << " <= 0.01;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -609,7 +609,7 @@ void Optimization::generateMOD(string file)
 		{
 			fout << "subject to coplanar" << i << "_" << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
-				 << " <= 0.03;\n";
+				 << " <= 0.01;\n";
 		}
 	}
     /*
@@ -995,18 +995,19 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 		ConstraintDetector::parallelThr))
 		return;
 
-	Plane plane((pos[0]+pos[1]+pos[2]+pos[3])*0.25, n,
-		(pos[0]-pos[1]).length()*(pos[2]-pos[3]).length()*
-		weightBetweenSegs(pos[0] , pos[1] , pos[2] , pos[3]));
-	//printf("plane p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f)\n" ,
-	//	plane.p.x , plane.p.y , plane.p.z ,
-	//	plane.n.x , plane.n.y , plane.n.z);
+    double weight = (pos[0]-pos[1]).length()*(pos[2]-pos[3]).length();
+        //*weightBetweenSegs(pos[0] , pos[1] , pos[2] , pos[3]);
+	Plane plane((pos[0]+pos[1]+pos[2]+pos[3])*0.25, n, weight);
+    printf("------------------\n");
+	printf("plane: p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f) , w = %.6f\n" ,
+		plane.p.x , plane.p.y , plane.p.z ,
+		plane.n.x , plane.n.y , plane.n.z , weight);
 	//net->coplanes.push_back(plane);
 	bool exist = false;
 	double planeDistThr = 0.07;
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
-		if (coplanes[i].dist(plane) < planeDistThr)
+        if (coplanes[i].dist(plane) < planeDistThr)
 		{
 			exist = true;
 			coplanes[i].add(plane);

@@ -153,6 +153,7 @@ public:
 	void cycleGroupUpdate();
 
     void autoGenBySymmetry();
+    void clearAutoGen();
     
     void backup();
     void undo();
@@ -186,6 +187,7 @@ public:
     int pickedBsp , pickedCtrlNode;
     Plane dragPlane;
     vec3d dragStartPoint , dragCurPoint;
+    int toExpandCurve;
     int pickedAutoCurve;
     bool snapToCurve;
     bool snapToNode;
