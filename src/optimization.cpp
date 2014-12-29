@@ -2,6 +2,7 @@
 #include <sstream>
 #include <cstdlib>
 #include "optimization.h"
+#include "splineUtils.h"
 
 using namespace std;
 
@@ -175,7 +176,107 @@ void Optimization::init(CurveNet *_net)
         }
     }
 
-    if (true)
+    // coplanar
+    printf("coplanar constraints...\n");
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->curveType[i] == 3)
+        {
+            //int numCtrlCurves = (int)net->bsplines[i].ctrlNodes.size() - 1;
+            for (int j = 0; j < net->bsplines[i].ctrlNodes.size(); j++)
+            {
+                int vi;
+                if (j == 0 || j == (int)net->bsplines[i].ctrlNodes.size() - 1)
+                {
+                    OptVariable var(0 , net->getNodeIndex(net->bsplines[i].ctrlNodes[j]));
+                    vi = getOptVarIndex(var);
+                }
+                else
+                {
+                    OptVariable var(1 , i , j);
+                    vi = getOptVarIndex(var);
+                }
+                Plane plane = net->planes[i];
+                double len = pathLength(net->polyLines[i]);
+                plane.weight = len * len;
+                addCoplanar(vi , plane);
+            }
+        }
+    }
+
+    printf("coplanar between curves...\n");
+    for (int i = 0; i < net->numPolyLines; i++)
+    {
+        if (net->curveType[i] == 2 || net->curveType[i] == -1) continue;
+        for (int j = i + 1; j < net->numPolyLines; j++)
+        {
+            if (net->curveType[j] == 2 || net->curveType[j] == -1) continue;
+            if (net->conSet->coplanarSet.getMark(i , 0 , j , 0) == 1)
+            {
+                Path path , path2;
+                resampleBspUniform(net->bsplines[i] , 30 , path);
+                resampleBspUniform(net->bsplines[j] , 30 , path2);
+                double len1 = pathLength(path);
+                double len2 = pathLength(path2);
+                for (int k = 0; k < path2.size(); k++) path.push_back(path2[k]);
+                Plane plane;
+                plane.fitFromPoints(path);
+                plane.weight = len1 * len2;
+                for (int x = 0; x < net->bsplines[i].ctrlNodes.size(); x++)
+                {
+                    int vi;
+                    if (x == 0 || x == (int)net->bsplines[i].ctrlNodes.size() - 1)
+                    {
+                        OptVariable var(0 , net->getNodeIndex(net->bsplines[i].ctrlNodes[x]));
+                        vi = getOptVarIndex(var);
+                    }
+                    else
+                    {
+                        OptVariable var(1 , i , x);
+                        vi = getOptVarIndex(var);
+                    }
+                    addCoplanar(vi , plane);
+                }
+                for (int y = 0; y < net->bsplines[j].ctrlNodes.size(); y++)
+                {
+                    int vi;
+                    if (y == 0 || y == (int)net->bsplines[j].ctrlNodes.size() - 1)
+                    {
+                        OptVariable var(0 , net->getNodeIndex(net->bsplines[j].ctrlNodes[y]));
+                        vi = getOptVarIndex(var);
+                    }
+                    else
+                    {
+                        OptVariable var(1 , j , y);
+                        vi = getOptVarIndex(var);
+                    }
+                    addCoplanar(vi , plane);
+                }
+            }
+        }
+    }
+
+    printf("adding coplanes...\n");
+	for (int i = 0; i < coplanes.size(); ++ i)
+	{
+		if (coplanarPoints[i].size() <= 3)
+		{
+			swap(coplanarPoints[i], coplanarPoints[coplanes.size() - 1]);
+			swap(coplanes[i], coplanes[coplanes.size() - 1]);
+			coplanarPoints.pop_back();
+			coplanes.pop_back();
+		}
+	}
+    /*
+    net->coplanes.clear();
+    for (int i = 0; i < net->planes.size(); i++)
+    {
+        if (net->curveType[i] == 3) net->coplanes.push_back(net->planes[i]);
+    }
+    */
+    net->coplanes = coplanes;
+    
+    if (false)
     {
     // coplanar
     printf("coplanar constraints...\n");
@@ -243,7 +344,12 @@ void Optimization::init(CurveNet *_net)
 		}
 	}
 
-	net->coplanes = coplanes;
+    net->coplanes.clear();
+    for (int i = 0; i < net->planes.size(); i++)
+    {
+        if (net->curveType[i] == 3) net->coplanes.push_back(net->planes[i]);
+    }
+	// net->coplanes = coplanes;
 
     }
     
@@ -601,7 +707,7 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= 0.01;\n";
+		fout << " <= 0.1;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -609,7 +715,7 @@ void Optimization::generateMOD(string file)
 		{
 			fout << "subject to coplanar" << i << "_" << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
-				 << " <= 0.01;\n";
+				 << " <= 0.1;\n";
 		}
 	}
     /*
@@ -905,7 +1011,7 @@ string Optimization::generateLineTangent(int u1, int u2, int v1, int v2)
 string Optimization::generateCoplanar(int plane, int point)
 {
 	stringstream ss;
-	ss << "abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
+	ss << "10 * abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
 	   << " + plane[" << plane << ", 4]) / "
 	   << "sqrt(sum{i in Dim3} (plane[" << plane << ", i] ^ 2))";
 	return ss.str();
@@ -998,10 +1104,12 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
     double weight = (pos[0]-pos[1]).length()*(pos[2]-pos[3]).length();
         //*weightBetweenSegs(pos[0] , pos[1] , pos[2] , pos[3]);
 	Plane plane((pos[0]+pos[1]+pos[2]+pos[3])*0.25, n, weight);
+    /*
     printf("------------------\n");
 	printf("plane: p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f) , w = %.6f\n" ,
 		plane.p.x , plane.p.y , plane.p.z ,
 		plane.n.x , plane.n.y , plane.n.z , weight);
+    */
 	//net->coplanes.push_back(plane);
 	bool exist = false;
 	double planeDistThr = 0.07;
@@ -1044,6 +1152,38 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 			}
 			if (!existP) tmpPoints.push_back(varNum[i]);
 		}
+		coplanarPoints.push_back(tmpPoints);
+	}
+}
+
+void Optimization::addCoplanar(int varIndex , Plane& plane)
+{
+    bool exist = false;
+    double planeDistThr = 0.07;
+	for (int i = 0; i < coplanes.size(); i++)
+	{
+        if (coplanes[i].dist(plane) < planeDistThr)
+		{
+			exist = true;
+			coplanes[i].add(plane);
+			bool existP = false;
+			for (int j = 0; j < coplanarPoints[i].size(); ++ j)
+			{
+				if (coplanarPoints[i][j] == varIndex)
+                {
+                    existP = true;
+                    break;
+                }
+            }
+            if (!existP) coplanarPoints[i].push_back(varIndex);
+			break;
+		}
+	}
+	if (!exist)
+	{
+		coplanes.push_back(plane);
+		vector<int> tmpPoints;
+		tmpPoints.push_back(varIndex);
 		coplanarPoints.push_back(tmpPoints);
 	}
 }

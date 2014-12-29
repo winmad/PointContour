@@ -202,6 +202,9 @@ void PointCloudRenderer::drawPlane(const Plane& plane , const double& r)
         a = vec3d(0 , 1 , 0);
     }
     b = plane.n.cross(a);
+    b.normalize();
+    a = b.cross(plane.n);
+    a.normalize();
     drawCircle(plane.p , a , b , r);
 }
 

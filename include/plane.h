@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <cmath>
+#include <Eigen/Dense>
 
 class Plane
 {
@@ -60,7 +61,11 @@ public:
         this->n.normalize();
         this->weight = weight;
     }
-	double dist(Plane &plane)
+    double dist(vec3d& point)
+    {
+        return n.dot(point - p);
+    }
+	double dist(Plane& plane)
 	{
 		vec3d norm = plane.n;
 		if (n.dot(plane.n) < 0)
@@ -79,7 +84,7 @@ public:
         printf("p = (%.6f,%.6f,%.6f), n = (%.6f,%.6f,%.6f) , w = %.6f\n" ,
             p.x , p.y , p.z , n.x , n.y , n.z , weight);
 
-		if (angleDist > 0.1) return 1e10;
+        if (angleDist > 0.1) return 1e10;
 		return posDist;
 	}
 	void add(Plane &plane)
@@ -141,6 +146,43 @@ public:
         double numer = -n.dot(start) - d;
         if (std::abs(denom) < 1e-6) printf("intersect denom = 0\n");
         return start + dir * (numer / denom);
+    }
+    void fitFromPoints(Path& path)
+    {
+        Eigen::MatrixXd m(3 , path.size());
+        vec3d p(0.0);
+        for (int i = 0; i < path.size(); i++)
+        {
+            p += path[i];
+        }
+        p /= (double)path.size();
+
+        for (int i = 0; i < path.size(); i++)
+        {
+            for (int j = 0; j < 3; j++) m(j , i) = path[i][j] - p[j];
+        }
+
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(m, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        Eigen::VectorXd sigVal(svd.singularValues());
+        Eigen::MatrixXd u(svd.matrixU());
+        std::cout << sigVal << std::endl << std::endl;
+        std::cout<< u << std::endl << std::endl;
+        double minSigVal = 1e20;
+        vec3d n = vec3d(0.0);
+        for (int i = 0; i < 3; i++)
+        {
+            if (minSigVal > sigVal(i))
+            {
+                minSigVal = sigVal(i);
+                n.x = u(0 , i); n.y = u(1 , i); n.z = u(2 , i);
+            }
+        }
+
+        this->p = p;
+		this->n = n;
+		this->n.normalize();
+		d = -p.dot(n);
+		this->weight = 1;
     }
 
     vec3d p;

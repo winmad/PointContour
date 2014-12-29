@@ -5,7 +5,7 @@
 #include "splineUtils.h"
 #include "disjointSet.h"
 #include "adjMatrix.h"
-#include "Plane.h"
+#include "plane.h"
 #include "curveMappingTool.h"
 #include "constraints.h"
 
@@ -96,6 +96,8 @@ public:
 
 	// 1: line, 2: nothing, 3: coplanar
 	std::vector<int> curveType;
+    // meaningful if curveType = 3
+    std::vector<Plane> planes;
 
 	ConstraintSet *conSet;
 

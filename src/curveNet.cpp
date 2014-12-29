@@ -25,6 +25,7 @@ void CurveNet::clear()
     polyLinesIndex.clear();
 
     curveType.clear();
+    planes.clear();
     conSet->clear();
 
     cycles.clear();
@@ -51,7 +52,7 @@ void CurveNet::copyFrom(const CurveNet& net)
     meshes = net.meshes;
     meshNormals = net.meshNormals;
     curveType = net.curveType;
-
+    planes = net.planes;
     conSet->copyFrom(net.conSet);
 }
 
@@ -108,6 +109,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     numPolyLines++;
     // type
     curveType.push_back(2);
+    planes.push_back(Plane());
 
     if (bsp.ctrlNodes.size() == 0) return;
 
@@ -185,6 +187,7 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
     bsplines.push_back(bsp);
     bsplines[numPolyLines - 1].calcCoefs();
     curveType.push_back(2);
+    planes.push_back(Plane());
     /*
     printf("mid: (%.6f,%.6f,%.6f)\n" , breakPos.x , breakPos.y , breakPos.z);
     printf("left: (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , bsplines[breakLine].ctrlNodes[0].x ,
@@ -305,6 +308,7 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
     numPolyLines++;
     // type
     curveType.push_back(2);
+    planes.push_back(Plane());
 
     if (bsp.ctrlNodes.size() == 0) return;
 
@@ -549,13 +553,13 @@ void CurveNet::addCurveType(int bspIndex)
     BSpline& bsp = bsplines[bspIndex];
     if (bsp.ctrlNodes.size() == 2)
     {
-        curveType[numPolyLines - 1] = 1;
+        curveType[bspIndex] = 1;
     }
-    else if (ConstraintDetector::coplanarTest(bsp , 0.02))
+    else if (ConstraintDetector::coplanarTest(bsp , planes[bspIndex]))
     {
-        curveType[numPolyLines - 1] = 3;
+        curveType[bspIndex] = 3;
     }
-    // printf("curve type %d: %d\n" , bspIndex , curveType[bspIndex]);
+    printf("curve type %d: %d\n" , bspIndex , curveType[bspIndex]);
 }
 
 void CurveNet::mapOrigin2polyLines(int bspIndex)
@@ -978,6 +982,7 @@ void CurveNet::loadCurveNet(const char* fileName)
     {
         fscanf(fp , "%d" , &tp);
         curveType.push_back(tp);
+        planes.push_back(Plane());
     }
     fclose(fp);
     printf("Curve loaded!\n");

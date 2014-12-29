@@ -20,13 +20,15 @@ class ConstraintDetector
 {
 public:
     static bool collinearTest(Path& path , BSpline& bsp);
-	static bool coplanarTest(const BSpline& bsp , const double& threshold);
+	static bool coplanarTest(BSpline& bsp , Plane& plane);
     static bool checkCollinear(const vec3d& x1 , const vec3d& y1 ,
         const vec3d& x2 , const vec3d& y2 , const double& threshold);
     static bool checkParallel(const vec3d& x1 , const vec3d& y1 ,
         const vec3d& x2 , const vec3d& y2 , const double& threshold);
-    static bool checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2 ,
-        const double& threshold);
+    static bool checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
+        BSpline& bsp2 , Plane& plane2 , const double& threshold);
+    //static bool checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2 ,
+    //    const double& threshold);
     //static bool checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
     //    const vec3d& x2 , const vec3d& y2 , const double& threshold);
     static bool checkOrtho(const vec3d& x0 , const vec3d& x1 ,

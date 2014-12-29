@@ -77,6 +77,9 @@ public:
 
 void convert2Spline(Path& path , BSpline& bsp);
 void resampleBsp(BSpline& bsp , Path& path);
+void resampleBspUniform(BSpline& bsp , int numPoints , Path& path);
 void convert2Line(Path& path , BSpline& bsp);
+
+double pathLength(Path& path);
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "curveNet.h"
 #include "TimeManager.h"
+#include "Plane.h"
 
 struct OptVariable
 {
@@ -79,6 +80,7 @@ private:
 	std::string generateSymmetryPoint(int, int, int);
 	std::string generateSelfSymmPoint(int, int);
 	void addCoplanar(int, int, int, int);
+    void addCoplanar(int varIndex , Plane& plane);
 
 	bool isLinked(int, int, int, int);
 

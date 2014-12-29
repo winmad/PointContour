@@ -1,8 +1,9 @@
 #include "constraints.h"
 #include "curveNet.h"
+#include <Eigen/Dense>
 
 const double ConstraintDetector::collinearThr = 0.05;
-const double ConstraintDetector::coplanarThr = 0.05;
+const double ConstraintDetector::coplanarThr = 0.03;
 const double ConstraintDetector::parallelThr = 0.05;
 const double ConstraintDetector::orthoThr = 0.1;
 const double ConstraintDetector::tangentThr = 0.05;
@@ -61,9 +62,22 @@ bool ConstraintDetector::collinearTest(Path& path , BSpline& bsp)
     return false;
 }
 
-bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& threshold)
+bool ConstraintDetector::coplanarTest(BSpline& bsp , Plane& plane)
 {
 	double res = 0.0 , totWeight = 0.0;
+    vec3d p(0.0) , n(0.0);
+    Path path;
+    resampleBspUniform(bsp , 40 , path);
+    //plane.weight = 0;
+    /*
+    p = vec3d(0.0);
+    for (int i = 0; i < path.size(); i++)
+    {
+        p += path[i];
+    }
+    p /= path.size();
+
+    plane = Plane(p , n , 0);
 	for (int i = 0; i < (int)bsp.ctrlNodes.size() - 1; i++)
 	{
 		for (int j = i + 1; j < (int)bsp.ctrlNodes.size() - 1; j++)
@@ -76,24 +90,37 @@ bool ConstraintDetector::coplanarTest(const BSpline& bsp , const double& thresho
 			}
             vec3d u1 = y1 - x1 , u2 = y2 - x2;
             u1.normalize(); u2.normalize();
-			vec3d n = u1.cross(u2);
-			n.normalize();
-			vec3d p = (x1 + y1 + x2 + y2) * 0.25;
+			vec3d norm = u1.cross(u2);
+			norm.normalize();
+			//vec3d p = (x1 + y1 + x2 + y2) * 0.25;
 
-			double score = 0.0 , weight;
-			weight = (x1 - y1).length() * (x2 - y2).length();
+			double score = 0.0 , weight = 1.0;
+			// weight = (x1 - y1).length() * (x2 - y2).length();
             // * weightBetweenSegs(x1 , y1 , x2 , y2);
+            Plane newPlane(p , norm , weight);
+            // plane.add(newPlane);
+            
 			vec3d d = (x2 + y2) * 0.5 - p;
-			score += std::abs(d.dot(n));
+			score += std::abs(d.dot(norm));
 			d = (x1 + y1) * 0.5 - p;
-			score += std::abs(d.dot(n));
+			score += std::abs(d.dot(norm));
 			res += score * 0.5 * weight;
 			totWeight += weight;
 		}
 	}
 	res /= totWeight;
-	printf("coplanar test score = %.8f\n" , res);
-	if (res < threshold) return true;
+    printf("coplanar test score = %.8f\n" , res);
+    */
+    
+    plane.fitFromPoints(path);
+    printf("coplane norm = (%.6f,%.6f,%.6f)\n" , plane.n.x , plane.n.y , plane.n.z);
+    
+    for (int i = 0; i < path.size(); i++)
+    {
+        res += std::abs(plane.dist(path[i]));
+    }
+	if (res / path.size() < 0.03) return true;
+    plane.weight = 0; plane.p = vec3d(0.0); plane.n = vec3d(0.0);
 	return false;
 }
 
@@ -145,6 +172,58 @@ bool ConstraintDetector::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
     return true;
 }
 
+bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
+    BSpline& bsp2 , Plane& plane2 , const double& threshold)
+{
+    int numPoints = 5;
+    double res = 0.0;
+    if (bsp1.ctrlNodes.size() > 2 && bsp2.ctrlNodes.size() > 2)
+    {
+        printf("type 3 & type 3\n");
+        if (plane1.dist(plane2) > threshold) return false;
+    }
+    else if (bsp1.ctrlNodes.size() > 2 && bsp2.ctrlNodes.size() == 2)
+    {
+        printf("type 3 & type 1\n");
+        Path path;
+        resampleBspUniform(bsp2 , numPoints , path);
+        for (int i = 0; i < path.size(); i++)
+        {
+            res += std::abs(plane1.dist(path[i]));
+        }
+        res /= (double)path.size();
+        if (res > threshold) return false;
+    }
+    else if (bsp1.ctrlNodes.size() == 2 && bsp2.ctrlNodes.size() > 2)
+    {
+        printf("type 1 & type 3\n");
+        Path path;
+        resampleBspUniform(bsp1 , numPoints , path);
+        for (int i = 0; i < path.size(); i++)
+        {
+            res += std::abs(plane2.dist(path[i]));
+        }
+        res /= (double)path.size();
+        if (res > threshold) return false;
+    }
+    else if (bsp1.ctrlNodes.size() == 2 && bsp2.ctrlNodes.size() == 2)
+    {
+        printf("type 1 & type 1\n");
+        vec3d x1 = bsp1.ctrlNodes[0] , y1 = bsp1.ctrlNodes[1];
+        vec3d x2 = bsp2.ctrlNodes[0] , y2 = bsp2.ctrlNodes[1];
+        if (checkParallel(x1 , y1 , x2 , y2 , parallelThr)) return true;
+        vec3d v1 = y1 - x1 , v2 = y2 - x2;
+        v1.normalize(); v2.normalize();
+        vec3d n = v1.cross(v2);
+        n.normalize();
+        vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
+        res = std::abs(d.dot(n));
+        if (res > threshold) return false;
+    }
+    return true;
+}
+
+/*
 bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2 ,
                              const double& threshold)
 {
@@ -179,6 +258,7 @@ bool ConstraintDetector::checkCoplanar(const BSpline& bsp1 , const BSpline& bsp2
     if (sum / denom < threshold) return true;
     return false;
 }
+*/
 /*
 bool ConstraintDetector::checkCoplanar(const vec3d& x1 , const vec3d& y1 ,
                              const vec3d& x2 , const vec3d& y2 , const double& threshold)
@@ -315,6 +395,7 @@ void ConstraintSet::addParallelConstraint(int bspIndex)
 void ConstraintSet::addCoplanarConstraint(int bspIndex)
 {
     BSpline& bsp = net->bsplines[bspIndex];
+    Plane& plane = net->planes[bspIndex];
     if (net->curveType[bspIndex] != 2)
     {
         coplanarSet.newCurve(bspIndex , 0);
@@ -324,8 +405,8 @@ void ConstraintSet::addCoplanarConstraint(int bspIndex)
             if (i == bspIndex) continue;
             if (net->curveType[i] != 1 && net->curveType[i] != 3) continue;
             if (net->bsplines[i].ctrlNodes.size() == 0) continue;
-            if (ConstraintDetector::checkCoplanar(bsp , net->bsplines[i] ,
-                    ConstraintDetector::coplanarThr))
+            if (ConstraintDetector::checkCoplanar(bsp , plane , net->bsplines[i] ,
+                    net->planes[i] , ConstraintDetector::coplanarThr))
             {
                 printf("coplanar: (%d) , (%d)\n" , bspIndex , i);
                 coplanarSet.connect(bspIndex , 0 , i , 0 , 1);

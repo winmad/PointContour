@@ -223,6 +223,86 @@ void resampleBsp(BSpline& bsp , Path& path)
     mxDestroyArray(t);
 }
 
+void resampleBspUniform(BSpline& bsp , int numPoints , Path& path)
+{
+    path.resize(numPoints);
+    double step = 1.0 / ((double)numPoints - 1.0);
+    if (bsp.ctrlNodes.size() == 2)
+    {
+        vec3d x1 = bsp.ctrlNodes[0];
+        vec3d x2 = bsp.ctrlNodes[1];
+        vec3d v = x2 - x1;
+        double len = v.length();
+        //v /= len;
+        // printf("path size = %lu, t size = %lu\n" , path.size() , bsp.t.size());
+        path[0] = x1;
+        path[(int)path.size() - 1] = x2;
+        for (int j = 1; j < (int)path.size() - 1; j++)
+        {
+            /*
+            vec3d u = path[j] - x1;
+            double proj = u.dot(v);
+            proj = std::min(std::max(proj , 1e-5) , len - 1e-5);
+            path[j] = x1 + v * proj;
+            */
+            path[j] = x1 + v * (step * j);
+        }
+        return;
+    }
+
+    // call matlab
+    double *coors = NULL;
+    coors = new double[path.size() * 3];
+    
+    mxArray *ctrlNodes = NULL;
+    ctrlNodes = mxCreateDoubleMatrix(3 , bsp.ctrlNodes.size() , mxREAL);
+    for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            coors[3 * i + j] = bsp.ctrlNodes[i][j];
+        }
+    }
+    memcpy((double*)mxGetPr(ctrlNodes) , coors , sizeof(double) * bsp.ctrlNodes.size() * 3);
+    engPutVariable(ep , "ctrlNodes" , ctrlNodes);
+    
+    mxArray *knots = NULL;
+    knots = mxCreateDoubleMatrix(1 , bsp.knots.size() , mxREAL);
+    for (int i = 0; i < bsp.knots.size(); i++)
+    {
+        coors[i] = bsp.knots[i];
+    }
+    memcpy((double*)mxGetPr(knots) , coors , sizeof(double) * bsp.knots.size());
+    engPutVariable(ep , "knots" , knots);
+
+    mxArray *t = NULL;
+    t = mxCreateDoubleMatrix(1 , numPoints , mxREAL);
+    for (int i = 0; i < numPoints; i++)
+    {
+        coors[i] = step * i;
+    }
+    memcpy((double*)mxGetPr(t) , coors , sizeof(double) * numPoints);
+    engPutVariable(ep , "t" , t);
+
+    engEvalString(ep , "pts = resampleBsp(ctrlNodes , knots , t);");
+    mxArray *pts = NULL;
+    pts = engGetVariable(ep , "pts");
+    memcpy(coors , (double*)mxGetPr(pts) , sizeof(double) * path.size() * 3);
+    for (int i = 0; i < path.size(); i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            path[i][j] = coors[3 * i + j];
+        }
+    }
+
+    delete[] coors;
+    mxDestroyArray(ctrlNodes);
+    mxDestroyArray(knots);
+    mxDestroyArray(pts);
+    mxDestroyArray(t);
+}
+
 void convert2Line(Path& path , BSpline& bsp)
 {
     bsp.clear();
@@ -240,4 +320,14 @@ void convert2Line(Path& path , BSpline& bsp)
     for (int i = 0; i < path.size(); i++) bsp.t[i] /= totLen;
 
     resampleBsp(bsp , path);
+}
+
+double pathLength(Path& path)
+{
+    double res = 0.0;
+    for (int i = 1; i < path.size(); i++)
+    {
+        res += (path[i] - path[i - 1]).length();
+    }
+    return res;
 }
