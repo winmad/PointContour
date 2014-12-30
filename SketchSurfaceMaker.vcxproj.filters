@@ -60,9 +60,6 @@
     <ClInclude Include="GUI_win\PointContourGUIMain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GUI_win\SketchGLCanvas.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\optimization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -79,6 +76,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\textfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\constraints.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SketchGLCanvas.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\RandGenerator.h">
@@ -119,9 +122,6 @@
     <ClCompile Include="GUI_win\PointContourGUIMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GUI_win\SketchGLCanvas.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\optimization.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -135,6 +135,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\textfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\constraints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SketchGLCanvas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RandGenerator.cpp">

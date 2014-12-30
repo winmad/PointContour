@@ -1125,11 +1125,11 @@ void DMWT::saveResults(
         pPos[i*3+1] = vertex(i,1);
         pPos[i*3+2] = vertex(i,2);
 
-		// if(useNormal){
+		if(useNormal){
 			pNorm[i*3] = normal(i,0);
 			pNorm[i*3+1] = normal(i,1);
 			pNorm[i*3+2] = normal(i,2);
-		// }
+		}
 
 		//writer << "v "<< vertex(i,0) << " " << vertex(i,1) << " " << vertex(i,2) <<"\n";
 	}

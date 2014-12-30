@@ -12,54 +12,72 @@ public:
 	Plane(double weight = 1) {this->weight = weight;}
 	Plane(const vec3d& p, const vec3d& n, double weight = 1)
 	{
+        this->p = p;
 		this->n = n;
+		this->n.normalize();
 		d = -p.dot(n);
 		this->weight = weight;
-		normalize();
 	}
 	void normalize()
 	{
-		d /= n.length();
+		p /= weight;
+		n /= weight;
 		n.normalize();
+		d = -p.dot(n);
 	}
-	double dist(Plane &p)
+	double dist(Plane &plane)
 	{
-		if (n.dot(p.n) < 0)
+		vec3d norm = plane.n;
+		if (n.dot(plane.n) < 0)
 		{
-			p.n = -p.n;
-			p.d = -p.d;
+			norm = -plane.n;
+			//plane.n = -plane.n;
+			//plane.d = -plane.d;
 		}
-		return sqrt(SQR((n - p.n).length()) + SQR(d - p.d));
+		//return sqrt(SQR((n - p.n).length()) + SQR(d - p.d));
+		norm = (n + norm) * 0.5;
+		double angleDist = 1 - std::abs(n.dot(plane.n));
+		double posDist = std::abs((p - plane.p).dot(norm));
+		if (angleDist > 0.1) return 1e10;
+		return posDist;
 	}
-	void add(Plane &p)
+	void add(Plane &plane)
 	{
-		if (n.dot(p.n) < 0)
+		vec3d norm = plane.n;
+		if (n.dot(plane.n) < 0)
 		{
-			p.n = -p.n;
-			p.d = -p.d;
+			norm = -plane.n;
 		}
-		n = n * weight + p.n * p.weight;
-		d = d * weight + p.d * p.weight;
-		weight += p.weight;
+		p = p * weight + plane.p * plane.weight;
+		n = n * weight + norm * plane.weight;
+		weight += plane.weight;
 		normalize();
 	}
-	void remove(Plane &p)
+	void remove(Plane &plane)
 	{
-		if (n.dot(p.n) < 0)
+		vec3d norm = plane.n;
+		if (n.dot(plane.n) < 0)
 		{
-			p.n = -p.n;
-			p.d = -p.d;
+			norm = -plane.n;
 		}
-		n = n * weight - p.n * p.weight;
-		d = d * weight - p.d * p.weight;
-		weight -= p.weight;
+		p = p * weight - plane.p * plane.weight;
+		n = n * weight - norm * plane.weight;
+		weight -= plane.weight;
 		normalize();
 	}
-	vec3d reflect(vec3d &p)
+	vec3d reflect(vec3d &pos)
 	{
-		return p + 2 * (-d - p.dot(n)) * n;
+		return pos + 2 * (-d - pos.dot(n)) * n;
 	}
+    vec3d intersect(vec3d& start , vec3d& dir)
+    {
+        double denom = n.dot(dir);
+        double numer = -n.dot(start) - d;
+        if (std::abs(denom) < 1e-6) printf("intersect denom = 0\n");
+        return start + dir * (numer / denom);
+    }
 
+    vec3d p;
 	vec3d n;
 	double d;
 	double weight;

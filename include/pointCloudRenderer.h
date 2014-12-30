@@ -8,6 +8,7 @@
 #include "optimization.h"
 #include "cycleDiscovery.h"
 #include "colormap.h"
+#include "plane.h"
 #include <vector>
 #include <string>
 
@@ -30,7 +31,7 @@ public:
 	bool isShowMetric;
 	bool isShowPath;
     bool isShowCtrlNodes;
-    bool isShowCollinear;
+	bool isShowCoplanes;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
@@ -58,8 +59,7 @@ public:
 					const double& r);
 	void drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , const double& r , 
 					const vec3d& n);
-	void drawQuad(const vec3d& origin , const vec3d& a , const vec3d& b , const double& r ,
-				  const vec3d& n);
+    void drawPlane(const Plane& plane , const double& r);
     void drawLine(const vec3d& st , const vec3d& ed);
 	void drawLines(const Path& v);
 	void drawCube(const vec3d& lb , const vec3d& rt);
@@ -89,6 +89,8 @@ public:
     void renderPickedCurve();
     void renderPathForComp();
     void renderCtrlNodes();
+    void renderDragPlane();
+	void renderCoplanes();
     void renderCollinearLines();
     void renderParallelLines();
     void renderCoplanarLines();
@@ -119,12 +121,15 @@ public:
         std::vector<vec3d>& cycleCenters);
     int cycleGroupSelectionByRay(int mouseX , int mouseY ,
         std::vector<std::vector<vec3d> >& cycleCenters);
+    int ctrlNodeSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
     bool pickCurve(int mouseX , int mouseY , int op);
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
+    // op: 0 choose, 1 update
+    bool pickCtrlNode(int mouseX , int mouseY , int lastX , int lastY , int op);
     
 	void surfaceBuilding(// input
 		std::vector<int> &numPoints, std::vector<double*> &inCurves, std::vector<double*> &inNorms,
@@ -134,7 +139,7 @@ public:
 		std::vector<std::vector<vec3d> > &mesh , std::vector<std::vector<vec3d> > &meshNormals
 		);
 
-    void optUpdate();
+    void optUpdate(bool isRefreshConst);
     void cycleDisc();
 	void cycleStatusUpdate();
 
@@ -172,10 +177,19 @@ public:
     int pickedCurve;
     int pickedCycle;
     int pickedSavedCycle;
+    int pickedBsp , pickedCtrlNode;
+    Plane dragPlane;
+    vec3d dragStartPoint , dragCurPoint;
     bool snapToCurve;
     bool snapToNode;
 
+    int dragPlaneNormalIndex;
+
+    // 0: shortest path, 1: straight line
+    int drawMode;
+
     std::vector<Cycle> unsavedCycles;
+    std::vector<bool> toBeSurfacing;
     std::vector<std::vector<Path> > unsavedCyclePoints;
     std::vector<vec3d> unsavedCycleCenters;
 	std::vector<double> unsavedCycleScores;
@@ -190,7 +204,7 @@ public:
     
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
-    
+
     // true: if not be picked
     std::vector<bool> unsavedStatus;
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshes; */

@@ -91,6 +91,7 @@ class PointContourGUIFrame: public wxFrame
         void OnRedoSelected(wxCommandEvent& event);
         void OnPatchesDrawSelect(wxCommandEvent& event);
         void OnHideDrawnPointsClick(wxCommandEvent& event);
+        void OnDrawModeSelect(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -109,10 +110,15 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_SLIDER3;
         static const long ID_CHECKBOX5;
         static const long ID_CHECKBOX6;
+        static const long ID_STATICTEXT18;
         static const long ID_CHOICE3;
         static const long ID_CHECKBOX7;
+        static const long ID_STATICTEXT19;
         static const long ID_CHOICE4;
+        static const long ID_STATICTEXT20;
         static const long ID_CHOICE5;
+        static const long ID_STATICTEXT21;
+        static const long ID_CHOICE6;
         static const long ID_STATICTEXT7;
         static const long ID_TEXTCTRL7;
         static const long ID_STATICTEXT8;
@@ -175,6 +181,7 @@ class PointContourGUIFrame: public wxFrame
         wxTextCtrl* FilterRadius;
         wxCheckBox* ShowMetric;
         wxTextCtrl* MaxTime;
+        wxStaticText* StaticText20;
         wxChoice* SmoothingChoice;
         wxCheckBox* ShowHessian;
         wxCheckBox* HidePointCloud;
@@ -193,9 +200,11 @@ class PointContourGUIFrame: public wxFrame
         wxMenu* MenuItem3;
         wxCheckBox* ShowPoint;
         wxMenuItem* SaveCurveNetwork;
+        wxStaticText* StaticText19;
         wxStaticText* StaticText8;
         wxStaticText* StaticText11;
         wxTextCtrl* ExtNum;
+        wxStaticText* StaticText18;
         wxChoice* PatchesVisual;
         wxTextCtrl* SmoothIter;
         wxButton* PrintInfoButton;
@@ -205,6 +214,7 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText3;
         wxTextCtrl* AlphaN;
         wxMenuItem* OpenCurveNetwork;
+        wxStaticText* StaticText21;
         wxMenuItem* Redo;
         wxTextCtrl* Alpha1;
         wxTextCtrl* PosX;
@@ -216,6 +226,7 @@ class PointContourGUIFrame: public wxFrame
         wxStatusBar* StatusBar1;
         wxScrolledWindow* ScrolledWindow2;
         wxCheckBox* ShowCtrlPoints;
+        wxChoice* DrawMode;
         wxStaticText* StaticText15;
         wxStaticText* StaticText12;
         wxChoice* MetricChoice;

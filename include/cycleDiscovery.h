@@ -373,7 +373,9 @@ public:
 
 void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 	std::vector<std::vector<unsigned> > &inCycleConstraint,
+    std::vector<bool> &inCycleToBeRemoved,
 	std::vector<std::vector<unsigned> > &outCycles,
+    std::vector<bool> &outCycleToBeSurfacing,
     std::vector<int> &inCurveNums,
     std::vector<double*> &inCurvePoints,
     std::vector<double*> &inCurveNormals,

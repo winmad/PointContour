@@ -81,6 +81,12 @@ bool isSameCycleGroup(CycleGroup& c1 , CycleGroup& c2)
     return true;
 }
 
+double weightBetweenSegs(const vec3d& x1 , const vec3d& y1 ,
+	const vec3d& x2 , const vec3d& y2)
+{
+	return std::exp(-SQR(((x1 + y1) * 0.5 - (x2 + y2) * 0.5).length() * 3));
+}
+
 void writeBMP(const char* filename , int w , int h ,
               unsigned char* rgb)
 {

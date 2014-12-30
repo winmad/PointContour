@@ -16,8 +16,17 @@ void BSpline::calcCoefs()
     memcpy((double*)mxGetPr(m_knots) , tmp , sizeof(double) * knots.size());
     engPutVariable(ep , "knots" , m_knots);
 
+    mxArray *m_t = NULL;
+    m_t = mxCreateDoubleMatrix(1 , t.size() , mxREAL);
+    for (int i = 0; i < t.size(); i++)
+    {
+        tmp[i] = t[i];
+    }
+    memcpy((double*)mxGetPr(m_t) , tmp , sizeof(double) * t.size());
+    engPutVariable(ep , "t" , m_t);
+
     mxArray *m_coefs = NULL;
-    engEvalString(ep , "coefs = calcCoefs(knots);");
+    engEvalString(ep , "coefs = calcCoefs(knots , t);");
     m_coefs = engGetVariable(ep , "coefs");
     memcpy(tmp , (double*)mxGetPr(m_coefs) , sizeof(double) * N * K);
     for (int i = 0; i < N; i++)
@@ -40,6 +49,26 @@ void BSpline::calcCoefs()
     delete[] tmp;
     mxDestroyArray(m_knots);
     mxDestroyArray(m_coefs);
+    mxDestroyArray(m_t);
+}
+
+int BSpline::getCtrlNodeIndex(const vec3d& pos)
+{
+    for (int i = 0; i < ctrlNodes.size(); i++)
+    {
+        if (isEqual(pos , ctrlNodes[i])) return i;
+    }
+    return -1;
+}
+
+void BSpline::updateBSpline(int index , const vec3d& newPos)
+{
+    // if (index < 0 || index >= ctrlNodes.size())
+    // {
+        // printf("update BSpline error: index out of range\n");
+        // return;
+    // }
+    ctrlNodes[index] = newPos;
 }
 
 void convert2Spline(Path& path , BSpline& bsp)
@@ -79,6 +108,16 @@ void convert2Spline(Path& path , BSpline& bsp)
     }
 
     bsp.clear();
+    double totLen = 0;
+    bsp.t.push_back(0);
+    for (int i = 1; i < N; i++)
+    {
+        double len = (path[i] - path[i - 1]).length();
+        totLen += len;
+        bsp.t.push_back(totLen);
+    }
+    for (int i = 0; i < N; i++) bsp.t[i] /= totLen;
+    
     memcpy(coors , (double*)mxGetPr(ctrlNodes) , sizeof(double) * numCtrlNodes * 3);
     for (int i = 0; i < numCtrlNodes; i++)
     {
@@ -98,7 +137,7 @@ void convert2Spline(Path& path , BSpline& bsp)
 
     bsp.N = path.size();
     bsp.K = numCtrlNodes;
-
+    
     delete[] coors;
     mxDestroyArray(pts);
     mxDestroyArray(res);
@@ -114,15 +153,19 @@ void resampleBsp(BSpline& bsp , Path& path)
         vec3d x2 = bsp.ctrlNodes[1];
         vec3d v = x2 - x1;
         double len = v.length();
-        v /= len;
+        //v /= len;
+        // printf("path size = %lu, t size = %lu\n" , path.size() , bsp.t.size());
         path[0] = x1;
         path[(int)path.size() - 1] = x2;
         for (int j = 1; j < (int)path.size() - 1; j++)
         {
+            /*
             vec3d u = path[j] - x1;
             double proj = u.dot(v);
             proj = std::min(std::max(proj , 1e-5) , len - 1e-5);
             path[j] = x1 + v * proj;
+            */
+            path[j] = x1 + v * bsp.t[j];
         }
         return;
     }
@@ -152,7 +195,16 @@ void resampleBsp(BSpline& bsp , Path& path)
     memcpy((double*)mxGetPr(knots) , coors , sizeof(double) * bsp.knots.size());
     engPutVariable(ep , "knots" , knots);
 
-    engEvalString(ep , "pts = resampleBsp(ctrlNodes , knots);");
+    mxArray *t = NULL;
+    t = mxCreateDoubleMatrix(1 , bsp.t.size() , mxREAL);
+    for (int i = 0; i < bsp.t.size(); i++)
+    {
+        coors[i] = bsp.t[i];
+    }
+    memcpy((double*)mxGetPr(t) , coors , sizeof(double) * bsp.t.size());
+    engPutVariable(ep , "t" , t);
+
+    engEvalString(ep , "pts = resampleBsp(ctrlNodes , knots , t);");
     mxArray *pts = NULL;
     pts = engGetVariable(ep , "pts");
     memcpy(coors , (double*)mxGetPr(pts) , sizeof(double) * path.size() * 3);
@@ -168,4 +220,24 @@ void resampleBsp(BSpline& bsp , Path& path)
     mxDestroyArray(ctrlNodes);
     mxDestroyArray(knots);
     mxDestroyArray(pts);
+    mxDestroyArray(t);
+}
+
+void convert2Line(Path& path , BSpline& bsp)
+{
+    bsp.clear();
+    bsp.ctrlNodes.push_back(path.front());
+    bsp.ctrlNodes.push_back(path.back());
+
+    double totLen = 0;
+    bsp.t.push_back(0);
+    for (int i = 1; i < path.size(); i++)
+    {
+        double len = (path[i] - path[i - 1]).length();
+        totLen += len;
+        bsp.t.push_back(totLen);
+    }
+    for (int i = 0; i < path.size(); i++) bsp.t[i] /= totLen;
+
+    resampleBsp(bsp , path);
 }
