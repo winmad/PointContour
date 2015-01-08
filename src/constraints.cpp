@@ -16,27 +16,32 @@ bool ConstraintDetector::collinearTest(Path& path , BSpline& bsp)
     if (path.size() <= 2)
     {
         bsp.clear();
-        for (int i = 0; i < path.size(); i++)
+        for (int i = 0; i < 2; i++)
         {
             bsp.ctrlNodes.push_back(path[i]);
+			bsp.t.push_back((double)i);
         }
         return true;
     }
     vec3d x1 = path[0] , x2 = path[path.size() - 1];
-    
     double totDist = 0.0;
     vec3d v = x2 - x1;
     double denom = std::abs(v.length());
     for (int i = 1; i < (int)path.size() - 1; i++)
     {
-        v = (path[i] - x1).cross(path[i] - x2);
+		vec3d u1 = path[i] - x1;
+		vec3d u2 = path[i] - x2;
+		double len1 = u1.length();
+		double len2 = u2.length();
+		u1 /= len1; u2 /= len2;
+        v = u1.cross(u2) * len1 * len2;
         double numer = std::abs(v.length());
         double d = numer / denom;
-        if (d > denom * 0.05) return false;
+        //if (d > denom * 0.05) return false;
         totDist += d;
     }
 
-    //printf("--- %.6f ---\n" , totDist / (double)path.size());
+    // printf("--- collinear test: %.6f op %.6f ---\n" , totDist / (double)path.size() , denom * 0.03);
     if (totDist / (double)path.size() < denom * 0.03)
     {
         bsp.clear();
@@ -68,6 +73,7 @@ bool ConstraintDetector::coplanarTest(BSpline& bsp , Plane& plane)
     vec3d p(0.0) , n(0.0);
     Path path;
     resampleBspUniform(bsp , 40 , path);
+    double pathLen = pathLength(path);
     //plane.weight = 0;
     /*
     p = vec3d(0.0);
@@ -113,13 +119,14 @@ bool ConstraintDetector::coplanarTest(BSpline& bsp , Plane& plane)
     */
     
     plane.fitFromPoints(path);
-    printf("coplane norm = (%.6f,%.6f,%.6f)\n" , plane.n.x , plane.n.y , plane.n.z);
     
     for (int i = 0; i < path.size(); i++)
     {
         res += std::abs(plane.dist(path[i]));
     }
-	if (res / path.size() < 0.03) return true;
+    printf("coplane norm = (%.6f,%.6f,%.6f)\n" , plane.n.x , plane.n.y , plane.n.z);
+    printf("coplane score = %.6f\n" , res / path.size());
+	if (res / path.size() < pathLen * 0.03) return true;
     plane.weight = 0; plane.p = vec3d(0.0); plane.n = vec3d(0.0);
 	return false;
 }
@@ -163,7 +170,11 @@ bool ConstraintDetector::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
     cosine = v1.dot(v2);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
-    vec3d denom = (y1 - x1).cross(y2 - x2);
+	v1 = y1 - x1; v2 = y2 - x2;
+	double len1 = v1.length() , len2 = v2.length();
+	v1 /= len1; v2 /= len2;
+
+    vec3d denom = v1.cross(v2) * len1 * len2;
     vec3d numer = (x2 - x1).dot(denom);
     double d = numer.length() / denom.length();
     // printf("dist = %.6f\n" , d);
@@ -179,12 +190,12 @@ bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
     double res = 0.0;
     if (bsp1.ctrlNodes.size() > 2 && bsp2.ctrlNodes.size() > 2)
     {
-        printf("type 3 & type 3\n");
+        // printf("type 3 & type 3\n");
         if (plane1.dist(plane2) > threshold) return false;
     }
     else if (bsp1.ctrlNodes.size() > 2 && bsp2.ctrlNodes.size() == 2)
     {
-        printf("type 3 & type 1\n");
+        // printf("type 3 & type 1\n");
         Path path;
         resampleBspUniform(bsp2 , numPoints , path);
         for (int i = 0; i < path.size(); i++)
@@ -196,7 +207,7 @@ bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
     }
     else if (bsp1.ctrlNodes.size() == 2 && bsp2.ctrlNodes.size() > 2)
     {
-        printf("type 1 & type 3\n");
+        // printf("type 1 & type 3\n");
         Path path;
         resampleBspUniform(bsp1 , numPoints , path);
         for (int i = 0; i < path.size(); i++)
@@ -208,7 +219,7 @@ bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
     }
     else if (bsp1.ctrlNodes.size() == 2 && bsp2.ctrlNodes.size() == 2)
     {
-        printf("type 1 & type 1\n");
+        // printf("type 1 & type 1\n");
         vec3d x1 = bsp1.ctrlNodes[0] , y1 = bsp1.ctrlNodes[1];
         vec3d x2 = bsp2.ctrlNodes[0] , y2 = bsp2.ctrlNodes[1];
         if (checkParallel(x1 , y1 , x2 , y2 , parallelThr)) return true;
@@ -429,9 +440,9 @@ void ConstraintSet::addJunctionConstraint(int bspIndex)
 		int i = candidates[candi];
         if (candi == 0)
         {
-            // printf("bsp.ctrlNodes[0] = (%.6f,%.6f,%.6f)\n" , bsp.ctrlNodes[0].x ,
-            // bsp.ctrlNodes[0].y , bsp.ctrlNodes[0].z);
             int ni = net->getNodeIndex(bsp.ctrlNodes[0]);
+			//printf("ni = %d, bsp.ctrlNodes[0] = (%.6f,%.6f,%.6f)\n" , ni , bsp.ctrlNodes[0].x ,
+			//	bsp.ctrlNodes[0].y , bsp.ctrlNodes[0].z);
             for (int j = 0; j < net->edges[ni].size(); j++)
             {
                 int ei = net->edges[ni][j].pli;

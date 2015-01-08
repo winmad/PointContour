@@ -211,6 +211,10 @@ void Optimization::init(CurveNet *_net)
         for (int j = i + 1; j < net->numPolyLines; j++)
         {
             if (net->curveType[j] == 2 || net->curveType[j] == -1) continue;
+            if (net->curveType[i] == 1 && net->curveType[j] == 1 &&
+                net->conSet->parallelSet.find(i , 0) == net->conSet->parallelSet.find(j , 0))
+                continue;
+
             if (net->conSet->coplanarSet.getMark(i , 0 , j , 0) == 1)
             {
                 Path path , path2;
@@ -885,7 +889,12 @@ void Optimization::run(CurveNet *net)
             printf("!!!!! (%lu , %lu) !!!!!\n" , net->bsplines[i].ctrlNodes.size() ,
             net->bsplines[i].knots.size());
         }
-        //printf("curve id = %d, type = %d\n" , i , net->curveType[i]);
+        printf("curve id = %d, type = %d\n" , i , net->curveType[i]);
+        for (int j = 0; j < net->bsplines[i].t.size(); j++) printf("%.6f " , net->bsplines[i].t[j]);
+        printf("\n");
+        for (int j = 0; j < net->bsplines[i].knots.size(); j++) printf("%.6f " , net->bsplines[i].knots[j]);
+        printf("\n");
+
         resampleBsp(net->bsplines[i] , net->polyLines[i]);
     }
 	fin.close();
@@ -1096,6 +1105,7 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 	vec3d x = (pos[0] - pos[1]) , y = (pos[2] - pos[3]);
 	x.normalize(); y.normalize();
     vec3d n = x.cross(y);
+    n.normalize();
 	// parallel
 	if (ConstraintDetector::checkParallel(pos[0] , pos[1] , pos[2] , pos[3] ,
 		ConstraintDetector::parallelThr))
@@ -1112,7 +1122,7 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
     */
 	//net->coplanes.push_back(plane);
 	bool exist = false;
-	double planeDistThr = 0.07;
+	double planeDistThr = 0.05;
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
         if (coplanes[i].dist(plane) < planeDistThr)
@@ -1159,7 +1169,7 @@ void Optimization::addCoplanar(int p, int q, int r, int s)
 void Optimization::addCoplanar(int varIndex , Plane& plane)
 {
     bool exist = false;
-    double planeDistThr = 0.07;
+    double planeDistThr = 0.05;
 	for (int i = 0; i < coplanes.size(); i++)
 	{
         if (coplanes[i].dist(plane) < planeDistThr)

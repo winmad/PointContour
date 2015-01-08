@@ -123,6 +123,12 @@ void PointCloudUtils::init()
 	timer.PopAndDisplayTime("\nBuild kdtree: %.6lf\n");
     
     curveNet->clear();
+
+    std::vector<vec3d> rays = pcRenderer->getRay(openGLView->getWidth() / 2 ,
+        openGLView->getHeight() / 2);
+    vec3d dir = rays.back() - rays.front();
+    dir.normalize();
+    pcRenderer->sketchPlane.init(rays.front() + dir * 0.5 , -dir , 1);
 }
 
 void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , const int& _gridResZ , 
@@ -910,6 +916,23 @@ void PointCloudUtils::calcPointTensor()
     }
 	timer.PopAndDisplayTime("\nInterpolate point tensors: %.6lf\n");
 
+    isFeaturePoint.resize(pcData.size());
+    for (int i = 0; i < pcData.size(); i++)
+    {
+        Tensor ts;
+		ts.hessian = lerpHessian(pcData[i].pos);
+		calcTensorDecomposition(ts);
+		calcTensorMetric(ts);
+        
+        isFeaturePoint[i] = false;
+        if ((std::abs(ts.eigenVal[0] / ts.eigenVal[1]) < 2 &&
+                std::abs(ts.eigenVal[1] / ts.eigenVal[2]) < 2) ||
+            (std::abs(ts.eigenVal[0] / ts.eigenVal[1]) < 2 &&
+                std::abs(ts.eigenVal[1] / ts.eigenVal[2]) > 10))
+        {
+            isFeaturePoint[i] = true;
+        }
+    }
     /*
 	for (int i = 0; i < nodes; i++)
 	{

@@ -270,6 +270,8 @@
 																		<content>
 																			<item>shortest path</item>
 																			<item>straight line</item>
+																			<item>circle/arc</item>
+																			<item>free sketch</item>
 																		</content>
 																		<selection>0</selection>
 																		<handler function="OnDrawModeSelect" entry="EVT_CHOICE" />

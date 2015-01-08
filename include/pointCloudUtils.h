@@ -11,6 +11,7 @@
 #include "curveNet.h"
 #include "colormap.h"
 #include "partialSymmetry.h"
+#include "sketchGLCanvas.h"
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -252,6 +253,7 @@ public:
 
     // visualization
 	PointCloudRenderer *pcRenderer;
+    SketchGLCanvas *openGLView;
     // curve network
     CurveNet *curveNet;
     // optimization
@@ -261,6 +263,7 @@ public:
 
 	std::vector<int> pcColor;
 	std::vector<Colormap::color> colors;
+    std::vector<bool> isFeaturePoint;
 
 public:
 	PointCloudUtils();

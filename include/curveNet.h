@@ -50,6 +50,8 @@ public:
 
     bool reflSymPath(const int& bspIndex , const Plane& plane ,
         Path& originPath , Path& path , BSpline& bsp);
+    bool transformPath(const int& bspIndex , Eigen::Matrix4f& transMat ,
+        Path& originPath , Path& path , BSpline& bsp);
 
     void calcDispCyclePoints(const Cycle& cycle ,
 		std::vector<Path>& cyclePts , vec3d& cycleCenter);

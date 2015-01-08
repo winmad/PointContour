@@ -1,6 +1,12 @@
 #include "curveNet.h"
 #include "splineUtils.h"
 #include "cycleDiscovery.h"
+#include "pclUtils.h"
+#ifdef __APPLE__
+    #include <sys/uio.h>
+#else
+    #include <io.h>
+#endif
 
 CurveNet::CurveNet()
 {
@@ -124,11 +130,12 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
 void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
     bool addConstraints)
 {
+	vec3d breakPos = polyLines[breakLine][breakPoint];
+	printf("0 <-> %d <-> %d\n" , breakPoint , polyLines[breakLine].size() - 1);
+
     PolyLineIndex index = polyLinesIndex[breakLine];
     int st_ni = index.ni[0] , st_ei = index.ei[0];
     int ed_ni = index.ni[1] , ed_ei = index.ei[1];
-    
-    vec3d breakPos = polyLines[breakLine][breakPoint];
 
     nodes.push_back(breakPos);
     nodesStat.push_back(true);
@@ -172,31 +179,38 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
     if (bsplines[breakLine].ctrlNodes.size() == 0) return;
 
     // recalculate both B-Splines
-    if (curveType[breakLine] != 1 ||
-        !ConstraintDetector::collinearTest(polyLines[breakLine] , bsplines[breakLine]))
+    if (!ConstraintDetector::collinearTest(polyLines[breakLine] , bsplines[breakLine]))
     {
         convert2Spline(polyLines[breakLine] , bsplines[breakLine]);
         bsplines[breakLine].calcCoefs();
+        curveType[breakLine] = 2;
     }
+    else
+    {
+        curveType[breakLine] = 1;
+    }
+
     BSpline bsp;
-    if (curveType[breakLine] != 1 ||
-        !ConstraintDetector::collinearTest(polyLines[numPolyLines - 1] , bsp))
+    if (!ConstraintDetector::collinearTest(polyLines[numPolyLines - 1] , bsp))
     {
         convert2Spline(polyLines[numPolyLines - 1] , bsp);
+		bsp.calcCoefs();
+		curveType.push_back(2);
     }
+	else
+	{
+		curveType.push_back(1);
+	}
     bsplines.push_back(bsp);
-    bsplines[numPolyLines - 1].calcCoefs();
-    curveType.push_back(2);
+    //bsplines[numPolyLines - 1].calcCoefs();
     planes.push_back(Plane());
     /*
     printf("mid: (%.6f,%.6f,%.6f)\n" , breakPos.x , breakPos.y , breakPos.z);
-    printf("left: (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , bsplines[breakLine].ctrlNodes[0].x ,
-        bsplines[breakLine].ctrlNodes[0].y , bsplines[breakLine].ctrlNodes[0].z ,
-        bsplines[breakLine].ctrlNodes[1].x , bsplines[breakLine].ctrlNodes[1].y ,
-        bsplines[breakLine].ctrlNodes[1].z);
+    printf("left: (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" , bsplines[breakLine].ctrlNodes.front().x , bsplines[breakLine].ctrlNodes.front().y , bsplines[breakLine].ctrlNodes.front().z ,
+        bsplines[breakLine].ctrlNodes.back().x , bsplines[breakLine].ctrlNodes.back().y , bsplines[breakLine].ctrlNodes.back().z);
     printf("right: (%.6f,%.6f,%.6f), (%.6f,%.6f,%.6f)\n" ,
-        bsplines[numPolyLines - 1].ctrlNodes[0].x , bsplines[numPolyLines - 1].ctrlNodes[0].y , bsplines[numPolyLines - 1].ctrlNodes[0].z ,
-        bsplines[numPolyLines - 1].ctrlNodes[1].x , bsplines[numPolyLines - 1].ctrlNodes[1].y , bsplines[numPolyLines - 1].ctrlNodes[1].z);
+        bsplines[numPolyLines - 1].ctrlNodes.front().x , bsplines[numPolyLines - 1].ctrlNodes.front().y , bsplines[numPolyLines - 1].ctrlNodes.front().z ,
+        bsplines[numPolyLines - 1].ctrlNodes.back().x , bsplines[numPolyLines - 1].ctrlNodes.back().y , bsplines[numPolyLines - 1].ctrlNodes.back().z);
     */
     printf("===== path split ======\n");
     int bspIndex[2] = {numPolyLines - 1 , breakLine};
@@ -341,6 +355,24 @@ bool CurveNet::reflSymPath(const int& bspIndex , const Plane& plane ,
     for (int i = 0; i < bsp.ctrlNodes.size(); i++)
     {
         bsp.ctrlNodes[i] = plane.reflect(bsplines[bspIndex].ctrlNodes[i]);
+    }
+    return true;
+}
+
+bool CurveNet::transformPath(const int& bspIndex , Eigen::Matrix4f& transMat ,
+    Path& originPath , Path& path , BSpline& bsp)
+{
+    originPath.clear();
+    path.clear();
+    for (int i = 0; i < originPolyLines[bspIndex].size(); i++)
+    {
+        originPath.push_back(transformPoint(transMat , originPolyLines[bspIndex][i]));
+        path.push_back(transformPoint(transMat , polyLines[bspIndex][i]));
+    }
+    bsp = bsplines[bspIndex];
+    for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+    {
+        bsp.ctrlNodes[i] = transformPoint(transMat , bsplines[bspIndex].ctrlNodes[i]);
     }
     return true;
 }
@@ -892,6 +924,13 @@ void CurveNet::saveCurveNet(const char* fileName)
 
 void CurveNet::loadCurveNet(const char* fileName)
 {
+    if (access(fileName , 0) == -1)
+    {
+        printf("==================\n");
+        printf("curve file doesn't exist!\n");
+        printf("==================\n");
+        return;
+    }
     FILE *fp = fopen(fileName , "r");
     vec3d p;
     int tp;

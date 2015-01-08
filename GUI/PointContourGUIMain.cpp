@@ -268,6 +268,8 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     DrawMode = new wxChoice(ScrolledWindow2, ID_CHOICE6, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE6"));
     DrawMode->SetSelection( DrawMode->Append(_("shortest path")) );
     DrawMode->Append(_("straight line"));
+    DrawMode->Append(_("circle/arc"));
+    DrawMode->Append(_("free sketch"));
     FlexGridSizer17->Add(DrawMode, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer2->Add(FlexGridSizer17, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(FlexGridSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -481,6 +483,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
 
     m_pcUtils = new PointCloudUtils();
     *(m_openGLView->getPointCloudUtils()) = m_pcUtils;
+    m_pcUtils->openGLView = m_openGLView;
 	m_config = new ConfigManager(m_pcUtils);
 	m_config->load("config.xml");
 	m_pcUtils->globalInit();
@@ -867,6 +870,9 @@ void PointContourGUIFrame::OnLeftDClick(wxMouseEvent& event)
 
 void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
 {
+    m_pcUtils->pcRenderer->isShiftPress = event.ShiftDown();
+    m_pcUtils->pcRenderer->isCtrlPress = event.ControlDown();
+    m_pcUtils->pcRenderer->isAltPress = event.AltDown();
     if (m_pcUtils->pcRenderer->isShiftPress)
     {
         if (event.GetWheelRotation() > 0)
@@ -886,8 +892,10 @@ void PointContourGUIFrame::OnMouseWheel(wxMouseEvent& event)
     }
     else if (m_pcUtils->pcRenderer->isCtrlPress)
     {
-        if (event.GetWheelRotation() != 0)
-            m_pcUtils->pcRenderer->drawMode = (m_pcUtils->pcRenderer->drawMode + 1) % 2;
+        if (event.GetWheelRotation() < 0)
+            m_pcUtils->pcRenderer->drawMode = (m_pcUtils->pcRenderer->drawMode + 1) % 4;
+        else if (event.GetWheelRotation() > 0)
+            m_pcUtils->pcRenderer->drawMode = (m_pcUtils->pcRenderer->drawMode + 3) % 4;
         DrawMode->SetSelection(m_pcUtils->pcRenderer->drawMode);
     }
     else if (!m_pcUtils->pcRenderer->isShiftPress && !m_pcUtils->pcRenderer->isCtrlPress &&

@@ -1,11 +1,13 @@
 #define _WCHAR_H_CPLUSPLUS_98_CONFORMANCE_
 #include <GL/glut.h>
+#include <algorithm>
 #include "curveNet.h"
 #include "pointCloudUtils.h"
 #include "pointCloudRenderer.h"
 #include "nvVector.h"
 #include "colormap.h"
 #include "CoarseSuf.h"
+#include "pclUtils.h"
 
 #ifdef _WIN32
 	#include "SmoothPatch.h"
@@ -43,6 +45,7 @@ void PointCloudRenderer::init()
 	isShowPointCloud = true;
     isShowCtrlNodes = false;
 	isShowCoplanes = false;
+    isShowFeaturePoints = false;
     constraintsVisual = 0;
     patchesVisual = 0;
     bspIndex = 0; curveIndex = 0;
@@ -50,7 +53,7 @@ void PointCloudRenderer::init()
     dragPlaneNormalIndex = 0;
     drawMode = 0;
 
-	pathVertex.clear();
+    pathVertex.clear();
     bsp.clear();
 	
 	axisU.clear();
@@ -80,8 +83,10 @@ void PointCloudRenderer::init()
     
 	if (pcUtils == NULL)
 		return;
-    
-	isNormalInfo = true;
+
+    initFreeSketchMode();
+
+    isNormalInfo = true;
 	for (int i = 0; i < pcUtils->pcData.size(); i++)
 	{
 		if (pcUtils->pcData[i].n.length() < 0.5)
@@ -110,7 +115,7 @@ void PointCloudRenderer::init()
 	}
 	
 	vec3d diag = pcUtils->box.rt - pcUtils->box.lb;
-	selectionOffset = std::min(diag.x , std::min(diag.y , diag.z)) / 50.0;
+	selectionOffset = std::min(diag.x , std::min(diag.y , diag.z)) / 40.0;
 
 	initSelectionBuffer();
 
@@ -124,17 +129,9 @@ void PointCloudRenderer::init()
     dispCurveNet->clear();
 }
 
-void PointCloudRenderer::drawPoint(const vec3d& pos)
+void PointCloudRenderer::drawPointCloud()
 {
-	glBegin(GL_POINTS);
-	glVertex3f(pos.x , pos.y , pos.z);
-	glEnd();
-}
-
-void PointCloudRenderer::drawPoints()
-{
-	// glBegin(GL_POINTS);
-	for (int i = 0; i < pcUtils->pcData.size(); i++)
+    for (int i = 0; i < pcUtils->pcData.size(); i++)
 	{
 		if (pcUtils->pcColor[i] >= 0 && pcUtils->pcColor[i] < dispCurveNet->meshes.size())
 		{
@@ -147,11 +144,12 @@ void PointCloudRenderer::drawPoints()
 			glColor3f(0.f , 0.f , 0.f);
 		}
 
-        if (i < pcUtils->partSym.isSampled.size() &&
-            pcUtils->partSym.isSampled[i])
+        //if ((i < pcUtils->partSym.isSampled.size() &&
+        //pcUtils->partSym.isSampled[i]))
+        if (i < isChosen.size() && isChosen[i])
         {
             glColor3f(1.f , 0.f , 0.f);
-            glPointSize(10.f);
+            glPointSize(8.f);
         }
         else
         {
@@ -163,7 +161,34 @@ void PointCloudRenderer::drawPoints()
 		glVertex3f(pcUtils->pcData[i].pos.x , pcUtils->pcData[i].pos.y , pcUtils->pcData[i].pos.z);
         glEnd();
 	}
-	// glEnd();
+}
+
+void PointCloudRenderer::drawPoint(const vec3d& pos)
+{
+	glBegin(GL_POINTS);
+	glVertex3f(pos.x , pos.y , pos.z);
+	glEnd();
+}
+
+void PointCloudRenderer::drawPoints(const std::vector<vec3d>& points)
+{
+	glBegin(GL_POINTS);
+	for (int i = 0; i < points.size(); i++)
+    {
+        glVertex3f(points[i].x , points[i].y , points[i].z);
+    }
+	glEnd();
+}
+
+void PointCloudRenderer::drawPoints(const std::vector<bool>& mask)
+{
+    glBegin(GL_POINTS);
+    for (int i = 0; i < pcUtils->pcData.size(); i++)
+	{
+        if (!(i < mask.size() && mask[i])) continue;
+		glVertex3f(pcUtils->pcData[i].pos.x , pcUtils->pcData[i].pos.y , pcUtils->pcData[i].pos.z);
+	}
+    glEnd();
 }
 
 void PointCloudRenderer::drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , 
@@ -205,7 +230,7 @@ void PointCloudRenderer::drawPlane(const Plane& plane , const double& r)
     b.normalize();
     a = b.cross(plane.n);
     a.normalize();
-    drawCircle(plane.p , a , b , r);
+    drawCircle(plane.p , b , a , r);
 }
 
 void PointCloudRenderer::drawLine(const vec3d& st , const vec3d& ed)
@@ -313,7 +338,7 @@ void PointCloudRenderer::drawPatch(const cycle::TriangleCycle& triangleCycle ,
         for(int j=0;j<triangle.size();j++){
             const vec3d &position = triangle[j];
             const vec3d &norm = verticesNormal[j];
-            glNormal3f(norm.x,norm.y,norm.z);
+            // glNormal3f(norm.x,norm.y,norm.z);
             glVertex3f(position.x,position.y,position.z);
         }
     }
@@ -334,7 +359,7 @@ void PointCloudRenderer::callListPoints()
 {
 	glNewList(LIST_POINTS , GL_COMPILE);
 
-	drawPoints();
+    drawPointCloud();
 
 	glEndList();
 }
@@ -362,10 +387,8 @@ void PointCloudRenderer::renderPoints()
 {
 	if (pcUtils == NULL)
 		return;
-	glColor3f(0.f , 0.f , 0.f);
-	glPointSize(2.f);
-	
-	drawPoints();
+
+    drawPointCloud();
 	// glCallList(LIST_POINTS);
     
 	//callListPoints();
@@ -1036,9 +1059,41 @@ void PointCloudRenderer::renderAutoGenPaths()
     glDisable(GL_LINE_STIPPLE);
 }
 
+void PointCloudRenderer::renderFreeSketches()
+{
+    glLineWidth(2.f);
+	glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+
+    glColor3f(1.f , 0.f , 0.f);
+    drawLines(sketchLine);
+    for (int i = 0; i < freeSketchLines.size(); i++)
+    {
+        drawLines(freeSketchLines[i]);
+    }
+
+    glDisable(GL_LINE_STIPPLE);
+}
+
+void PointCloudRenderer::renderFeaturePoints()
+{
+    if (!isShowFeaturePoints) return;
+    glPointSize(8.f);
+    glColor3f(0.f , 0.f , 1.f);
+    drawPoints(pcUtils->isFeaturePoint);
+}
+
+void PointCloudRenderer::renderDebug()
+{
+    glPointSize(6.f);
+    glColor3f(1.f , 0.f , 1.f);
+    drawPoints(debugPoints);
+}
+
 void PointCloudRenderer::render()
 {
-	renderPointCloud();
+    renderFreeSketches();
+    renderPointCloud();
 	renderHessian();
 	renderMetric();
 	renderSelectedPoints();
@@ -1067,6 +1122,8 @@ void PointCloudRenderer::render()
     // renderPickedSavedCycle();
     // renderSavedCycles();
 // #endif
+    renderFeaturePoints();
+    renderDebug();
 }
 
 void PointCloudRenderer::initSelectionBuffer()
@@ -1691,7 +1748,7 @@ void PointCloudRenderer::undo()
     clearTemp();
 }
 
-std::vector<vec3d> getRay(int mouseX,int mouseY)
+std::vector<vec3d> PointCloudRenderer::getRay(int mouseX , int mouseY)
 {
 	// ********* ray from eye to mouse location *********
 	GLint aViewport[4];
@@ -1708,11 +1765,11 @@ std::vector<vec3d> getRay(int mouseX,int mouseY)
 	gluUnProject ((GLdouble) mouseX, (GLdouble) mouseY, 0.0,
 		matMV, matProj, aViewport, &wx, &wy, &wz);
 	vec3d lineP0(wx,wy,wz);
-	//printf ("World coords at z=0.0 are (%f, %f, %f)\n", wx, wy, wz);
+	// printf ("World coords at z=0.0 are (%f, %f, %f)\n", wx, wy, wz);
 
 	gluUnProject ((GLdouble) mouseX, (GLdouble) mouseY, 1.0, matMV, matProj, aViewport, &wx, &wy, &wz);
 	vec3d lineP1(wx,wy,wz);
-	//printf ("World coords at z=1.0 are (%f, %f, %f)\n", wx, wy, wz);
+	// printf ("World coords at z=1.0 are (%f, %f, %f)\n", wx, wy, wz);
 
 	std::vector<vec3d> ray;
 	ray.push_back(lineP0);ray.push_back(lineP1);
@@ -1760,6 +1817,19 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
     if (nodeIndex == 0 || nodeIndex == dispCurveNet->polyLines[res].size() - 1)
         snapOffset *= 2;
     if (minDistance > snapOffset) res = -1;
+	if (res != -1)
+	{
+		if ((dispCurveNet->polyLines[res][nodeIndex] - 
+			dispCurveNet->polyLines[res].front()).length() < 1e-2)
+		{
+			nodeIndex = 0;
+		}
+		else if ((dispCurveNet->polyLines[res][nodeIndex] -
+			dispCurveNet->polyLines[res].back()).length() < 1e-2)
+		{
+			nodeIndex = (int)dispCurveNet->polyLines[res].size() - 1;
+		}
+	}
     return res;
 }
 
@@ -2333,11 +2403,173 @@ void PointCloudRenderer::autoGenBySymmetry()
     }
 }
 
+void PointCloudRenderer::autoGenByICP()
+{
+    autoGenOriginPaths.clear();
+    autoGenPaths.clear();
+    autoGenBsp.clear();
+
+    PointCloudT::Ptr cloud_source (new PointCloudT);
+    PointCloudT::Ptr cloud_target (new PointCloudT);
+    PointCloudT::Ptr cloud_tmp (new PointCloudT);
+    PointCloudT::Ptr cloud_result (new PointCloudT);
+    Eigen::Matrix4f transMat;
+
+    path2PointCloud(chosenPoints , cloud_target);
+
+    pcl::IterativeClosestPoint<PointT, PointT> icp;
+    icp.setMaximumIterations(200);
+    // icp.setMaxCorrespondenceDistance(0.05);
+    icp.setInputTarget(cloud_target);
+
+    double minScore = 1e20;
+    int matchedCurve = -1;
+    if (toExpandCurve == -1)
+    {
+        for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+        {
+            if (dispCurveNet->curveType[i] == -1) continue;
+            path2PointCloud(dispCurveNet->polyLines[i] , cloud_source);
+            icp.setInputSource(cloud_source);
+            icp.align(*cloud_tmp);
+            double score = icp.getFitnessScore();
+            // printf("curve %d icp score: %.6f\n" , i , score);
+
+            if (minScore > score)
+            {
+                minScore = score;
+                matchedCurve = i;
+                *cloud_result = *cloud_tmp;
+                transMat = icp.getFinalTransformation();
+            }
+        }
+    }
+    else
+    {
+        path2PointCloud(dispCurveNet->polyLines[toExpandCurve] , cloud_source);
+        icp.setInputSource(cloud_source);
+        icp.align(*cloud_result);
+        minScore = icp.getFitnessScore();
+        matchedCurve = toExpandCurve;
+        transMat = icp.getFinalTransformation();
+    }
+    printf("curve %d icp score: %.6f\n" , matchedCurve , minScore);
+    // post-icp
+    /*
+    int iters = 0;
+    double prevScore = 1e20;
+    double distThreshold = 0.02;
+    for (int it = 0; it < iters; it++)
+    {
+        debugPoints.clear();
+
+        icp.setInputSource(cloud_result);
+
+        // cloud_target->width = cloud_result->width;
+        // cloud_target->points.resize(cloud_target->width * cloud_target->height);
+        std::vector<vec3d> closePoints;
+        for (int i = 0; i < cloud_result->width; i++)
+        {
+            DistQuery q;
+            q.maxSqrDis = 1e30;
+            vec3d pos(cloud_result->points[i].x , cloud_result->points[i].y ,
+                cloud_result->points[i].z);
+            pcUtils->tree->searchKnn(0 , pos , q);
+            // if (q.maxSqrDis > distThreshold * distThreshold) continue;
+            pos = pcUtils->pcData[q.pointIndex].pos;
+            closePoints.push_back(pos);
+        }
+
+        cloud_target->width = closePoints.size();
+        cloud_target->height = 1;
+        cloud_target->points.resize(cloud_target->width * cloud_target->height);
+        for (int i = 0; i < closePoints.size(); i++)
+        {
+            vec3d pos = closePoints[i];
+            debugPoints.push_back(pos);
+
+            cloud_target->points[i].x = pos.x;
+            cloud_target->points[i].y = pos.y;
+            cloud_target->points[i].z = pos.z;
+        }
+        icp.setInputTarget(cloud_target);
+        icp.align(*cloud_tmp);
+        printf("post opt iter %d score: %.6f\n" , it , icp.getFitnessScore());
+        if (icp.getFitnessScore() < prevScore)
+            prevScore = icp.getFitnessScore();
+        else
+            break;
+        *cloud_result = *cloud_tmp;
+    }
+    */
+    Path originPath , path;
+    BSpline bsp;
+
+    if (minScore > 1e-2)
+    {
+    }
+    // pointCloud2Path(cloud_result , originPath);
+    /*
+    for (int i = 0; i < dispCurveNet->polyLines[matchedCurve].size(); i++)
+    {
+        Eigen::Vector4f p;
+        for (int j = 0; j < 3; j++) p(j) = dispCurveNet->polyLines[matchedCurve][i][j];
+        p(3) = 1.f;
+        p = transMat * p;
+        originPath.push_back(vec3d(p(0) , p(1) , p(2)));
+    }
+    path = originPath;
+    if (!ConstraintDetector::collinearTest(path , bsp))
+    {
+        convert2Spline(path , bsp);
+    }
+    bsp.calcCoefs();
+    */
+    dispCurveNet->transformPath(matchedCurve , transMat , originPath , path , bsp);
+    autoGenOriginPaths.push_back(originPath);
+    autoGenPaths.push_back(path);
+    autoGenBsp.push_back(bsp);
+}
+
 void PointCloudRenderer::clearAutoGen()
 {
     autoGenPaths.clear();
     autoGenOriginPaths.clear();
     autoGenBsp.clear();
+}
+
+void PointCloudRenderer::initFreeSketchMode()
+{
+    chosenPoints.clear();
+    isChosen.resize(pcUtils->pcData.size());
+    for (int i = 0; i < pcUtils->pcData.size(); i++) isChosen[i] = false;
+}
+
+void PointCloudRenderer::freeSketchOnPointCloud(std::vector<std::pair<unsigned , unsigned> > & seq)
+{
+    // printf("----- seq size = %lu -----\n" , seq.size());
+    for (int i = 0; i < seq.size(); i++)
+    {
+        int x = seq[i].first , y = seq[i].second;
+        // printf("(%d , %d)\n" , x , y);
+        int pointIndex = selectionByColorMap(x , y);
+        if (pointIndex != -1 && !isChosen[pointIndex])
+        {
+            isChosen[pointIndex] = true;
+            chosenPoints.push_back(pcUtils->pcData[pointIndex].pos);
+
+            std::vector<vec3d> ray = getRay(x , y);
+            vec3d dir = ray.back() - ray.front();
+            dir.normalize();
+            sketchLine.push_back(sketchPlane.intersect(ray.front() , dir));
+            double t = (-sketchPlane.n.dot(ray.front()) - sketchPlane.d) /
+                (sketchPlane.n.dot(dir));
+            // printf("st = (%.6f,%.6f,%.6f), dir = (%.6f,%.6f,%.6f),\nt=%.6f, p = (%.6f,%.6f,%.6f)\n" ,
+                // ray.front().x , ray.front().y , ray.front().z ,
+                // dir.x , dir.y , dir.z , t ,
+                // sketchLine.back().x , sketchLine.back().y , sketchLine.back().z);
+        }
+    }
 }
 
 void PointCloudRenderer::cycleColorGenByRandom(std::vector<Cycle>& cycles , 
@@ -2454,3 +2686,4 @@ void PointCloudRenderer::decBspCurveIndex()
         curveIndex = (int)dispCurveNet->bsplines[bspIndex].ctrlNodes.size() - 2;
     }
 }
+

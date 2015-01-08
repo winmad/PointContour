@@ -120,10 +120,12 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
         inCurveNormals.erase(inCurveNormals.begin() + j);
     }
 
+    // fix up: all should be surfacing
     outCycleToBeSurfacing.clear();
     for (int i = 0; i < outCycles.size(); i++)
     {
         bool flag = true;
+        /*
         for (int j = 0; j < inCycleConstraint.size(); j++)
         {
             if (isSameCycle(inCycleConstraint[j] , outCycles[i]) &&
@@ -133,7 +135,8 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
                 break;
             }
         }
-        outCycleToBeSurfacing.push_back(flag);
+        */
+        outCycleToBeSurfacing.push_back(true);
     }
 #ifdef _WIN32
 	outMeshes.swap(m_cycleUtil->m_triangleSurface);

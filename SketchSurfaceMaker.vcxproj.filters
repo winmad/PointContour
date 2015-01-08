@@ -90,6 +90,9 @@
     <ClInclude Include="include\RandGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\partialSymmetry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\curveNet.cpp">
@@ -150,6 +153,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RandGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\partialSymmetry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\plane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
