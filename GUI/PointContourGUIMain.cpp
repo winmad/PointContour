@@ -131,6 +131,8 @@ const long PointContourGUIFrame::ID_MENUITEM2 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM4 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM1 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM3 = wxNewId();
+const long PointContourGUIFrame::ID_MENUITEM8 = wxNewId();
+const long PointContourGUIFrame::ID_MENUITEM7 = wxNewId();
 const long PointContourGUIFrame::idMenuQuit = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM5 = wxNewId();
 const long PointContourGUIFrame::ID_MENUITEM6 = wxNewId();
@@ -408,8 +410,12 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     OpenCurveNetwork = new wxMenuItem(MenuItem3, ID_MENUITEM4, _("Curve Network\tCtrl-O"), wxEmptyString, wxITEM_NORMAL);
     MenuItem3->Append(OpenCurveNetwork);
     Menu1->Append(ID_MENUITEM1, _("Open"), MenuItem3, wxEmptyString);
-    SaveCurveNetwork = new wxMenuItem(Menu1, ID_MENUITEM3, _("Save curve network\tCtrl-S"), wxEmptyString, wxITEM_NORMAL);
-    Menu1->Append(SaveCurveNetwork);
+    MenuItem4 = new wxMenu();
+    SaveCurveNetwork = new wxMenuItem(MenuItem4, ID_MENUITEM3, _("Save curve network\tCtrl-S"), wxEmptyString, wxITEM_NORMAL);
+    MenuItem4->Append(SaveCurveNetwork);
+    SaveMesh = new wxMenuItem(MenuItem4, ID_MENUITEM8, _("Save mesh"), wxEmptyString, wxITEM_NORMAL);
+    MenuItem4->Append(SaveMesh);
+    Menu1->Append(ID_MENUITEM7, _("Save"), MenuItem4, wxEmptyString);
     MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);
     Menu1->Append(MenuItem1);
     MenuBar1->Append(Menu1, _("&File"));
@@ -472,6 +478,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_MENUITEM2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenPointCloudSelected);
     Connect(ID_MENUITEM4,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnOpenCurveNetworkSelected);
     Connect(ID_MENUITEM3,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSaveCurveNetworkSelected);
+    Connect(ID_MENUITEM8,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnSaveMeshSelected);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnQuit);
     Connect(ID_MENUITEM5,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnUndoSelected);
     Connect(ID_MENUITEM6,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&PointContourGUIFrame::OnRedoSelected);
@@ -1112,4 +1119,10 @@ void PointContourGUIFrame::OnHideDrawnPointsClick(wxCommandEvent& event)
 void PointContourGUIFrame::OnDrawModeSelect(wxCommandEvent& event)
 {
     m_pcUtils->pcRenderer->drawMode = event.GetSelection();
+}
+
+void PointContourGUIFrame::OnSaveMeshSelected(wxCommandEvent& event)
+{
+    std::string fileName = m_pcUtils->dataMeshPath + m_pcUtils->name + ".obj";
+    m_pcUtils->curveNet->saveMesh2Obj(fileName.c_str());
 }

@@ -2,6 +2,7 @@
 #include "splineUtils.h"
 #include "cycleDiscovery.h"
 #include "pclUtils.h"
+#include <map>
 #ifdef __APPLE__
     #include <sys/uio.h>
 #else
@@ -1025,4 +1026,66 @@ void CurveNet::loadCurveNet(const char* fileName)
     }
     fclose(fp);
     printf("Curve loaded!\n");
+}
+
+void CurveNet::saveMesh2Obj(const char* fileName)
+{
+    FILE *fp = fopen(fileName , "w");
+    int numVertices = 0;
+    std::vector<vec3d> vertices;
+    std::vector<std::vector<int> > faces;
+    std::map<double , int> double2Index;
+    for (int i = 0; i < meshes.size(); i++)
+    {
+        for (int j = 0; j < meshes[i].size(); j++)
+        {
+            std::vector<int> face;
+            for (int k = 0; k < meshes[i][j].size(); k++)
+            {
+                double hashVal = point2double(meshes[i][j][k]);
+                int vertIndex;
+                if (double2Index.find(hashVal) == double2Index.end())
+                {
+                    double2Index[hashVal] = numVertices;
+                    vertIndex = numVertices;
+                    vertices.push_back(meshes[i][j][k]);
+                    numVertices++;
+                }
+                else
+                {
+                    vertIndex = double2Index[hashVal];
+                    /*
+                    if (!isEqual(vertices[vertIndex] , meshes[i][j][k]))
+                    {
+                        writeLog("===================\n");
+                        writeLog("(%.6f,%.6f,%.6f), %.6f\n" , vertices[vertIndex].x ,
+                            vertices[vertIndex].y , vertices[vertIndex].z ,
+                            point2double(vertices[vertIndex]));
+                        writeLog("(%.6f,%.6f,%.6f), %.6f\n" , meshes[i][j][k].x ,
+                            meshes[i][j][k].y , meshes[i][j][k].z ,
+                            point2double(meshes[i][j][k]));
+                    }
+                    */
+                }
+                face.push_back(vertIndex + 1);
+            }
+            faces.push_back(face);
+        }
+    }
+
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        fprintf(fp , "v %.6f %.6f %.6f\n" , vertices[i].x , vertices[i].y , vertices[i].z);
+    }
+    for (int i = 0; i < faces.size(); i++)
+    {
+        fprintf(fp , "f");
+        for (int j = 0; j < faces[i].size(); j++)
+        {
+            fprintf(fp , " %d" , faces[i][j]);
+        }
+        fprintf(fp , "\n");
+    }
+    fclose(fp);
+    printf("Mesh saved!\n");
 }

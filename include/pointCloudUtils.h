@@ -247,6 +247,7 @@ public:
     std::string name;
     std::string matlabFilesPath;
     std::string dataCurvePath;
+    std::string dataMeshPath;
     std::string dataVotesPath;
 
     wxStatusBar *statusBar;

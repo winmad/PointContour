@@ -884,6 +884,7 @@ void Optimization::run(CurveNet *net)
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == -1) continue;
+        /*
         if (net->bsplines[i].ctrlNodes.size() > 2 && net->bsplines[i].knots.size() == 0)
         {
             printf("!!!!! (%lu , %lu) !!!!!\n" , net->bsplines[i].ctrlNodes.size() ,
@@ -894,7 +895,7 @@ void Optimization::run(CurveNet *net)
         printf("\n");
         for (int j = 0; j < net->bsplines[i].knots.size(); j++) printf("%.6f " , net->bsplines[i].knots[j]);
         printf("\n");
-
+        */
         resampleBsp(net->bsplines[i] , net->polyLines[i]);
     }
 	fin.close();
