@@ -20,3 +20,8 @@ void PartialSymmetry::init(PointCloudUtils *_pcUtils)
     // pos: position in signature space, n: position in original space
     PointKDTree<Data> signSpaceTree(signData);
 }
+
+void PartialSymmetry::findSymmPlanes()
+{
+
+}
