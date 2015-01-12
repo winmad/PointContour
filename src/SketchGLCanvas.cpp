@@ -175,6 +175,7 @@ void SketchGLCanvas::Initialize()
     m_timePrev = m_timeCurr-100;
     m_rotationCount=0;
     m_frames=0;
+
 }
 
 void SketchGLCanvas::rotateModel(){
@@ -335,7 +336,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
     //printf("mouse pos = (%d,%d)\n" , x , y);
 
 	SetFocus();
-	if ((event.Dragging()||event.GetWheelRotation()!=0) && !event.ControlDown() && !event.ShiftDown()&& !event.AltDown())
+	if (event.Dragging() && !event.ControlDown() && !event.ShiftDown()&& !event.AltDown())
     {
 		if (event.LeftIsDown())
 		{
@@ -390,6 +391,12 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		}
 		Render();
 		isChangeView=true;
+        // printf("eye: (%.6f,%.6f,%.6f)\n" , m_Eye[0] , m_Eye[1] , m_Eye[2]);
+        std::vector<vec3d> rays = computeRay(m_width / 2 , m_height / 2);
+        vec3d dir = rays.back() - rays.front();
+        dir.normalize();
+        m_pcUtils->pcRenderer->sketchPlane.init(rays.front() + dir * 0.5 , -dir , 1);
+        m_pcUtils->pcRenderer->freeSketchLines.clear();
 	}
 
 	if (event.ShiftDown()) // cycle operation
@@ -436,9 +443,12 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 	}
     else if (event.ControlDown()) // curve operation
     {
+        if (event.AltDown())
+            m_pcUtils->pcRenderer->isAltPress = true;
         m_pcUtils->pcRenderer->pickedCurve = -1;
         m_pcUtils->pcRenderer->pickedCycle = -1;
         m_pcUtils->pcRenderer->pickedSavedCycle = -1;
+        m_pcUtils->pcRenderer->pickedAutoCurve = -1;
         lastKeyBoard=1;
 		m_pcUtils->pcRenderer->isCtrlPress = true;
 
@@ -446,25 +456,132 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 			renderSelectionBuffer();
 			isChangeView=false;
 		}
-
-		m_pcUtils->pcRenderer->pickPoint(x , y , 0);
-
-		if (event.LeftIsDown())
-		{
-            // extend path by adding a new point
-            m_pcUtils->pcRenderer->backup();
-			m_pcUtils->pcRenderer->pickPoint(x , y , 1);
-		}
-		if (event.RightIsDown())
-		{
-            // cancel path extension
-			m_pcUtils->pcRenderer->pathVertex.clear();
+        if (event.AltDown())
+        {
+            m_pcUtils->pcRenderer->pathVertex.clear();
             m_pcUtils->pcRenderer->bsp.clear();
 			setNull(m_pcUtils->pcRenderer->lastDispPoint);
+            setNull(m_pcUtils->pcRenderer->pickedDispPoint);
+            m_pcUtils->pcRenderer->pickAutoCurve(x , y , 0);
+        }
+        else if (m_pcUtils->pcRenderer->drawMode == 0 ||
+            m_pcUtils->pcRenderer->drawMode == 1)
+        {
+            m_pcUtils->pcRenderer->pickPoint(x , y , 0);
+        }
+        else if (m_pcUtils->pcRenderer->drawMode == 3)
+        {
+            m_pcUtils->pcRenderer->pathVertex.clear();
+            m_pcUtils->pcRenderer->bsp.clear();
+            setNull(m_pcUtils->pcRenderer->lastDispPoint);
+            setNull(m_pcUtils->pcRenderer->pickedDispPoint);
+        }
+        
+		if (event.LeftIsDown())
+		{
+            if (event.AltDown())
+            {
+                m_pcUtils->pcRenderer->backup();
+                m_pcUtils->pcRenderer->pickAutoCurve(x , y , 1);
+            }
+            else if (m_pcUtils->pcRenderer->drawMode == 0 ||
+                m_pcUtils->pcRenderer->drawMode == 1)
+            {
+                m_pcUtils->pcRenderer->backup();
+                m_pcUtils->pcRenderer->pickPoint(x , y , 1);
+            }
+            else if (m_pcUtils->pcRenderer->drawMode == 3 && !(m_selectx==x&&m_selecty==y))
+            {
+                if(startDraw){
+                    double slope = double(y-m_selecty);
+                    if(x==m_selectx) slope=1e20;
+                    else slope/=double(x-m_selectx);
+                    double absSlope= slope>=0?slope:-slope;
+                    int interX,interY;
+                    interX=m_selectx; interY=m_selecty;
+                    do{
+                        if(absSlope<=1){
+                            if(x>=m_selectx)
+							interX++;
+                            else
+							interX--;
+                            interY = y - int(slope * double(x-interX)+.5);
+                        }
+                        else{
+                            if(y>=m_selecty)
+							interY++;
+                            else
+							interY--;
+                            interX = x - int(double(y-interY)/slope+.5);
+                        }
+                        sequence.push_back(std::pair<unsigned,unsigned>(interX,interY));
+                    } while (!(interX==x&&interY==y));
+                }
+                else{
+                    // printf("start draw\n");
+                    startDraw=true;
+                    sequence.clear();
+                    sequence.push_back(std::pair<unsigned,unsigned>(x,y));
+                }
+                m_pcUtils->pcRenderer->freeSketchOnPointCloud(sequence);
+
+                /*
+                printf("--------------\n");
+                for (int i = 0; i < m_pcUtils->pcRenderer->sketchLine.size(); i++)
+                {
+                    vec3d& p = m_pcUtils->pcRenderer->sketchLine[i];
+                    printf("%.6f %.6f %.6f\n" , p.x , p.y , p.z);
+                }
+                */
+                m_selectx = x;
+                m_selecty = y;
+            }
+		}
+        else if (event.LeftUp())
+        {
+            // printf("left is up\n");
+            startDraw=false;
+            sequence.clear();
+            /*
+            printf("===========\n");
+            for (int i = 0; i < m_pcUtils->pcRenderer->sketchLine.size(); i++)
+            {
+                vec3d& p = m_pcUtils->pcRenderer->sketchLine[i];
+                printf("%.6f %.6f %.6f\n" , p.x , p.y , p.z);
+            }
+            */
+            m_pcUtils->pcRenderer->freeSketchLines.push_back(m_pcUtils->pcRenderer->sketchLine);
+            m_pcUtils->pcRenderer->sketchLine.clear();
+        }
+        if (event.MiddleIsDown())
+        {
+            if (m_pcUtils->pcRenderer->drawMode == 3)
+            {
+                m_pcUtils->pcRenderer->autoGenByICP();
+                m_pcUtils->pcRenderer->initFreeSketchMode();
+                m_pcUtils->pcRenderer->sketchLine.clear();
+                m_pcUtils->pcRenderer->freeSketchLines.clear();
+            }
+        }
+		if (event.RightIsDown())
+		{
+            if (m_pcUtils->pcRenderer->drawMode == 0 ||
+                m_pcUtils->pcRenderer->drawMode == 1)
+            {
+                // cancel path extension
+                m_pcUtils->pcRenderer->pathVertex.clear();
+                m_pcUtils->pcRenderer->bsp.clear();
+                setNull(m_pcUtils->pcRenderer->lastDispPoint);
+            }
+            else if (m_pcUtils->pcRenderer->drawMode == 3)
+            {
+                m_pcUtils->pcRenderer->initFreeSketchMode();
+                m_pcUtils->pcRenderer->sketchLine.clear();
+                m_pcUtils->pcRenderer->freeSketchLines.clear();
+            }
 		}
 
-		Render();
-
+        Render();
 	}
     else if (event.AltDown()) // edit operation
     {
@@ -541,6 +658,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		Render();
     }
 
+    // Release shift/ctrl/alt button
 	if (!event.ShiftDown())
 	{
 		m_pcUtils->pcRenderer->isShiftPress = false;
@@ -554,6 +672,11 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 	if (!event.ControlDown())
 	{
 		m_pcUtils->pcRenderer->isCtrlPress = false;
+        if (m_pcUtils->pcRenderer->drawMode == 3)
+        {
+            startDraw = false;
+            sequence.clear();
+        }
 		if (!event.ShiftDown())
 		{
 			for (int i = 0; i < m_pcUtils->pcRenderer->inGroup.size(); i++)
@@ -567,8 +690,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         m_pcUtils->pcRenderer->pickedBsp = -1;
         m_pcUtils->pcRenderer->pickedCtrlNode = -1;
     }
-
-	if(!event.ControlDown()) {startDraw=false;}
 
 	m_lastx = x;
 	m_lasty = y;
@@ -669,6 +790,16 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 			//m_pcUtils->curveNet->conSet->collinearSet.printLog();
             //m_pcUtils->curveNet->conSet->orthoSet.printLog();
 			//m_pcUtils->curveNet->debugLog();
+            writeLog("CurveNet polylines\n");
+            m_pcUtils->curveNet->outputPolyLines();
+            writeLog("\nFree sketch points\n");
+            writeLog("%lu\n" , m_pcUtils->pcRenderer->chosenPoints.size());
+            for (int i = 0; i < m_pcUtils->pcRenderer->chosenPoints.size(); i++)
+            {
+                vec3d& p = m_pcUtils->pcRenderer->chosenPoints[i];
+                writeLog("%.6f %.6f %.6f\n" , p.x , p.y , p.z);
+            }
+            /*
 			for (int i = 0; i < m_pcUtils->curveNet->coplanes.size(); i++)
 			{
 				Plane& plane = m_pcUtils->curveNet->coplanes[i];
@@ -676,6 +807,7 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 					plane.p.x , plane.p.y , plane.p.z ,
 					plane.n.x , plane.n.y , plane.n.z);
 			}
+            */
 		}
         else if (uc == 'O')
         {
@@ -694,6 +826,24 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 		{
 			m_pcUtils->pcRenderer->isShowCoplanes = !m_pcUtils->pcRenderer->isShowCoplanes;
 		}
+        else if (uc == 'R')
+        {
+            m_pcUtils->pcRenderer->autoGenBySymmetry();
+        }
+        else if (uc == 'D')
+        {
+            m_pcUtils->pcRenderer->clearAutoGen();
+        }
+        else if (uc == ' ')
+        {
+            m_pcUtils->pcRenderer->cycleDisc();
+            m_pcUtils->pcRenderer->surfacingUnsavedCycles();
+            m_pcUtils->pcRenderer->evalUnsavedCycles();
+        }
+        else if (uc == 'F')
+        {
+            m_pcUtils->pcRenderer->isShowFeaturePoints = !m_pcUtils->pcRenderer->isShowFeaturePoints;
+        }
 	}
 	else
 	{
@@ -701,15 +851,6 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         {
             case WXK_ESCAPE:
                 exit(0);
-            case WXK_SPACE:
-                // m_pcUtils->pcRenderer->optUpdate();
-
-                // m_pcUtils->pcRenderer->dispCurveNet->debugLog();
-
-                m_pcUtils->pcRenderer->cycleDisc();
-                m_pcUtils->pcRenderer->surfacingUnsavedCycles();
-                m_pcUtils->pcRenderer->evalUnsavedCycles();
-                break;
             case WXK_UP:
                 m_pcUtils->pcRenderer->incBspCurveIndex();
                 break;

@@ -52,6 +52,14 @@ void ConfigManager::load(const string &configFilePath)
         printf("data_curve_path: %s\n" , pathStr.c_str());
         pcUtils->dataCurvePath = pathStr;
     }
+
+    if (nodeConfig->first_node("data_votes"))
+    {
+        pathStr = getPath(nodeConfig->first_node("data_votes"));
+        printf("data_votes_path: %s\n" , pathStr.c_str());
+        pcUtils->dataVotesPath = pathStr;
+    }
+
     /*
 	if (nodeConfig->first_node("useGPU"))
 	{

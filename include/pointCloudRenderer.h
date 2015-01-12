@@ -32,6 +32,7 @@ public:
 	bool isShowPath;
     bool isShowCtrlNodes;
 	bool isShowCoplanes;
+    bool isShowFeaturePoints;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
@@ -53,8 +54,10 @@ public:
 
 	void init();
 
-	void drawPoint(const vec3d& pos);
-	void drawPoints();
+    void drawPointCloud();
+    void drawPoint(const vec3d& pos);
+	void drawPoints(const std::vector<vec3d>& points);
+    void drawPoints(const std::vector<bool>& mask);
 	void drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , 
 					const double& r);
 	void drawCircle(const vec3d& origin , const vec3d& a , const vec3d& b , const double& r , 
@@ -104,6 +107,11 @@ public:
     void renderPickedMesh();
     void renderPickedSavedMesh();
     void renderSavedMeshes();
+    void renderAutoGenPaths();
+    void renderFreeSketches();
+
+    void renderFeaturePoints();
+    void renderDebug();
 
     void render();
 
@@ -116,7 +124,8 @@ public:
 	void initSelectionBuffer();
 	void updateSelectionBuffer();
 	int selectionByColorMap(int mouseX , int mouseY);
-    int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
+    int curveSelectionByRay(int mouseX , int mouseY , int& nodeIndex ,
+        std::vector<Path>& polyLines);
     int cycleSelectionByRay(int mouseX , int mouseY ,
         std::vector<vec3d>& cycleCenters);
     int cycleGroupSelectionByRay(int mouseX , int mouseY ,
@@ -125,13 +134,17 @@ public:
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
     bool pickCurve(int mouseX , int mouseY , int op);
+    bool pickAutoCurve(int mouseX , int mouseY , int op);
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
     // op: 0 choose, 1 update
     bool pickCtrlNode(int mouseX , int mouseY , int lastX , int lastY , int op);
-    
-	void surfaceBuilding(// input
+
+    void initFreeSketchMode();
+    void freeSketchOnPointCloud(std::vector<std::pair<unsigned , unsigned> >& seq);
+
+    void surfaceBuilding(// input
 		std::vector<int> &numPoints, std::vector<double*> &inCurves, std::vector<double*> &inNorms,
 		bool useDelaunay, bool useMinSet, bool useNormal, 
 		float areaWeight, float edgeWeight,	float dihedralWeight, float boundaryNormalWeight, 
@@ -139,6 +152,7 @@ public:
 		std::vector<std::vector<vec3d> > &mesh , std::vector<std::vector<vec3d> > &meshNormals
 		);
 
+    void afterCurveNetUpdate();
     void optUpdate(bool isRefreshConst);
     void cycleDisc();
 	void cycleStatusUpdate();
@@ -147,7 +161,11 @@ public:
     void surfacingUnsavedCycleGroup();
     void evalUnsavedCycles();
 	void cycleGroupUpdate();
-	
+
+    void autoGenBySymmetry();
+    void autoGenByICP();
+    void clearAutoGen();
+
     void backup();
     void undo();
 public:
@@ -180,12 +198,16 @@ public:
     int pickedBsp , pickedCtrlNode;
     Plane dragPlane;
     vec3d dragStartPoint , dragCurPoint;
+    int toExpandCurve;
+    int pickedAutoCurve;
     bool snapToCurve;
     bool snapToNode;
+    Plane sketchPlane;
 
     int dragPlaneNormalIndex;
 
-    // 0: shortest path, 1: straight line
+    // 0: shortest path, 1: straight line,
+    // 2: circle or arc, 3: free 2d sketch
     int drawMode;
 
     std::vector<Cycle> unsavedCycles;
@@ -209,7 +231,19 @@ public:
     std::vector<bool> unsavedStatus;
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshes; */
 	/* std::vector<std::vector<std::vector<cycle::Point> > > meshNormals; */
-    
+
+    std::vector<Path> autoGenOriginPaths;
+    std::vector<Path> autoGenPaths;
+    std::vector<BSpline> autoGenBsp;
+    std::vector<bool> autoPathStatus;
+
+    std::vector<vec3d> chosenPoints;
+    Path sketchLine;
+    std::vector<Path> freeSketchLines;
+    // for debug
+    std::vector<bool> isChosen;
+    std::vector<vec3d> debugPoints;
+
     std::vector<vec3uc> glObjColors;
 	unsigned char *rgbBuffer;
 
@@ -226,6 +260,8 @@ public:
 	{
 		return powf(std::abs(l) , 0.25) * metricRenderLengthScale;
 	}
+
+    std::vector<vec3d> getRay(int mouseX , int mouseY);
 };
 
 #endif

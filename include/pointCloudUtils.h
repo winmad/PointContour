@@ -10,6 +10,8 @@
 #include "TimeManager.h"
 #include "curveNet.h"
 #include "colormap.h"
+#include "partialSymmetry.h"
+#include "sketchGLCanvas.h"
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -243,19 +245,26 @@ public:
 	wxString m_fileName;
     wxString m_cacheName;
     std::string name;
-	wxStatusBar *statusBar;
+    std::string matlabFilesPath;
+    std::string dataCurvePath;
+    std::string dataVotesPath;
+
+    wxStatusBar *statusBar;
 
     // visualization
 	PointCloudRenderer *pcRenderer;
+    SketchGLCanvas *openGLView;
     // curve network
     CurveNet *curveNet;
+    // optimization
     Optimization opt;
+    // symmetry detector
+    PartialSymmetry partSym;
 
 	std::vector<int> pcColor;
 	std::vector<Colormap::color> colors;
+    std::vector<bool> isFeaturePoint;
 
-    std::string matlabFilesPath;
-    std::string dataCurvePath;
 public:
 	PointCloudUtils();
 	~PointCloudUtils();
@@ -295,6 +304,9 @@ public:
 	void buildGraphFromPoints();
     bool addPointToGraph(const vec3d& pos);
 
+    void calcSymmetricPlanes();
+    void loadSymmetricPlanes();
+    
 	bool dijkstra(const Graph& g , const int& source ,
 				  DijkstraInfo& info , int *sink = NULL);
 	void traceBack(const DijkstraInfo& info , const int& sink ,

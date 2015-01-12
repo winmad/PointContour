@@ -5,7 +5,7 @@
 #include "splineUtils.h"
 #include "disjointSet.h"
 #include "adjMatrix.h"
-#include "Plane.h"
+#include "plane.h"
 #include "curveMappingTool.h"
 #include "constraints.h"
 
@@ -40,11 +40,18 @@ public:
     void startPath(const vec3d& st);
     void extendPath(const vec3d& st , const vec3d& ed , const Path& path ,
         bool newNode , const BSpline& bsp , const Path& originPath ,
-        bool addConstrants);
+        bool addConstraints);
     void breakPath(const int& breakLine , const int& breakPoint ,
         bool addConstraints);
     void updatePath(const int& bspIndex , const int& nodeIndex ,
         const vec3d& newPos , bool addConstraints);
+    void storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
+        double offset , bool addConstraints);
+
+    bool reflSymPath(const int& bspIndex , const Plane& plane ,
+        Path& originPath , Path& path , BSpline& bsp);
+    bool transformPath(const int& bspIndex , Eigen::Matrix4f& transMat ,
+        Path& originPath , Path& path , BSpline& bsp);
 
     void calcDispCyclePoints(const Cycle& cycle ,
 		std::vector<Path>& cyclePts , vec3d& cycleCenter);
@@ -63,6 +70,7 @@ public:
     void cycle2boundary(CycleGroup& cycleGroup , std::vector<std::vector<vec3d> >& inCurves);
     
     int getNodeIndex(const vec3d& pos);
+    int getNodeIndex(vec3d& pos , double offset);
     bool linkNoEdges(const int& ni);
 
     void addCurveType(int bspIndex);
@@ -90,6 +98,8 @@ public:
 
 	// 1: line, 2: nothing, 3: coplanar
 	std::vector<int> curveType;
+    // meaningful if curveType = 3
+    std::vector<Plane> planes;
 
 	ConstraintSet *conSet;
 

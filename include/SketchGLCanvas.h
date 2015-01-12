@@ -41,6 +41,9 @@ public:
 
 	void setRotate(){ m_isRotate = !m_isRotate;}
 
+    int getWidth() { return m_width; }
+    int getHeight() { return m_height; }
+
 private:
 
 
@@ -70,6 +73,7 @@ private:
 	wxCoord m_selectx;
 	wxCoord m_selecty;
 	std::vector<std::pair<int,int> > vts;
+    std::vector<std::pair<unsigned,unsigned> > sequence;
 	int lastKeyBoard;
 	bool isDrag;
     bool isEditSpline;
