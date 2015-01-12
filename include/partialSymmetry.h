@@ -10,6 +10,11 @@
 struct Data;
 class PointCloudUtils;
 
+const int binNumTheta = 100;
+const int binNumPhi = 100;
+const int binNumR = 100;
+
+
 class PartialSymmetry
 {
 public:
@@ -30,6 +35,9 @@ public:
 
     std::vector<Plane> votes;
     std::vector<Plane> symPlanes;
+
+	double weights[binNumTheta][binNumPhi][binNumR];
+	std::vector<Plane> candidatePlanes;
 };
 
 #endif
