@@ -72,19 +72,22 @@
     <ClInclude Include="include\cycleDiscovery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ConfigManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\curveMappingTool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\textfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ConfigManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\constraints.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SketchGLCanvas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\partialSymmetry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\RandGenerator.h">
@@ -137,16 +140,19 @@
     <ClCompile Include="src\cycleDiscovery.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ConfigManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\curveMappingTool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\textfile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ConfigManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\constraints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\partialSymmetry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\SketchGLCanvas.cpp">

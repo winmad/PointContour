@@ -5,9 +5,15 @@
 #include "plane.h"
 #include "PointKDTree.h"
 #include "TimeManager.h"
+#include "plane.h"
 
 struct Data;
 class PointCloudUtils;
+
+const int binNumTheta = 100;
+const int binNumPhi = 100;
+const int binNumR = 100;
+
 
 class PartialSymmetry
 {
@@ -15,10 +21,11 @@ public:
     PartialSymmetry();
     void init(PointCloudUtils *_pcUtils);
     void samplePointsUniform(int numSamples);
+	void findSymmPlanes();
     void calcVotes();
 
     PointCloudUtils *pcUtils;
-
+	vector<Plane> symmPlanes;
     std::vector<bool> isSampled;
 
     std::vector<Data> signData;
@@ -28,6 +35,9 @@ public:
 
     std::vector<Plane> votes;
     std::vector<Plane> symPlanes;
+
+	double weights[binNumTheta][binNumPhi][binNumR];
+	std::vector<Plane> candidatePlanes;
 };
 
 #endif

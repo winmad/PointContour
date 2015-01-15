@@ -133,3 +133,93 @@ void PartialSymmetry::calcVotes()
     fclose(fp);
     */
 }
+
+void PartialSymmetry::findSymmPlanes()
+{
+	double dcostheta = 2 / binNumTheta;
+	double dphi = pi / binNumPhi;
+	double maxR = 0;
+
+	for (int i = 0; i < pcUtils->pcData.size(); ++ i)
+	{
+		for (int j = i + 1; j < pcUtils->pcData.size(); ++ j)
+		{
+			Data x1 = pcUtils->pcData[i];
+			Data x2 = pcUtils->pcData[j];
+			double d = (x1.pos - x2.pos).length();
+			if (d < 1e-6) continue;
+			vec3d n = x1.pos - x2.pos;
+			vec3d x = (x1.pos + x2.pos) / 2;
+			n.normalize();
+			if (n.x < 0) n = - n;
+			double r = abs(n.dot(x));
+			if (r > maxR) maxR = r;
+		}
+	}
+
+	double dr = maxR * 2 / binNumR;
+
+	for (int i = 0; i < pcUtils->pcData.size(); ++ i)
+	{
+		for (int j = i + 1; j < pcUtils->pcData.size(); ++ j)
+		{
+			Data x1 = pcUtils->pcData[i];
+			Data x2 = pcUtils->pcData[j];
+			double d = (x1.pos - x2.pos).length();
+			if (d < 1e-6) continue;
+			double weight = 1 / d / d;
+			vec3d n = x1.pos - x2.pos;
+			vec3d x = (x1.pos + x2.pos) / 2;
+			n.normalize();
+			if (n.x < 0) n = - n;
+			double theta = acos(n.z);
+			double phi = acos(n.y / sin(theta));
+			double r = - n.dot(x);
+			
+			int binTheta = (n.z + 1) / dcostheta;
+			int binPhi = (phi - 0) / dphi;
+			int binR = (r + maxR) / dr;
+			if (binTheta == binNumTheta) -- binTheta;
+			if (binPhi == binNumPhi) -- binPhi;
+			if (binR == binNumR) -- binR;
+			weights[binTheta][binPhi][binR] += weight;
+		}
+	}
+
+	double maxWeight = 0;
+	for (int i = 0; i < binNumTheta; ++ i)
+	{
+		for (int j = 0; j < binNumPhi; ++ j)
+		{
+			for (int k = 0; k < binNumR; ++ k)
+			{
+				if (weights[i][j][k] > maxWeight)
+				{
+					maxWeight = weights[i][j][k];
+				}
+			}
+		}
+	}
+	double thresholdWeight = maxWeight / 10;
+
+
+	for (int i = 0; i < binNumTheta; ++ i)
+	{
+		for (int j = 0; j < binNumPhi; ++ j)
+		{
+			for (int k = 0; k < binNumR; ++ k)
+			{
+				if (weights[i][j][k] > thresholdWeight)
+				{
+					double costheta = i * dcostheta - 1 + dcostheta / 2;
+					double theta = acos(costheta);
+					double phi = j * dphi + dphi / 2;
+					double r = k * dr - maxR + dr / 2;
+					vec3d n(sin(theta)*sin(phi), sin(theta)*cos(phi), cos(theta));
+					Plane p(n.x, n.y, n.z, r);
+					candidatePlanes.push_back(p);
+				}
+			}
+		}
+	}
+}
