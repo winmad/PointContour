@@ -92,6 +92,7 @@ class PointContourGUIFrame: public wxFrame
         void OnPatchesDrawSelect(wxCommandEvent& event);
         void OnHideDrawnPointsClick(wxCommandEvent& event);
         void OnDrawModeSelect(wxCommandEvent& event);
+        void OnSaveMeshSelected(wxCommandEvent& event);
         //*)
 
         void resetAll();
@@ -166,6 +167,8 @@ class PointContourGUIFrame: public wxFrame
         static const long ID_MENUITEM4;
         static const long ID_MENUITEM1;
         static const long ID_MENUITEM3;
+        static const long ID_MENUITEM8;
+        static const long ID_MENUITEM7;
         static const long idMenuQuit;
         static const long ID_MENUITEM5;
         static const long ID_MENUITEM6;
@@ -194,6 +197,7 @@ class PointContourGUIFrame: public wxFrame
         wxScrolledWindow* ScrolledWindow3;
         wxScrolledWindow* ScrolledWindow1;
         wxTextCtrl* Alpha2;
+        wxMenuItem* SaveMesh;
         wxMenu* Menu3;
         wxCheckBox* AutoOpt;
         wxStaticText* StaticText6;
@@ -203,6 +207,7 @@ class PointContourGUIFrame: public wxFrame
         wxStaticText* StaticText19;
         wxStaticText* StaticText8;
         wxStaticText* StaticText11;
+        wxMenu* MenuItem4;
         wxTextCtrl* ExtNum;
         wxStaticText* StaticText18;
         wxChoice* PatchesVisual;

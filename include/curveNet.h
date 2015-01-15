@@ -85,6 +85,7 @@ public:
     void outputPolyLines();
     void saveCurveNet(const char* fileName);
     void loadCurveNet(const char* fileName);
+    void saveMesh2Obj(const char* fileName);
     
     int numNodes , numPolyLines;
     std::vector<vec3d> nodes;

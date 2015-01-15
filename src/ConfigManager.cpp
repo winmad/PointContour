@@ -53,6 +53,13 @@ void ConfigManager::load(const string &configFilePath)
         pcUtils->dataCurvePath = pathStr;
     }
 
+    if (nodeConfig->first_node("data_mesh"))
+    {
+        pathStr = getPath(nodeConfig->first_node("data_mesh"));
+        printf("data_mesh_path: %s\n" , pathStr.c_str());
+        pcUtils->dataMeshPath = pathStr;
+    }
+
     if (nodeConfig->first_node("data_votes"))
     {
         pathStr = getPath(nodeConfig->first_node("data_votes"));

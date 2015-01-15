@@ -171,11 +171,11 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 	}
 
     // phase 5
-    std::string votesFileName = dataVotesPath + name + ".planes";
-    if (access(votesFileName.c_str() , 0) == -1)
-    // if (false)
+    std::string planesFileName = dataVotesPath + name + ".planes";
+    if (access(planesFileName.c_str() , 0) == -1)
     {
         calcSymmetricPlanes();
+        pcRenderer->dispCurveNet->coplanes = partSym.candidatePlanes;
     }
     else
     {
@@ -1051,8 +1051,9 @@ void PointCloudUtils::calcSymmetricPlanes()
 {
     timer.PushCurrentTime();
     partSym.init(this);
-    partSym.samplePointsUniform(500);
-    partSym.calcVotes();
+    partSym.samplePointsUniform(2000);
+    //partSym.calcVotes();
+    partSym.findSymmPlanes();
     timer.PopAndDisplayTime("\nCalculate symmetric planes: %.6f\n");
 }
 
