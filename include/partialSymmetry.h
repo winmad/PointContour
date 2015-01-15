@@ -22,6 +22,7 @@ public:
     void init(PointCloudUtils *_pcUtils);
     void samplePointsUniform(int numSamples);
 	void findSymmPlanes();
+	void adjustSymmPlane(Plane &p);
     void calcVotes();
 
     PointCloudUtils *pcUtils;

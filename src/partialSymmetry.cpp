@@ -223,3 +223,22 @@ void PartialSymmetry::findSymmPlanes()
 		}
 	}
 }
+
+void PartialSymmetry::adjustSymmPlane(Plane &plane)
+{
+	srand(time(0));
+	int sampleNum = 10000;
+	int totalNum = pcUtils->pcData.size();
+	std::vector<vec3d> points;
+	std::vector<vec3d> reflectPoints;
+	for (int i = 0; i < sampleNum; ++ i)
+	{
+		int idx = (rand() << 16 + rand()) % totalNum;
+		vec3d p = pcUtils->pcData[idx].pos;
+		points.push_back(p);
+		vec3d rp = plane.reflect(p);
+		reflectPoints.push_back(rp);
+	}
+
+
+}
