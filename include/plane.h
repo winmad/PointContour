@@ -33,13 +33,6 @@ public:
 	void calcAngle(double& theta , double& phi);
 	vec3d intersect(vec3d& start , vec3d& dir);
 	void fitFromPoints(Path& path);
-		double posDist = std::abs(d - plane.d);
-			plane.n = -plane.n;
-			plane.d = -plane.d;
-		d = d * weight + plane.d * plane.weight;
-			plane.n = -plane.n;
-			plane.d = -plane.d;
-		d = d * weight - plane.d * plane.weight;
 	void calculateAngle()
 	{
 		if (d > 0)

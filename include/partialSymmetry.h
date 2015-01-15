@@ -36,7 +36,7 @@ public:
     std::vector<Plane> votes;
     std::vector<Plane> symPlanes;
 
-	double weights[binNumTheta][binNumPhi][binNumR];
+    double weights[binNumTheta][binNumPhi][binNumR];
 	std::vector<Plane> candidatePlanes;
 };
 

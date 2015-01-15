@@ -140,16 +140,18 @@ void PartialSymmetry::findSymmPlanes()
 	double dphi = pi / binNumPhi;
 	double maxR = 0;
 
-	for (int i = 0; i < pcUtils->pcData.size(); ++ i)
+	for (int i = 0; i < signData.size(); ++ i)
 	{
-		for (int j = i + 1; j < pcUtils->pcData.size(); ++ j)
+		for (int j = i + 1; j < signData.size(); ++ j)
 		{
-			Data x1 = pcUtils->pcData[i];
-			Data x2 = pcUtils->pcData[j];
-			double d = (x1.pos - x2.pos).length();
+			//Data x1 = pcUtils->pcData[i];
+			//Data x2 = pcUtils->pcData[j];
+            vec3d x1 = signData[i].n;
+            vec3d x2 = signData[j].n;
+			double d = (x1 - x2).length();
 			if (d < 1e-6) continue;
-			vec3d n = x1.pos - x2.pos;
-			vec3d x = (x1.pos + x2.pos) / 2;
+			vec3d n = x1 - x2;
+			vec3d x = (x1 + x2) / 2;
 			n.normalize();
 			if (n.x < 0) n = - n;
 			double r = abs(n.dot(x));
@@ -159,29 +161,34 @@ void PartialSymmetry::findSymmPlanes()
 
 	double dr = maxR * 2 / binNumR;
 
-	for (int i = 0; i < pcUtils->pcData.size(); ++ i)
+	for (int i = 0; i < signData.size(); ++ i)
 	{
-		for (int j = i + 1; j < pcUtils->pcData.size(); ++ j)
+		for (int j = i + 1; j < signData.size(); ++ j)
 		{
-			Data x1 = pcUtils->pcData[i];
-			Data x2 = pcUtils->pcData[j];
-			double d = (x1.pos - x2.pos).length();
+			//Data x1 = pcUtils->pcData[i];
+			//Data x2 = pcUtils->pcData[j];
+            vec3d x1 = signData[i].n;
+            vec3d x2 = signData[j].n;
+			double d = (x1 - x2).length();
 			if (d < 1e-6) continue;
 			double weight = 1 / d / d;
-			vec3d n = x1.pos - x2.pos;
-			vec3d x = (x1.pos + x2.pos) / 2;
+			vec3d n = x1 - x2;
+			vec3d x = (x1 + x2) / 2;
 			n.normalize();
 			if (n.x < 0) n = - n;
 			double theta = acos(n.z);
 			double phi = acos(n.y / sin(theta));
 			double r = - n.dot(x);
-			
-			int binTheta = (n.z + 1) / dcostheta;
-			int binPhi = (phi - 0) / dphi;
-			int binR = (r + maxR) / dr;
-			if (binTheta == binNumTheta) -- binTheta;
-			if (binPhi == binNumPhi) -- binPhi;
-			if (binR == binNumR) -- binR;
+
+            int binTheta = (int)((n.z + 1.0) / dcostheta);
+			int binPhi = (int)((phi - 0) / dphi);
+			int binR = (int)((r + maxR) / dr);
+			//if (binTheta == binNumTheta) -- binTheta;
+            binTheta = clampValue(binTheta , 0 , binNumTheta - 1);
+			//if (binPhi == binNumPhi) -- binPhi;
+            binPhi = clampValue(binPhi , 0 , binNumPhi - 1);
+			//if (binR == binNumR) -- binR;
+            binR = clampValue(binR , 0 , binNumR - 1);
 			weights[binTheta][binPhi][binR] += weight;
 		}
 	}

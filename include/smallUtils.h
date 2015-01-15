@@ -39,6 +39,12 @@ double weightBetweenSegs(const vec3d& x1 , const vec3d& y1 ,
 	const vec3d& x2 , const vec3d& y2);
 
 template<typename T>
+T clampValue(const T& x , const T& minval , const T& maxval)
+{
+    return std::max(minval , std::min(maxval , x));
+}
+
+template<typename T>
 bool allocate3(T*** &d , const vec3i& size)
 {
 	if (d != NULL)
