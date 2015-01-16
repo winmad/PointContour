@@ -726,8 +726,8 @@ double PointCloudUtils::calcEdgeWeight(const vec3d& _v ,
 {
     Vector3d dv(_v.x , _v.y , _v.z);
     
-    double w = 0.5 * (sqrt(dv.transpose() * st.tensor * dv) +
-                      sqrt(dv.transpose() * ed.tensor * dv));
+    double w = 0.5 * (sqrt((double)(dv.transpose() * st.tensor * dv)) +
+                      sqrt((double)(dv.transpose() * ed.tensor * dv)));
     /*
 	double cos_theta = std::min(1.f , std::abs(v.dot(st.axis[0])));
 	double sin_theta = sqrt(1.f - cos_theta * cos_theta);

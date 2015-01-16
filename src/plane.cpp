@@ -44,7 +44,8 @@ void Plane::init(const double& x , const double& y , const double& z ,
 	this->n = vec3d(x , y , z);
     double normLen = this->n.length();
 	this->d = d;
-	if (std::abs(x) > 1e-4)
+	this->p = -this->n * this->d; 
+	/*if (std::abs(x) > 1e-4)
 	{
 		this->p = vec3d(-d / x , 0 , 0);
 	}
@@ -55,7 +56,7 @@ void Plane::init(const double& x , const double& y , const double& z ,
 	else if (std::abs(z) > 1e-4)
 	{
 		this->p = vec3d(0 , 0 , -d / z);
-	}
+	}*/
 	this->n /= normLen;
     this->d /= normLen;
 	this->weight = weight;

@@ -4,6 +4,7 @@
 #include "RandGenerator.h"
 #include <string>
 
+
 PartialSymmetry::PartialSymmetry()
 {
     pcUtils = NULL;
@@ -136,7 +137,7 @@ void PartialSymmetry::calcVotes()
 
 void PartialSymmetry::findSymmPlanes()
 {
-	double dcostheta = 2 / binNumTheta;
+	double dcostheta = 2.0 / binNumTheta;
 	double dphi = pi / binNumPhi;
 	double maxR = 0;
 
@@ -146,8 +147,8 @@ void PartialSymmetry::findSymmPlanes()
 		{
 			//Data x1 = pcUtils->pcData[i];
 			//Data x2 = pcUtils->pcData[j];
-            vec3d x1 = signData[i].n;
-            vec3d x2 = signData[j].n;
+			vec3d x1 = signData[i].n;
+			vec3d x2 = signData[j].n;
 			double d = (x1 - x2).length();
 			if (d < 1e-6) continue;
 			vec3d n = x1 - x2;
@@ -167,8 +168,8 @@ void PartialSymmetry::findSymmPlanes()
 		{
 			//Data x1 = pcUtils->pcData[i];
 			//Data x2 = pcUtils->pcData[j];
-            vec3d x1 = signData[i].n;
-            vec3d x2 = signData[j].n;
+			vec3d x1 = signData[i].n;
+			vec3d x2 = signData[j].n;
 			double d = (x1 - x2).length();
 			if (d < 1e-6) continue;
 			double weight = 1 / d / d;
@@ -177,19 +178,27 @@ void PartialSymmetry::findSymmPlanes()
 			n.normalize();
 			if (n.x < 0) n = - n;
 			double theta = acos(n.z);
-			double phi = acos(n.y / sin(theta));
+			double phi, cosphi;
+			if (abs(sin(theta)) < 1e-6) cosphi = 0;
+			else cosphi = n.y / sin(theta);
+			if (cosphi < -1) cosphi = -1;
+			if (cosphi > 1) cosphi = 1;
+			phi = acos(cosphi);
 			double r = - n.dot(x);
 
             int binTheta = (int)((n.z + 1.0) / dcostheta);
 			int binPhi = (int)((phi - 0) / dphi);
 			int binR = (int)((r + maxR) / dr);
-			//if (binTheta == binNumTheta) -- binTheta;
-            binTheta = clampValue(binTheta , 0 , binNumTheta - 1);
-			//if (binPhi == binNumPhi) -- binPhi;
-            binPhi = clampValue(binPhi , 0 , binNumPhi - 1);
-			//if (binR == binNumR) -- binR;
-            binR = clampValue(binR , 0 , binNumR - 1);
+			if (binTheta == binNumTheta) -- binTheta;
+            //binTheta = clampValue(binTheta , 0 , binNumTheta - 1);
+			if (binPhi == binNumPhi) -- binPhi;
+            //binPhi = clampValue(binPhi , 0 , binNumPhi - 1);
+			if (binR == binNumR) -- binR;
+            //binR = clampValue(binR , 0 , binNumR - 1);
+			//writeLog("position: %f, %f, %f, %f, %f, %f\n", n.x, n.y, n.z, theta, n.y / sin(theta), phi);
+			//writeLog("bin:  %d, %d, %d\n", binTheta, binPhi, binR);
 			weights[binTheta][binPhi][binR] += weight;
+			
 		}
 	}
 
@@ -207,7 +216,7 @@ void PartialSymmetry::findSymmPlanes()
 			}
 		}
 	}
-	double thresholdWeight = maxWeight / 10;
+	double thresholdWeight = maxWeight * 0.75;
 
 
 	for (int i = 0; i < binNumTheta; ++ i)
