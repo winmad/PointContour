@@ -10,9 +10,9 @@
 struct Data;
 class PointCloudUtils;
 
-const int binNumTheta = 100;
-const int binNumPhi = 100;
-const int binNumR = 100;
+const int binNumTheta = 50;
+const int binNumPhi = 50;
+const int binNumR = 50;
 
 
 class PartialSymmetry
@@ -22,8 +22,16 @@ public:
     void init(PointCloudUtils *_pcUtils);
     void samplePointsUniform(int numSamples);
 	void findSymmPlanes();
-	void adjustSymmPlane(Plane &p);
+	Plane adjustSymmPlane(int i, int j, int k);
     void calcVotes();
+
+	typedef struct {
+		double a, b;
+	} my_constraint_data;
+
+	static double myfunc(unsigned n, const double *x, double *grad, void *my_func_data);
+	static double myconstraint(unsigned n, const double *x, double *grad, void *data);
+
 
     PointCloudUtils *pcUtils;
 	vector<Plane> symmPlanes;
@@ -37,7 +45,10 @@ public:
     std::vector<Plane> votes;
     std::vector<Plane> symPlanes;
 
+	double dcostheta, dphi, dr, maxR;
+
     double weights[binNumTheta][binNumPhi][binNumR];
+	std::vector<std::pair<int, int> > symmPoints[binNumTheta][binNumPhi][binNumR];
 	std::vector<Plane> candidatePlanes;
 };
 
