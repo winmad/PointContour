@@ -483,6 +483,8 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
 
     m_pcUtils = new PointCloudUtils();
     *(m_openGLView->getPointCloudUtils()) = m_pcUtils;
+    *(m_openGLView->getPointCloudRenderer()) = m_pcUtils->pcRenderer;
+    m_openGLView->pcUtils = m_pcUtils;
 	m_config = new ConfigManager(m_pcUtils);
 	m_config->load("config.xml");
 	m_pcUtils->globalInit();

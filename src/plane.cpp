@@ -21,6 +21,16 @@ Plane::Plane(const double& cosTheta , const double& cosPhi , const double& d)
 	init(norm.x , norm.y , norm.z , d , 1);
 }
 
+bool Plane::isValid()
+{
+    return ::isValid(n);
+}
+
+void Plane::setNull()
+{
+    ::setNull(n);
+}
+
 void Plane::normalize()
 {
 	p /= weight;
@@ -202,4 +212,16 @@ void Plane::fitFromPoints(Path& path)
 	this->n.normalize();
 	d = -p.dot(n);
 	this->weight = 1;
+}
+
+void Plane::calculateAngle()
+{
+    if (d > 0)
+    {
+        n = -n;
+        d = -d;
+    }
+    r = std::abs(d);
+    phi = acos(n.z);
+    theta = acos(n.y / sin(phi));
 }

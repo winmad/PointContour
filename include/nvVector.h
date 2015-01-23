@@ -817,6 +817,7 @@ public:
 
 typedef vec2<float> vec2f;
 typedef vec2<int> vec2i;
+typedef vec2<double> vec2d;
 typedef vec3<float> vec3f;
 typedef vec3<double> vec3d;
 typedef vec3<int> vec3i;
@@ -828,6 +829,7 @@ typedef vec4<float> vec4f;
 
 typedef nv::vec2f vec2f;
 typedef nv::vec2i vec2i;
+typedef nv::vec2d vec2d;
 typedef nv::vec3f vec3f;
 typedef nv::vec3d vec3d;
 typedef nv::vec3i vec3i;

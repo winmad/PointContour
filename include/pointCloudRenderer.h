@@ -33,6 +33,7 @@ public:
     bool isShowCtrlNodes;
 	bool isShowCoplanes;
     bool isShowFeaturePoints;
+    bool isShowDebugPoints;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
@@ -109,6 +110,7 @@ public:
     void renderSavedMeshes();
     void renderAutoGenPaths();
     void renderFreeSketches();
+    void renderCrossPlane();
 
     void renderFeaturePoints();
     void renderDebug();
@@ -165,6 +167,8 @@ public:
     void autoGenBySymmetry();
     void autoGenByICP();
     void clearAutoGen();
+
+    void calcPointsNearCrossPlane();
 
     void backup();
     void undo();
@@ -240,6 +244,11 @@ public:
     std::vector<vec3d> chosenPoints;
     Path sketchLine;
     std::vector<Path> freeSketchLines;
+
+    Plane crossPlane;
+    std::vector<vec3d> crossPoints3d;
+    std::vector<vec2d> crossPoints2d;
+
     // for debug
     std::vector<bool> isChosen;
     std::vector<vec3d> debugPoints;

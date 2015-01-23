@@ -490,6 +490,7 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
 
     m_pcUtils = new PointCloudUtils();
     *(m_openGLView->getPointCloudUtils()) = m_pcUtils;
+    *(m_openGLView->getPointCloudRenderer()) = m_pcUtils->pcRenderer;
     m_pcUtils->openGLView = m_openGLView;
 	m_config = new ConfigManager(m_pcUtils);
 	m_config->load("config.xml");
@@ -520,7 +521,7 @@ void PointContourGUIFrame::resetFrame()
 	//mystring = wxString::Format(wxT("%i"), 6);
 	ExtNum->SetValue(mystring);
 
-	mystring = wxString::Format(wxT("%i"), 10);
+	mystring = wxString::Format(wxT("%i"), 5);
 	//mystring = wxString::Format(wxT("%i"), 5);
 	FilterRadius->SetValue(mystring);
 
