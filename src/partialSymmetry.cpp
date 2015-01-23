@@ -5,7 +5,6 @@
 #include <string>
 #include <nlopt.h>
 
-
 PartialSymmetry::PartialSymmetry()
 {
     pcUtils = NULL;
@@ -217,7 +216,7 @@ void PartialSymmetry::findSymmPlanes()
 			}
 		}
 	}
-	double thresholdWeight = maxWeight * 0.5;
+	double thresholdWeight = maxWeight * 0.7;
 
 
 	for (int i = 0; i < binNumTheta; ++ i)

@@ -5,7 +5,6 @@
 #include "plane.h"
 #include "PointKDTree.h"
 #include "TimeManager.h"
-#include "plane.h"
 
 struct Data;
 class PointCloudUtils;
