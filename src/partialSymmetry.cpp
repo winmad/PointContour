@@ -257,6 +257,24 @@ void PartialSymmetry::findSymmPlanes()
 			}
 		}
 	}
+	for (int i = 1; i < candidatePlanes.size(); ++ i)
+	{
+		for (int j = 0; j < i; ++ j)
+		{
+			Plane &p1 = candidatePlanes[j];
+			Plane &p2 = candidatePlanes[i];
+			if (p1.weight == 0 || p2.weight == 0) continue;
+			if (p1.dist(p2) < 0.1)
+			{
+				if (p1.weight > p2.weight) 
+				{
+					p2.weight = 0;
+					break;
+				}
+				else p1.weight = 0;
+			}
+		}
+	}
 	maxWeight = 0;
 	for (int i = 0; i < candidatePlanes.size(); ++ i)
 	{
