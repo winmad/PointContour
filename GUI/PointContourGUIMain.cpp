@@ -1047,6 +1047,7 @@ void PointContourGUIFrame::OnOpenCurveNetworkSelected(wxCommandEvent& event)
 {
     std::string fileName = m_pcUtils->dataCurvePath + m_pcUtils->name + ".curve";
     m_pcUtils->curveNet->loadCurveNet(fileName.c_str());
+    m_pcUtils->pcRenderer->isCurvesChosen.resize(m_pcUtils->curveNet->numPolyLines , false);
     for (int i = 0; i < m_pcUtils->curveNet->nodes.size(); i++)
     {
         m_pcUtils->addPointToGraph(m_pcUtils->curveNet->nodes[i]);

@@ -3,6 +3,7 @@
 #include "TimeManager.h"
 #include "curveNet.h"
 #include "RandGenerator.h"
+#include "macros.h"
 #include <omp.h>
 #include <queue>
 #include <algorithm>
@@ -156,6 +157,22 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 
 	// phase 2
 	gaussianSmooth(originF , f , _filterRadius / 3.0);
+#ifdef DEBUG_OUTPUT
+    FILE* fout = fopen("field_grid.txt" , "w");
+    fprintf(fout , "%d %d %d\n" , sizeOriginF.x , sizeOriginF.y , sizeOriginF.z);
+    for (int i = 0; i < sizeOriginF.x; i++)
+    {
+        for (int j = 0; j < sizeOriginF.y; j++)
+        {
+            for (int k = 0; k < sizeOriginF.z; k++)
+            {
+                fprintf(fout , "%.6f %.6f %.6f %.6f\n" , extXval[i] , extYval[j] ,
+                    extZval[k] , f[i][j][k]);
+            }
+        }
+    }
+    fclose(fout);
+#endif
     /*
     double threshold_f = 0.005;
     pcRenderer->debugPoints.clear();
@@ -742,9 +759,11 @@ double PointCloudUtils::calcEdgeWeight(const vec3d& _v ,
 	const Tensor& st , const Tensor& ed)
 {
     Vector3d dv(_v.x , _v.y , _v.z);
-    
-    double w = 0.5 * (sqrt(dv.transpose() * st.tensor * dv) +
-                      sqrt(dv.transpose() * ed.tensor * dv));
+    //Vector3d dv_transpose = dv.transpose();
+	double w1 = (double)(dv.transpose() * st.tensor * dv);
+	double w2 = (double)(dv.transpose() * ed.tensor * dv);
+
+    double w = 0.5 * (w1 + w2);
     /*
 	double cos_theta = std::min(1.f , std::abs(v.dot(st.axis[0])));
 	double sin_theta = sqrt(1.f - cos_theta * cos_theta);

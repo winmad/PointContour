@@ -5,8 +5,10 @@
 #include <wx/dcclient.h>
 #include <wx/Statusbr.h>
 #include <wx/filename.h>
+#include <wx/string.h>
 #include "pointCloudUtils.h"
 #include "pointCloudRenderer.h"
+#include "LocalFrame.h"
 
 BEGIN_EVENT_TABLE( SketchGLCanvas, wxGLCanvas )
 	EVT_PAINT( SketchGLCanvas::OnPaint )
@@ -630,8 +632,32 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             m_pcUtils->pcRenderer->pickPoint(x , y , 0);
         }
 
-        // cross plane operation, ignore all other editing operations
-        if (crossPlanePicked)
+        if (pcRenderer->copyMode == 1)
+        {
+            if (event.Dragging())
+            {
+                double delta;
+                Plane plane;
+                plane.init(cameraPos + cameraFrame.n * 0.5 , -cameraFrame.n , 1);
+
+                std::vector<vec3d> ray = computeRay(x , y);
+                vec3d dir = ray.back() - ray.front();
+                dir.normalize();
+                vec3d pos = plane.intersect(ray.front() , dir);
+                ray = computeRay(m_lastx , m_lasty);
+                dir = ray.back() - ray.front();
+                dir.normalize();
+                vec3d last_pos = plane.intersect(ray.front() , dir);
+
+                delta = pcRenderer->axisPlane.n.dot(pos - last_pos);
+                pcRenderer->autoGenByTranslation(delta);
+            }
+            else if (event.MiddleIsDown())
+            {
+                pcRenderer->pickAllAutoCurves();
+            }
+        }
+        else if (crossPlanePicked) // cross plane operation, ignore all other editing operations
         {
             if (event.Dragging())
             {
@@ -679,7 +705,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 pcRenderer->crossPlane.setNull();
             }
         }
-        else
+        else if (pcRenderer->copyMode == 0)
         {
             if (event.LeftIsDown()) // update
             {
@@ -699,6 +725,10 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                         plane.d = -plane.p.dot(plane.n);
                         m_pcUtils->pcRenderer->backup();
                     }
+                }
+                else if (curvePicked)
+                {
+                    pcRenderer->pickCurve(x , y , 3);
                 }
                 else if (!crossPlanePicked)
                 {
@@ -872,6 +902,22 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 		{
 			m_pcUtils->pcRenderer->clearPaths();
 		}
+        else if (uc == 'T') // translation mode
+        {
+            if (pcRenderer->copyMode != 1)
+            {
+                pcRenderer->copyMode = 1;
+                pcRenderer->initTranslationMode();
+                wxString str("copy by translation\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
 		else if (uc == 'J')
 		{
 			m_pcUtils->pcRenderer->incBspCurveIndex();
@@ -887,23 +933,26 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 			//m_pcUtils->curveNet->debugLog();
             writeLog("CurveNet polylines\n");
             m_pcUtils->curveNet->outputPolyLines();
-
+            /*
             writeLog("\nCrossing plane points\n");
             writeLog("%lu\n" , pcRenderer->crossPoints2d.size());
             for (int i = 0; i < pcRenderer->crossPoints2d.size(); i++)
             {
                 vec2d& p = pcRenderer->crossPoints2d[i];
-                writeLog("%.6f %.6f %.6f\n" , p.x , p.y , 0.f);
+                writeLog("%.6f %.6f\n" , p.x , p.y);
             }
-            /*
+            */
+            LocalFrame frame;
+            frame.buildFromNormal(pcRenderer->crossPlane.n);
             writeLog("\nFree sketch points\n");
             writeLog("%lu\n" , m_pcUtils->pcRenderer->chosenPoints.size());
             for (int i = 0; i < m_pcUtils->pcRenderer->chosenPoints.size(); i++)
             {
                 vec3d& p = m_pcUtils->pcRenderer->chosenPoints[i];
-                writeLog("%.6f %.6f %.6f\n" , p.x , p.y , p.z);
+                vec3d posLocal = frame.toLocal(p - pcRenderer->crossPlane.p);
+                //writeLog("%.6f %.6f %.6f\n" , p.x , p.y , p.z);
+                writeLog("%.6f %.6f 0.0\n" , posLocal.x , posLocal.z);
             }
-            */
             /*
 			for (int i = 0; i < m_pcUtils->curveNet->coplanes.size(); i++)
 			{

@@ -135,8 +135,9 @@ public:
     int ctrlNodeSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
-    bool pickCurve(int mouseX , int mouseY , int op);
+    bool pickCurve(int mouseX , int mouseY , int op); // extra: op = 3, choose/not
     bool pickAutoCurve(int mouseX , int mouseY , int op);
+    void pickAllAutoCurves();
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
@@ -165,6 +166,8 @@ public:
 	void cycleGroupUpdate();
 
     void autoGenBySymmetry();
+    void initTranslationMode();
+    void autoGenByTranslation(double offset);
     void autoGenByICP();
     void clearAutoGen();
 
@@ -214,6 +217,9 @@ public:
     // 2: circle or arc, 3: free 2d sketch
     int drawMode;
 
+    // 0: none, 1: translation
+    int copyMode;
+
     std::vector<Cycle> unsavedCycles;
     std::vector<bool> toBeSurfacing;
     std::vector<std::vector<Path> > unsavedCyclePoints;
@@ -249,8 +255,14 @@ public:
     std::vector<vec3d> crossPoints3d;
     std::vector<vec2d> crossPoints2d;
 
-    // for debug
+    Plane axisPlane;
+
     std::vector<bool> isChosen;
+    std::vector<bool> isCrossing;
+
+    std::vector<bool> isCurvesChosen;
+
+    // for debug
     std::vector<vec3d> debugPoints;
 
     std::vector<vec3uc> glObjColors;

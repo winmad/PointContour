@@ -360,6 +360,43 @@ bool CurveNet::reflSymPath(const int& bspIndex , const Plane& plane ,
     return true;
 }
 
+bool CurveNet::translatePath(const int& bspIndex , const Plane& axisPlane ,
+    const double& offset , Path& originPath , Path& path , BSpline& bsp)
+{
+    originPath.clear();
+    path.clear();
+    for (int i = 0; i < originPolyLines[bspIndex].size(); i++)
+    {
+        originPath.push_back(originPolyLines[bspIndex][i] + axisPlane.n * offset);
+        path.push_back(polyLines[bspIndex][i] + axisPlane.n * offset);
+    }
+    bsp = bsplines[bspIndex];
+    for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+    {
+        bsp.ctrlNodes[i] = bsplines[bspIndex].ctrlNodes[i] + axisPlane.n * offset;
+    }
+    return true;
+}
+
+bool CurveNet::translatePath(const Path& lastOriginPath , const Path& lastPath ,
+    const BSpline& lastBsp, const Plane& axisPlane , const double& offset ,
+    Path& originPath , Path& path , BSpline& bsp)
+{
+    originPath.clear();
+    path.clear();
+    for (int i = 0; i < lastOriginPath.size(); i++)
+    {
+        originPath.push_back(lastOriginPath[i] + axisPlane.n * offset);
+        path.push_back(lastPath[i] + axisPlane.n * offset);
+    }
+    bsp = lastBsp;
+    for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+    {
+        bsp.ctrlNodes[i] = lastBsp.ctrlNodes[i] + axisPlane.n * offset;
+    }
+    return true;
+}
+
 bool CurveNet::transformPath(const int& bspIndex , Eigen::Matrix4f& transMat ,
     Path& originPath , Path& path , BSpline& bsp)
 {

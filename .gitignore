@@ -3,6 +3,7 @@ data/
 build/
 xcode/
 ampl/
+external_win/
 external_win/boost
 *.bmp
 *.pfm

@@ -96,6 +96,12 @@
     <ClInclude Include="include\partialSymmetry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\LocalFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pclUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\curveNet.cpp">
@@ -165,6 +171,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\plane.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pclUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
