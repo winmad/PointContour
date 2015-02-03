@@ -169,6 +169,7 @@ public:
     void initTranslationMode();
     void autoGenByTranslation(double offset);
     void autoGenByICP();
+    void autoGenByPclNurbsFitting();
     void clearAutoGen();
 
     void calcPointsNearCrossPlane();

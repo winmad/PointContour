@@ -6,7 +6,7 @@ find_package(GLEW REQUIRED)
 find_package(GLFW REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(PkgConfig REQUIRED)
-find_package(PCL REQUIRED COMPONENTS common io registration)
+find_package(PCL 1.7 REQUIRED)
 
 pkg_search_module(GLFW REQUIRED glfw3)
 
@@ -71,9 +71,7 @@ set(ALL_LIBS
   ${GLUT_LIBRARIES}
   ${GLEW_LIBRARIES}
   ${GLFW_LIBRARIES}
-  ${PCL_COMMON_LIBRARIES}
-  ${PCL_IO_LIBRARIES}
-  ${PCL_REGISTRATION_LIBRARIES}
+  ${PCL_LIBRARIES}
   libwx_osx_cocoau-3.0.a
   libwx_osx_cocoau_gl-3.0.a
   libtet.a

@@ -580,7 +580,14 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         {
             if (m_pcUtils->pcRenderer->drawMode == 3)
             {
-                m_pcUtils->pcRenderer->autoGenByICP();
+                if (!pcRenderer->crossPlane.isValid())
+                {
+                    m_pcUtils->pcRenderer->autoGenByICP();
+                }
+                else
+                {
+                    pcRenderer->autoGenByPclNurbsFitting();
+                }
                 m_pcUtils->pcRenderer->initFreeSketchMode();
                 m_pcUtils->pcRenderer->sketchLine.clear();
                 m_pcUtils->pcRenderer->freeSketchLines.clear();

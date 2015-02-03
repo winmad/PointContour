@@ -1869,24 +1869,24 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 		}
 	}
     double snapOffset = selectionOffset;
-    // printf("%d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
     if (res == -1) return res;
-    if (nodeIndex == 0 || nodeIndex == dispCurveNet->polyLines[res].size() - 1)
+    if (nodeIndex == 0 || nodeIndex == polyLines[res].size() - 1)
         snapOffset *= 2;
     if (minDistance > snapOffset) res = -1;
+    printf("curve selection: choose node\n");
 	if (res != -1)
 	{
-		if ((dispCurveNet->polyLines[res][nodeIndex] - 
-			dispCurveNet->polyLines[res].front()).length() < 1e-2)
+		if ((polyLines[res][nodeIndex] - polyLines[res].front()).length() < 1e-2)
 		{
 			nodeIndex = 0;
 		}
-		else if ((dispCurveNet->polyLines[res][nodeIndex] -
-			dispCurveNet->polyLines[res].back()).length() < 1e-2)
+		else if ((polyLines[res][nodeIndex] - polyLines[res].back()).length() < 1e-2)
 		{
-			nodeIndex = (int)dispCurveNet->polyLines[res].size() - 1;
+			nodeIndex = (int)polyLines[res].size() - 1;
 		}
 	}
+    printf("curve selection: success!\n");
     return res;
 }
 
@@ -1969,6 +1969,13 @@ void PointCloudRenderer::pickAllAutoCurves()
     printf("begin storing translated auto curves\n");
     for (int i = 0; i < autoGenPaths.size(); i++)
     {
+        pcUtils->gradientDescentSmooth(autoGenPaths[i] , true);
+        if (!ConstraintDetector::collinearTest(autoGenPaths[i] , autoGenBsp[i]))
+        {
+            convert2Spline(autoGenPaths[i] , autoGenBsp[i]);
+        }
+        autoGenBsp[i].calcCoefs();
+
         dispCurveNet->storeAutoPath(autoGenPaths[i] ,
             autoGenBsp[i] , autoGenOriginPaths[i] ,
             selectionOffset * 1.5 , isAutoOpt);
@@ -2585,7 +2592,6 @@ void PointCloudRenderer::autoGenByTranslation(double offset)
         dispCurveNet->translatePath(autoGenOriginPaths[i] , autoGenPaths[i] ,
             autoGenBsp[i] , axisPlane , offset , originPath , path , bsp);
 
-        pcUtils->gradientDescentSmooth(path , true);
         autoGenOriginPaths[i] = originPath;
         autoGenPaths[i] = path;
         autoGenBsp[i] = bsp;
@@ -2728,6 +2734,65 @@ void PointCloudRenderer::autoGenByICP()
     autoGenPaths.push_back(path);
     autoGenBsp.push_back(bsp);
 #endif
+}
+
+void PointCloudRenderer::autoGenByPclNurbsFitting()
+{
+    autoGenOriginPaths.clear();
+    autoGenPaths.clear();
+    autoGenBsp.clear();
+
+    pcl::on_nurbs::NurbsDataCurve2d inputPoints2d;
+    LocalFrame frame;
+    frame.buildFromNormal(crossPlane.n);
+    for (int i = 0; i < chosenPoints.size(); i++)
+    {
+        vec3d posLocal = frame.toLocal(chosenPoints[i] - crossPlane.p);
+        inputPoints2d.interior.push_back(Eigen::Vector2d(posLocal.x , posLocal.z));
+    }
+    pcl::on_nurbs::FittingCurve2d::Parameter curve_params;
+    curve_params.smoothness = 0.000001;
+    curve_params.rScale = 1.0;
+    unsigned order = 3;
+    unsigned numCtrlPoints = std::max((unsigned)6 , (unsigned)(chosenPoints.size() / 4 + 1));
+    printf("num_ctrl_points = %d\n" , numCtrlPoints);
+
+    ON_NurbsCurve curve = pcl::on_nurbs::FittingCurve2d::initNurbsPCA(order ,
+        &inputPoints2d , numCtrlPoints);
+    pcl::on_nurbs::FittingCurve2d fit(&inputPoints2d , curve);
+    fit.assemble(curve_params);
+    fit.solve();
+
+    // resample on nurbs
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::on_nurbs::Triangulation::convertCurve2PointCloud(fit.m_nurbs , cloud , 8);
+
+    // bspline fitting by my matlab code
+    Path originPath , path;
+    BSpline bsp;
+    // printf("cloud_size = %lu\n" , cloud->size());
+    for (int i = 0; i < cloud->size(); i++)
+    {
+        pcl::PointXYZRGB &p = cloud->at(i);
+        // printf("%.6f %.6f %.6f\n" , p.x , p.y , p.z);
+        vec3d posLocal(p.x , 0 , p.y);
+        vec3d pos = crossPlane.p + frame.toWorld(posLocal);
+        originPath.push_back(pos);
+    }
+    path = originPath;
+
+    /*
+    pcUtils->gradientDescentSmooth(path , true);
+    */
+    if (!ConstraintDetector::collinearTest(path , bsp))
+    {
+        convert2Spline(path , bsp);
+    }
+    bsp.calcCoefs();
+
+    autoGenOriginPaths.push_back(originPath);
+    autoGenPaths.push_back(path);
+    autoGenBsp.push_back(bsp);
 }
 
 void PointCloudRenderer::clearAutoGen()
