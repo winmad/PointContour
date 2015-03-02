@@ -2,6 +2,7 @@
 #include "splineUtils.h"
 #include "cycleDiscovery.h"
 #include "pclUtils.h"
+#include "macros.h"
 #include <map>
 #ifdef __APPLE__
     #include <sys/uio.h>
@@ -1063,6 +1064,22 @@ void CurveNet::loadCurveNet(const char* fileName)
     }
     fclose(fp);
     printf("Curve loaded!\n");
+
+#ifdef OUTPUT_CURVE_NET
+    FILE *fout = fopen("curve_net.txt" , "w");
+    fprintf(fout , "%d\n" , numPolyLines);
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fprintf(fout , "\n");
+        fprintf(fout , "%d\n" , polyLines[i].size());
+        for (int j = 0; j < polyLines[i].size(); j++)
+        {
+            fprintf(fout , "%.6f %.6f %.6f\n" , polyLines[i][j].x , polyLines[i][j].y ,
+                polyLines[i][j].z);
+        }
+    }
+    fclose(fout);
+#endif
 }
 
 void CurveNet::saveMesh2Obj(const char* fileName)

@@ -157,7 +157,7 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 
 	// phase 2
 	gaussianSmooth(originF , f , _filterRadius / 3.0);
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_DIST_FIELD
     FILE* fout = fopen("field_grid.txt" , "w");
     fprintf(fout , "%d %d %d\n" , sizeOriginF.x , sizeOriginF.y , sizeOriginF.z);
     for (int i = 0; i < sizeOriginF.x; i++)
@@ -254,6 +254,9 @@ void PointCloudUtils::getBBox()
     {
         pcData[i].pos *= scale;
     }
+
+    printf("translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
+    printf("scale = %.6f\n" , scale);
 }
 
 void PointCloudUtils::buildUniformGrid(vec3i size)

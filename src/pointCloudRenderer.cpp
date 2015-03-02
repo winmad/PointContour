@@ -1869,12 +1869,12 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 		}
 	}
     double snapOffset = selectionOffset;
-    printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    // printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
     if (res == -1) return res;
     if (nodeIndex == 0 || nodeIndex == polyLines[res].size() - 1)
         snapOffset *= 2;
     if (minDistance > snapOffset) res = -1;
-    printf("curve selection: choose node\n");
+    // printf("curve selection: choose node\n");
 	if (res != -1)
 	{
 		if ((polyLines[res][nodeIndex] - polyLines[res].front()).length() < 1e-2)
@@ -1886,7 +1886,7 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 			nodeIndex = (int)polyLines[res].size() - 1;
 		}
 	}
-    printf("curve selection: success!\n");
+    // printf("curve selection: success!\n");
     return res;
 }
 
@@ -2246,11 +2246,12 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	mesh.clear();
 	meshNormals.clear();
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_MESH_IN_CURVE
     FILE* fout = fopen("inCurves.txt" , "w");
     fprintf(fout , "%d\n" , inCurves.size());
     for (int i = 0; i < inCurves.size(); i++)
     {
+        fprintf(fout , "\n");
         fprintf(fout , "%d\n" , numPoints[i]);
         for (int j = 0; j < numPoints[i]; j++)
         {
@@ -2414,7 +2415,7 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 		}
 	}
 
-#ifdef DEBUG_OUTPUT
+#ifdef OUTPUT_MESH
     fout = fopen("coarse_mesh.txt" , "w");
     fprintf(fout , "%d\n" , numPositions);
     for (int i = 0; i < numPositions; i++)

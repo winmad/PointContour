@@ -7,7 +7,6 @@
 #include <pcl/registration/icp.h>
 #include <pcl/surface/on_nurbs/fitting_curve_2d.h>
 #include <pcl/surface/on_nurbs/triangulation.h>
-#include <pcl/visualization/pcl_visualizer.h>
 
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
