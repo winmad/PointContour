@@ -84,6 +84,7 @@ private:
     std::vector<std::pair<unsigned,unsigned> > sequence;
 	int lastKeyBoard;
 	bool isDrag;
+    int chosenAxis;
     bool isEditSpline;
 
 	int m_width;

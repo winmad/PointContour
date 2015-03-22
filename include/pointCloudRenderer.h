@@ -9,6 +9,7 @@
 #include "cycleDiscovery.h"
 #include "colormap.h"
 #include "plane.h"
+#include "axisWidget.h"
 #include <vector>
 #include <string>
 
@@ -34,6 +35,7 @@ public:
 	bool isShowCoplanes;
     bool isShowFeaturePoints;
     bool isShowDebugPoints;
+    bool isShowAxisWidget;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
@@ -111,6 +113,7 @@ public:
     void renderAutoGenPaths();
     void renderFreeSketches();
     void renderCrossPlane();
+    void renderAxisWidget();
 
     void renderFeaturePoints();
     void renderDebug();
@@ -262,6 +265,9 @@ public:
     std::vector<bool> isCrossing;
 
     std::vector<bool> isCurvesChosen;
+
+    AxisWidget axisWidget;
+    int chosenAxis;
 
     // for debug
     std::vector<vec3d> debugPoints;

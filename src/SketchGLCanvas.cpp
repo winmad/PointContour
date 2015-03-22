@@ -9,6 +9,7 @@
 #include "pointCloudUtils.h"
 #include "pointCloudRenderer.h"
 #include "LocalFrame.h"
+#include "axisWidget.h"
 
 BEGIN_EVENT_TABLE( SketchGLCanvas, wxGLCanvas )
 	EVT_PAINT( SketchGLCanvas::OnPaint )
@@ -641,8 +642,19 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
         if (pcRenderer->copyMode == 1)
         {
-            if (event.Dragging())
+            int nodeIndex = -1;
+            pcRenderer->chosenAxis = pcRenderer->curveSelectionByRay(x , y , nodeIndex ,
+                pcRenderer->axisWidget.axesPoints);
+            printf("chosen axis = %d\n" , pcRenderer->chosenAxis);
+            if (event.Dragging() && pcRenderer->chosenAxis != -1)
             {
+                if (!isDrag)
+                {
+                    isDrag = true;
+                    chosenAxis = pcRenderer->chosenAxis;
+                }
+                pcRenderer->axisPlane.init(pcRenderer->axisWidget.origin ,
+                    pcRenderer->axisWidget.axes[chosenAxis] , 1);
                 double delta;
                 Plane plane;
                 plane.init(cameraPos + cameraFrame.n * 0.5 , -cameraFrame.n , 1);
@@ -662,6 +674,12 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             else if (event.MiddleIsDown())
             {
                 pcRenderer->pickAllAutoCurves();
+            }
+
+            if (event.LeftUp())
+            {
+                chosenAxis = -1;
+                isDrag = false;
             }
         }
         else if (crossPlanePicked) // cross plane operation, ignore all other editing operations
@@ -914,6 +932,7 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
             if (pcRenderer->copyMode != 1)
             {
                 pcRenderer->copyMode = 1;
+                pcRenderer->isShowAxisWidget = true;
                 pcRenderer->initTranslationMode();
                 wxString str("copy by translation\n");
                 m_pcUtils->statusBar->SetStatusText(str);
@@ -921,6 +940,7 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
             else
             {
                 pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
                 wxString str("");
                 m_pcUtils->statusBar->SetStatusText(str);
             }

@@ -303,6 +303,17 @@ void resampleBspUniform(BSpline& bsp , int numPoints , Path& path)
     mxDestroyArray(t);
 }
 
+void resampleLine(const vec3d& st , const vec3d& ed , int numPoints , Path& path)
+{
+    vec3d dir = ed - st;
+    dir /= ((double)numPoints - 1.0);
+    path.clear();
+    for (int i = 0; i < numPoints; i++)
+    {
+        path.push_back(st + dir * i);
+    }
+}
+
 void convert2Line(Path& path , BSpline& bsp)
 {
     bsp.clear();

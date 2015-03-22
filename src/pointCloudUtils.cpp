@@ -257,6 +257,10 @@ void PointCloudUtils::getBBox()
 
     printf("translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
     printf("scale = %.6f\n" , scale);
+    FILE *fp = fopen("transformation.txt" , "w");
+    fprintf(fp , "translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
+    fprintf(fp , "scale = %.6f\n" , scale);
+    fclose(fp);
 }
 
 void PointCloudUtils::buildUniformGrid(vec3i size)

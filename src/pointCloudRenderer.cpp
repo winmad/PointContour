@@ -48,6 +48,11 @@ void PointCloudRenderer::init()
 	isShowCoplanes = false;
     isShowFeaturePoints = false;
     isShowDebugPoints = false;
+
+    isShowAxisWidget = false;
+    chosenAxis = -1;
+    axisWidget.init();
+
     constraintsVisual = 0;
     patchesVisual = 0;
     bspIndex = 0; curveIndex = 0;
@@ -1144,6 +1149,28 @@ void PointCloudRenderer::renderCrossPlane()
     drawPoints(crossPoints3d);
 }
 
+void PointCloudRenderer::renderAxisWidget()
+{
+    if (!isShowAxisWidget) return;
+    glLineWidth(2.5f);
+
+    for (int i = 0; i < axisWidget.axes.size(); i++)
+    {
+        if (chosenAxis == i)
+        {
+            glColor4f(1.f , 0.f , 0.f , 1.f);
+            drawLine(axisWidget.origin - axisWidget.axes[i] * axisWidget.length * 2 ,
+                axisWidget.origin + axisWidget.axes[i] * axisWidget.length * 2);
+        }
+        else
+        {
+            glColor4f(0.f , 0.f , 0.f , 0.7f);
+            drawLine(axisWidget.origin , axisWidget.origin + axisWidget.axes[i] *
+                axisWidget.length);
+        }
+    }
+}
+
 void PointCloudRenderer::render()
 {
     renderFreeSketches();
@@ -1171,6 +1198,7 @@ void PointCloudRenderer::render()
 	renderPickedCycle();
     renderPickedSavedMesh();
     renderSavedMeshes();
+    renderAxisWidget();
 // #else
     // renderUnsavedCycles();
     // renderPickedCycle();
@@ -1869,7 +1897,7 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 		}
 	}
     double snapOffset = selectionOffset;
-    // printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
     if (res == -1) return res;
     if (nodeIndex == 0 || nodeIndex == polyLines[res].size() - 1)
         snapOffset *= 2;
@@ -2572,10 +2600,22 @@ void PointCloudRenderer::initTranslationMode()
     autoGenOriginPaths.clear();
     autoGenPaths.clear();
     autoGenBsp.clear();
+    bool isFirst = true;
     for (int i = 0; i < dispCurveNet->numPolyLines; i++)
     {
         if (isCurvesChosen[i])
         {
+            if (isFirst)
+            {
+                axisWidget.origin = dispCurveNet->polyLines[i][0];
+                for (int j = 0; j < axisWidget.axes.size(); j++)
+                {
+                    resampleLine(axisWidget.origin - axisWidget.axes[j] * 0.5 ,
+                        axisWidget.origin + axisWidget.axes[j] * 0.5 , 500 ,
+                        axisWidget.axesPoints[j]);
+                }
+                isFirst = false;
+            }
             autoGenOriginPaths.push_back(dispCurveNet->originPolyLines[i]);
             autoGenPaths.push_back(dispCurveNet->polyLines[i]);
             autoGenBsp.push_back(dispCurveNet->bsplines[i]);
@@ -2596,6 +2636,14 @@ void PointCloudRenderer::autoGenByTranslation(double offset)
         autoGenOriginPaths[i] = originPath;
         autoGenPaths[i] = path;
         autoGenBsp[i] = bsp;
+    }
+    axisWidget.origin += axisPlane.n * offset;
+    for (int i = 0; i < axisWidget.axesPoints.size(); i++)
+    {
+        for (int j = 0; j < axisWidget.axesPoints[i].size(); j++)
+        {
+            axisWidget.axesPoints[i][j] += axisPlane.n * offset;
+        }
     }
 }
 
