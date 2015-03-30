@@ -57,6 +57,12 @@ public:
     bool translatePath(const Path& lastOriginPath , const Path& lastPath ,
         const BSpline& lastBsp , const Plane& axisPlane , const double& offset ,
         Path& originPath , Path& path , BSpline& bsp);
+    bool scalePath(const Path& lastOriginPath , const Path& lastPath ,
+        const BSpline& lastBsp , const Plane& axisPlane , const double& offset ,
+        Path& originPath , Path& path , BSpline& bsp);
+    bool rotatePath(const Path& lastOriginPath , const Path& lastPath ,
+        const BSpline& lastBsp , const Plane& axisPlane , const double& offset ,
+        Path& originPath , Path& path , BSpline& bsp);
 
     void calcDispCyclePoints(const Cycle& cycle ,
 		std::vector<Path>& cyclePts , vec3d& cycleCenter);

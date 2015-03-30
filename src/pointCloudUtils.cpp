@@ -157,7 +157,7 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 
 	// phase 2
 	gaussianSmooth(originF , f , _filterRadius / 3.0);
-#ifdef OUTPUT_DIST_FIELD
+#if (OUTPUT_DIST_FIELD)
     FILE* fout = fopen("field_grid.txt" , "w");
     fprintf(fout , "%d %d %d\n" , sizeOriginF.x , sizeOriginF.y , sizeOriginF.z);
     for (int i = 0; i < sizeOriginF.x; i++)
@@ -168,6 +168,19 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
             {
                 fprintf(fout , "%.6f %.6f %.6f %.6f\n" , extXval[i] , extYval[j] ,
                     extZval[k] , f[i][j][k]);
+            }
+        }
+    }
+
+    pcRenderer->debugPoints.clear();
+    for (int i = 0; i < sizeOriginF.x; i++)
+    {
+        for (int j = 0; j < sizeOriginF.y; j++)
+        {
+            for (int k = 0; k < sizeOriginF.z; k++)
+            {
+                if (f[i][j][k] < 0.005) pcRenderer->debugPoints.push_back(vec3d(extXval[i] ,
+                        extYval[j] , extZval[k]));
             }
         }
     }
@@ -236,6 +249,10 @@ void PointCloudUtils::getBBox()
         center = center + pcData[i].pos;
 	}
     center = center / (double)pcData.size();
+
+#if (PC_NOT_NEED_TRANSFORM)
+    return;
+#endif
     
     // translate
     for (int i = 0; i < pcData.size(); i++)
@@ -261,6 +278,16 @@ void PointCloudUtils::getBBox()
     fprintf(fp , "translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
     fprintf(fp , "scale = %.6f\n" , scale);
     fclose(fp);
+
+#if (OUTPUT_TRANSFORMED_PC)
+    fp = fopen("transformed_point_cloud.npts" , "w");
+    for (int i = 0; i < pcData.size(); i++)
+    {
+        fprintf(fp , "%.6f %.6f %.6f %.6f %.6f %.6f\n" , pcData[i].pos.x , pcData[i].pos.y ,
+            pcData[i].pos.z , pcData[i].n.x , pcData[i].n.y , pcData[i].n.z);
+    }
+    fclose(fp);
+#endif
 }
 
 void PointCloudUtils::buildUniformGrid(vec3i size)

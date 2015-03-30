@@ -643,16 +643,22 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         if (pcRenderer->copyMode == 1)
         {
             int nodeIndex = -1;
-            pcRenderer->chosenAxis = pcRenderer->curveSelectionByRay(x , y , nodeIndex ,
-                pcRenderer->axisWidget.axesPoints);
-            printf("chosen axis = %d\n" , pcRenderer->chosenAxis);
+            if (!isDrag)
+            {
+                pcRenderer->chosenAxis = pcRenderer->curveSelectionByRay(x , y , nodeIndex ,
+                    pcRenderer->axisWidget.axesPoints);
+            }
+            // printf("chosen axis = %d\n" , pcRenderer->chosenAxis);
             if (event.Dragging() && pcRenderer->chosenAxis != -1)
             {
                 if (!isDrag)
                 {
                     isDrag = true;
                     chosenAxis = pcRenderer->chosenAxis;
+
+                    printf("start translation, fixed axis = %d\n" , chosenAxis);
                 }
+
                 pcRenderer->axisPlane.init(pcRenderer->axisWidget.origin ,
                     pcRenderer->axisWidget.axes[chosenAxis] , 1);
                 double delta;
@@ -662,24 +668,163 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 std::vector<vec3d> ray = computeRay(x , y);
                 vec3d dir = ray.back() - ray.front();
                 dir.normalize();
+                // vec3d pos = pcRenderer->axisPlane.intersect(ray.front() , dir);
                 vec3d pos = plane.intersect(ray.front() , dir);
                 ray = computeRay(m_lastx , m_lasty);
                 dir = ray.back() - ray.front();
                 dir.normalize();
                 vec3d last_pos = plane.intersect(ray.front() , dir);
 
-                delta = pcRenderer->axisPlane.n.dot(pos - last_pos);
+                delta = pcRenderer->axisPlane.n.dot(pos - last_pos) * 10;
+                // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
                 pcRenderer->autoGenByTranslation(delta);
             }
             else if (event.MiddleIsDown())
             {
-                pcRenderer->pickAllAutoCurves();
+                pcRenderer->pickAllAutoCurves(0);
+            }
+            else if (event.RightIsDown())
+            {
+                pcRenderer->pickAllAutoCurves(1);
             }
 
-            if (event.LeftUp())
+            if (!event.LeftIsDown() && isDrag)
             {
                 chosenAxis = -1;
                 isDrag = false;
+
+                printf("finish translation!\n");
+            }
+        }
+        else if (pcRenderer->copyMode == 2)
+        {
+            int nodeIndex = -1;
+            if (!isDrag)
+            {
+                pcRenderer->chosenAxis = pcRenderer->curveSelectionByRay(x , y , nodeIndex ,
+                    pcRenderer->axisWidget.axesPoints);
+            }
+            // printf("chosen axis = %d\n" , pcRenderer->chosenAxis);
+            if (event.Dragging() && pcRenderer->chosenAxis != -1)
+            {
+                if (!isDrag)
+                {
+                    isDrag = true;
+                    chosenAxis = pcRenderer->chosenAxis;
+
+                    printf("start scaling, fixed axis = %d\n" , chosenAxis);
+                }
+
+                pcRenderer->axisPlane.init(pcRenderer->axisWidget.origin ,
+                    pcRenderer->axisWidget.axes[chosenAxis] , 1);
+                double delta;
+                Plane plane;
+                plane.init(cameraPos + cameraFrame.n * 0.5 , -cameraFrame.n , 1);
+
+                std::vector<vec3d> ray = computeRay(x , y);
+                vec3d dir = ray.back() - ray.front();
+                dir.normalize();
+                // vec3d pos = pcRenderer->axisPlane.intersect(ray.front() , dir);
+                vec3d pos = plane.intersect(ray.front() , dir);
+                ray = computeRay(m_lastx , m_lasty);
+                dir = ray.back() - ray.front();
+                dir.normalize();
+                vec3d last_pos = plane.intersect(ray.front() , dir);
+
+                delta = 1 - pcRenderer->axisPlane.n.dot(pos - last_pos) * 20;
+                printf("scaling delta = %.6f\n" , delta);
+                // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
+                pcRenderer->autoGenByScaling(delta);
+            }
+            else if (event.MiddleIsDown())
+            {
+                pcRenderer->pickAllAutoCurves(0);
+            }
+            else if (event.RightIsDown())
+            {
+                pcRenderer->pickAllAutoCurves(1);
+            }
+
+            if (!event.LeftIsDown() && isDrag)
+            {
+                chosenAxis = -1;
+                isDrag = false;
+
+                printf("finish scaling!\n");
+            }
+        }
+        else if (pcRenderer->copyMode == 3)
+        {
+            int nodeIndex = -1;
+            if (!isDrag)
+            {
+                pcRenderer->chosenAxis = pcRenderer->curveSelectionByRay(x , y , nodeIndex ,
+                    pcRenderer->axisWidget.globePoints);
+            }
+            // printf("chosen axis = %d\n" , pcRenderer->chosenAxis);
+            if (event.Dragging() && pcRenderer->chosenAxis != -1)
+            {
+                if (!isDrag)
+                {
+                    isDrag = true;
+                    chosenAxis = pcRenderer->chosenAxis;
+
+                    printf("start rotation, fixed axis = %d\n" , chosenAxis);
+                }
+
+                pcRenderer->axisPlane.init(pcRenderer->axisWidget.origin ,
+                    pcRenderer->axisWidget.axes[chosenAxis] , 1);
+                double delta;
+                Plane plane;
+                plane.init(cameraPos + cameraFrame.n * 0.5 , -cameraFrame.n , 1);
+
+                std::vector<vec3d> ray = computeRay(x , y);
+                vec3d dir = ray.back() - ray.front();
+                dir.normalize();
+                vec3d pos = pcRenderer->axisPlane.intersect(ray.front() , dir);
+                // vec3d pos = plane.intersect(ray.front() , dir);
+                ray = computeRay(m_lastx , m_lasty);
+                dir = ray.back() - ray.front();
+                dir.normalize();
+                vec3d last_pos = pcRenderer->axisPlane.intersect(ray.front() , dir);
+                // vec3d last_pos = plane.intersect(ray.front() , dir);
+
+                vec3d x = pos - pcRenderer->axisWidget.origin;
+                vec3d y = last_pos - pcRenderer->axisWidget.origin;
+                dir = x.cross(y);
+                if (dir.dot(pcRenderer->axisPlane.n) < 0)
+                {
+                    delta = 0.05;
+                }
+                else
+                {
+                    delta = -0.05;
+                }
+                /*
+                dir = pcRenderer->axisWidget.origin - cameraPos;
+                dir.normalize();
+                vec3d origin_proj = plane.intersect(cameraPos , dir);
+                */
+                //delta = 1 - pcRenderer->axisPlane.n.dot(pos - last_pos) * 20;
+                printf("rotation delta = %.6f\n" , delta);
+                // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
+                pcRenderer->autoGenByRotation(delta);
+            }
+            else if (event.MiddleIsDown())
+            {
+                pcRenderer->pickAllAutoCurves(0);
+            }
+            else if (event.RightIsDown())
+            {
+                pcRenderer->pickAllAutoCurves(1);
+            }
+
+            if (!event.LeftIsDown() && isDrag)
+            {
+                chosenAxis = -1;
+                isDrag = false;
+
+                printf("finish rotation!\n");
             }
         }
         else if (crossPlanePicked) // cross plane operation, ignore all other editing operations
@@ -931,10 +1076,46 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         {
             if (pcRenderer->copyMode != 1)
             {
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode();
                 pcRenderer->copyMode = 1;
                 pcRenderer->isShowAxisWidget = true;
-                pcRenderer->initTranslationMode();
                 wxString str("copy by translation\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
+        else if (uc == 'S')
+        {
+            if (pcRenderer->copyMode != 2)
+            {
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode();
+                pcRenderer->copyMode = 2;
+                pcRenderer->isShowAxisWidget = true;
+                wxString str("copy by scaling\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
+        else if (uc == 'R')
+        {
+            if (pcRenderer->copyMode != 3)
+            {
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode();
+                pcRenderer->copyMode = 3;
+                pcRenderer->isShowAxisWidget = true;
+                wxString str("copy by rotation\n");
                 m_pcUtils->statusBar->SetStatusText(str);
             }
             else
@@ -1007,7 +1188,7 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 		{
 			m_pcUtils->pcRenderer->isShowCoplanes = !m_pcUtils->pcRenderer->isShowCoplanes;
 		}
-        else if (uc == 'R')
+        else if (uc == 'G')
         {
             m_pcUtils->pcRenderer->autoGenBySymmetry();
         }
@@ -1025,7 +1206,7 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         {
             m_pcUtils->pcRenderer->isShowFeaturePoints = !m_pcUtils->pcRenderer->isShowFeaturePoints;
         }
-        else if (uc == 'S')
+        else if (uc == 'B')
         {
             m_pcUtils->pcRenderer->isShowDebugPoints = !m_pcUtils->pcRenderer->isShowDebugPoints;
         }

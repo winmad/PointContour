@@ -81,6 +81,24 @@ bool isSameCycleGroup(CycleGroup& c1 , CycleGroup& c2)
     return true;
 }
 
+vec3d pointScaling(const vec3d& pos , const vec3d& origin , int chosenAxis , double scale)
+{
+    vec3d res;
+    vec3d dir = pos - origin;
+    for (int i = 0; i < 3; i++)
+    {
+        if (chosenAxis == i)
+        {
+            res[i] = origin[i] + dir[i] * scale;
+        }
+        else
+        {
+            res[i] = pos[i];
+        }
+    }
+    return res;
+}
+
 double weightBetweenSegs(const vec3d& x1 , const vec3d& y1 ,
 	const vec3d& x2 , const vec3d& y2)
 {

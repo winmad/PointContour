@@ -1154,21 +1154,54 @@ void PointCloudRenderer::renderAxisWidget()
     if (!isShowAxisWidget) return;
     glLineWidth(2.5f);
 
-    for (int i = 0; i < axisWidget.axes.size(); i++)
+    if (chosenAxis != -1)
     {
-        if (chosenAxis == i)
+        glColor4f(1.f , 0.f , 0.f , 1.f);
+        drawLine(axisWidget.origin - axisWidget.axes[chosenAxis] * axisWidget.length * 2 ,
+            axisWidget.origin + axisWidget.axes[chosenAxis] * axisWidget.length * 2);
+        if (copyMode == 3)
         {
-            glColor4f(1.f , 0.f , 0.f , 1.f);
-            drawLine(axisWidget.origin - axisWidget.axes[i] * axisWidget.length * 2 ,
-                axisWidget.origin + axisWidget.axes[i] * axisWidget.length * 2);
-        }
-        else
-        {
-            glColor4f(0.f , 0.f , 0.f , 0.7f);
-            drawLine(axisWidget.origin , axisWidget.origin + axisWidget.axes[i] *
-                axisWidget.length);
+            for (int i = 0; i < axisWidget.axes.size(); i++)
+            {
+                if (i == chosenAxis)
+                {
+                    glPointSize(4.f);
+                    glColor4f(1.f , 0.f , 0.f , 0.7f);
+                }
+                else
+                {
+                    glPointSize(1.f);
+                    glColor4f(0.f , 0.f , 0.f , 0.7f);
+                }
+                drawPoints(axisWidget.globePoints[i]);
+            }
         }
     }
+    else
+    {
+        if (copyMode != 3)
+        {
+            for (int i = 0; i < axisWidget.axes.size(); i++)
+            {
+                glColor4f(0.f , 0.f , 0.f , 0.7f);
+                drawLine(axisWidget.origin , axisWidget.origin + axisWidget.axes[i] *
+                    axisWidget.length);
+            }
+        }
+        else if (copyMode == 3)
+        {
+            glPointSize(1.f);
+            for (int i = 0; i < axisWidget.axes.size(); i++)
+            {
+                glColor4f(0.f , 0.f , 0.f , 0.7f);
+                drawPoints(axisWidget.globePoints[i]);
+            }
+        }
+    }
+
+    glPointSize(8.f);
+    glColor4f(1.f , 0.f , 0.f , 0.7f);
+    drawPoint(axisWidget.origin);
 }
 
 void PointCloudRenderer::render()
@@ -1897,7 +1930,7 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 		}
 	}
     double snapOffset = selectionOffset;
-    printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    // printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
     if (res == -1) return res;
     if (nodeIndex == 0 || nodeIndex == polyLines[res].size() - 1)
         snapOffset *= 2;
@@ -1992,12 +2025,20 @@ bool PointCloudRenderer::pickAutoCurve(int mouseX , int mouseY , int op)
     return false;
 }
 
-void PointCloudRenderer::pickAllAutoCurves()
+void PointCloudRenderer::pickAllAutoCurves(int op)
 {
     printf("begin storing translated auto curves\n");
+    if (op == 1)
+    {
+        for (int i = 0; i < autoPathOrigins.size(); i++)
+        {
+            int j = autoPathOrigins[i];
+            dispCurveNet->deletePath(j);
+        }
+    }
     for (int i = 0; i < autoGenPaths.size(); i++)
     {
-        pcUtils->gradientDescentSmooth(autoGenPaths[i] , true);
+        pcUtils->gradientDescentSmooth(autoGenPaths[i] , false);
         if (!ConstraintDetector::collinearTest(autoGenPaths[i] , autoGenBsp[i]))
         {
             convert2Spline(autoGenPaths[i] , autoGenBsp[i]);
@@ -2009,6 +2050,11 @@ void PointCloudRenderer::pickAllAutoCurves()
             selectionOffset * 1.5 , isAutoOpt);
     }
     isCurvesChosen.resize(dispCurveNet->numPolyLines , false);
+
+    autoGenOriginPaths.clear();
+    autoGenPaths.clear();
+    autoGenBsp.clear();
+    autoPathOrigins.clear();
 }
 
 int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY ,
@@ -2274,7 +2320,7 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	mesh.clear();
 	meshNormals.clear();
 
-#ifdef OUTPUT_MESH_IN_CURVE
+#if (OUTPUT_MESH_IN_CURVE)
     FILE* fout = fopen("inCurves.txt" , "w");
     fprintf(fout , "%d\n" , inCurves.size());
     for (int i = 0; i < inCurves.size(); i++)
@@ -2443,7 +2489,7 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 		}
 	}
 
-#ifdef OUTPUT_MESH
+#if (OUTPUT_MESH)
     fout = fopen("coarse_mesh.txt" , "w");
     fprintf(fout , "%d\n" , numPositions);
     for (int i = 0; i < numPositions; i++)
@@ -2600,6 +2646,7 @@ void PointCloudRenderer::initTranslationMode()
     autoGenOriginPaths.clear();
     autoGenPaths.clear();
     autoGenBsp.clear();
+    autoPathOrigins.clear();
     bool isFirst = true;
     for (int i = 0; i < dispCurveNet->numPolyLines; i++)
     {
@@ -2608,17 +2655,21 @@ void PointCloudRenderer::initTranslationMode()
             if (isFirst)
             {
                 axisWidget.origin = dispCurveNet->polyLines[i][0];
+                axisWidget.resamplePoints();
+                /*
                 for (int j = 0; j < axisWidget.axes.size(); j++)
                 {
                     resampleLine(axisWidget.origin - axisWidget.axes[j] * 0.5 ,
                         axisWidget.origin + axisWidget.axes[j] * 0.5 , 500 ,
                         axisWidget.axesPoints[j]);
                 }
+                */
                 isFirst = false;
             }
             autoGenOriginPaths.push_back(dispCurveNet->originPolyLines[i]);
             autoGenPaths.push_back(dispCurveNet->polyLines[i]);
             autoGenBsp.push_back(dispCurveNet->bsplines[i]);
+            autoPathOrigins.push_back(i);
         }
     }
 }
@@ -2638,12 +2689,47 @@ void PointCloudRenderer::autoGenByTranslation(double offset)
         autoGenBsp[i] = bsp;
     }
     axisWidget.origin += axisPlane.n * offset;
+    axisWidget.resamplePoints();
+    /*
     for (int i = 0; i < axisWidget.axesPoints.size(); i++)
     {
         for (int j = 0; j < axisWidget.axesPoints[i].size(); j++)
         {
             axisWidget.axesPoints[i][j] += axisPlane.n * offset;
         }
+    }
+    */
+}
+
+void PointCloudRenderer::autoGenByScaling(double offset)
+{
+    Path originPath , path;
+    BSpline bsp;
+    for (int i = 0; i < autoGenPaths.size(); i++)
+    {
+        // printf("  translate path %d\n" , i);
+        dispCurveNet->scalePath(autoGenOriginPaths[i] , autoGenPaths[i] ,
+            autoGenBsp[i] , axisPlane , offset , originPath , path , bsp);
+
+        autoGenOriginPaths[i] = originPath;
+        autoGenPaths[i] = path;
+        autoGenBsp[i] = bsp;
+    }
+}
+
+void PointCloudRenderer::autoGenByRotation(double offset)
+{
+    Path originPath , path;
+    BSpline bsp;
+    for (int i = 0; i < autoGenPaths.size(); i++)
+    {
+        // printf("  translate path %d\n" , i);
+        dispCurveNet->rotatePath(autoGenOriginPaths[i] , autoGenPaths[i] ,
+            autoGenBsp[i] , axisPlane , offset , originPath , path , bsp);
+
+        autoGenOriginPaths[i] = originPath;
+        autoGenPaths[i] = path;
+        autoGenBsp[i] = bsp;
     }
 }
 

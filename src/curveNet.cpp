@@ -398,6 +398,88 @@ bool CurveNet::translatePath(const Path& lastOriginPath , const Path& lastPath ,
     return true;
 }
 
+bool CurveNet::scalePath(const Path& lastOriginPath , const Path& lastPath ,
+    const BSpline& lastBsp, const Plane& axisPlane , const double& offset ,
+    Path& originPath , Path& path , BSpline& bsp)
+{
+    originPath.clear();
+    path.clear();
+    int chosenAxis = -1;
+    for (int j = 0; j < 3; j++)
+    {
+        if (axisPlane.n[j] > 0.99)
+        {
+            chosenAxis = j;
+            break;
+        }
+    }
+    for (int i = 0; i < lastOriginPath.size(); i++)
+    {
+        originPath.push_back(pointScaling(lastOriginPath[i] , axisPlane.p ,
+                chosenAxis , offset));
+        path.push_back(pointScaling(lastPath[i] , axisPlane.p ,
+                chosenAxis , offset));
+    }
+    bsp = lastBsp;
+    for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+    {
+        bsp.ctrlNodes[i] = pointScaling(lastBsp.ctrlNodes[i] , axisPlane.p ,
+            chosenAxis , offset);
+    }
+    return true;
+}
+
+bool CurveNet::rotatePath(const Path& lastOriginPath , const Path& lastPath ,
+    const BSpline& lastBsp, const Plane& axisPlane , const double& offset ,
+    Path& originPath , Path& path , BSpline& bsp)
+{
+    originPath.clear();
+    path.clear();
+    Eigen::Matrix3d rotateMat;
+    rotateMat = Eigen::AngleAxisd(offset ,
+        Eigen::Vector3d(axisPlane.n.x , axisPlane.n.y , axisPlane.n.z));
+    for (int i = 0; i < lastOriginPath.size(); i++)
+    {
+        vec3d dir = lastOriginPath[i] - axisPlane.p;
+        double len = dir.length();
+        Eigen::Vector3d d(dir.x , dir.y , dir.z);
+        d = rotateMat * d;
+        /*
+        printf("len = %.6f, (%.6f,%.6f,%.6f)-(%.6f,%.6f,%.6f)\n" , len , lastOriginPath[i].x ,
+            lastOriginPath[i].y , lastOriginPath[i].z , axisPlane.p.x , axisPlane.p.y ,
+            axisPlane.p.z);
+        printf("before: (%.6f,%.6f,%.6f), after: (%.6f,%.6f,%.6f)\n\n" ,
+            dir.x , dir.y , dir.z , d(0) , d(1) , d(2));
+        */
+        for (int j = 0; j < 3; j++) dir[j] = d(j);
+        dir.normalize();
+        dir *= len;
+        originPath.push_back(axisPlane.p + dir);
+
+        dir = lastPath[i] - axisPlane.p;
+        len = dir.length();
+        for (int j = 0; j < 3; j++) d(j) = dir[j];
+        d = rotateMat * d;
+        for (int j = 0; j < 3; j++) dir[j] = d(j);
+        dir.normalize();
+        dir *= len;
+        path.push_back(axisPlane.p + dir);
+    }
+    bsp = lastBsp;
+    for (int i = 0; i < bsp.ctrlNodes.size(); i++)
+    {
+        vec3d dir = lastBsp.ctrlNodes[i] - axisPlane.p;
+        double len = dir.length();
+        Eigen::Vector3d d(dir.x , dir.y , dir.z);
+        d = rotateMat * d;
+        for (int j = 0; j < 3; j++) dir[j] = d(j);
+        dir.normalize();
+        dir *= len;
+        bsp.ctrlNodes[i] = vec3d(axisPlane.p + dir);
+    }
+    return true;
+}
+
 bool CurveNet::transformPath(const int& bspIndex , Eigen::Matrix4f& transMat ,
     Path& originPath , Path& path , BSpline& bsp)
 {

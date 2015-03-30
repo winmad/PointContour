@@ -207,6 +207,7 @@ public:
 	PointKDTree<Data> *tree;
 
     bool initialized;
+    bool needTransform;
 	BBox box;
 
 	vec3i gridRes;

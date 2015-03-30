@@ -140,12 +140,14 @@ public:
 	void pickPoint(int mouseX , int mouseY , int op);
     bool pickCurve(int mouseX , int mouseY , int op); // extra: op = 3, choose/not
     bool pickAutoCurve(int mouseX , int mouseY , int op);
-    void pickAllAutoCurves();
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
     // op: 0 choose, 1 update
     bool pickCtrlNode(int mouseX , int mouseY , int lastX , int lastY , int op);
+
+    // op: 0 copy, 1 replace
+    void pickAllAutoCurves(int op);
 
     void initFreeSketchMode();
     void freeSketchOnPointCloud(std::vector<std::pair<unsigned , unsigned> >& seq);
@@ -171,6 +173,8 @@ public:
     void autoGenBySymmetry();
     void initTranslationMode();
     void autoGenByTranslation(double offset);
+    void autoGenByScaling(double offset);
+    void autoGenByRotation(double offset);
     void autoGenByICP();
     void autoGenByPclNurbsFitting();
     void clearAutoGen();
@@ -221,7 +225,7 @@ public:
     // 2: circle or arc, 3: free 2d sketch
     int drawMode;
 
-    // 0: none, 1: translation
+    // 0: none, 1: translation, 2: scaling
     int copyMode;
 
     std::vector<Cycle> unsavedCycles;
@@ -250,6 +254,7 @@ public:
     std::vector<Path> autoGenPaths;
     std::vector<BSpline> autoGenBsp;
     std::vector<bool> autoPathStatus;
+    std::vector<int> autoPathOrigins;
 
     std::vector<vec3d> chosenPoints;
     Path sketchLine;

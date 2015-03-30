@@ -10,11 +10,18 @@ class AxisWidget
 {
 public:
     void init();
+    void resamplePoints();
 
     vec3d origin;
-    double length;
+    double length , radius;
+
+    int tableSize;
+    std::vector<double> cosTable;
+    std::vector<double> sinTable;
+
     std::vector<vec3d> axes;
     std::vector<Path> axesPoints;
+    std::vector<Path> globePoints;
 };
 
 #endif
