@@ -38,6 +38,8 @@ public:
 	vec3d intersect(vec3d& start , vec3d& dir);
 	void fitFromPoints(Path& path);
 
+    void calculateAngle();
+
     vec3d p;
 	vec3d n;
 	double d;

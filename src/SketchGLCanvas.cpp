@@ -363,13 +363,14 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 		if (event.LeftIsDown())
 		{
 			//convert the mouse clicked locations to lie between [-1,1] for both X and Y
+            /*
 			double halfWidth = m_width/2.0;
 			double halfHeight = m_height/2.0;
 			double xNormalized = (x-halfWidth)/halfWidth;
 			double yNormalized = (halfHeight-y)/halfHeight;
 			double oldXNormalized = (m_lastx-halfWidth)/halfWidth;
 			double oldYNormalized = (halfHeight-m_lasty)/halfHeight;
-
+            */
 			// rotates screen
 			float rot[3]={0};
 			rot[1] -= (m_lasty - y) * 0.5;
@@ -629,10 +630,10 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 			isChangeView=false;
 		}
 
-        pcRenderer->dragPlane.setNull();
-        
 		bool curvePicked = m_pcUtils->pcRenderer->pickCurve(x , y , 0);
         bool ctrlNodePicked = m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 0);
+        if (!pcRenderer->isShowCtrlNodes) ctrlNodePicked = false;
+
         bool crossPlanePicked = pcRenderer->crossPlane.isValid();
         if (!curvePicked)
         {
@@ -640,6 +641,9 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             m_pcUtils->pcRenderer->pickPoint(x , y , 0);
         }
 
+        // printf("curve picked = %d, ctrlNode picked = %d, crossPlane picked = %d\n" ,
+            // curvePicked , ctrlNodePicked , crossPlanePicked);
+        
         if (pcRenderer->copyMode == 1)
         {
             int nodeIndex = -1;
@@ -732,7 +736,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 vec3d last_pos = plane.intersect(ray.front() , dir);
 
                 delta = 1 - pcRenderer->axisPlane.n.dot(pos - last_pos) * 20;
-                printf("scaling delta = %.6f\n" , delta);
+                // printf("scaling delta = %.6f\n" , delta);
                 // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
                 pcRenderer->autoGenByScaling(delta);
             }
@@ -806,7 +810,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 vec3d origin_proj = plane.intersect(cameraPos , dir);
                 */
                 //delta = 1 - pcRenderer->axisPlane.n.dot(pos - last_pos) * 20;
-                printf("rotation delta = %.6f\n" , delta);
+                // printf("rotation delta = %.6f\n" , delta);
                 // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
                 pcRenderer->autoGenByRotation(delta);
             }
@@ -827,18 +831,94 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 printf("finish rotation!\n");
             }
         }
+        else if (pcRenderer->copyMode == 4)
+        {
+            m_pcUtils->pcRenderer->pickedBsp = chosenBsp;
+            m_pcUtils->pcRenderer->pickedCtrlNode = chosenCtrlNode;
+
+            int nodeIndex = -1;
+            if (!isDrag)
+            {
+                pcRenderer->chosenAxis = pcRenderer->curveSelectionByRay(x , y ,
+                    nodeIndex , pcRenderer->axisWidget.axesPoints);
+            }
+            // printf("chosen axis = %d\n" , pcRenderer->chosenAxis);
+            if (event.Dragging() && pcRenderer->chosenAxis != -1)
+            {
+                if (!isDrag)
+                {
+                    isDrag = true;
+                    chosenAxis = pcRenderer->chosenAxis;
+
+                    printf("start point translation, fixed axis = %d\n" , chosenAxis);
+                }
+
+                pcRenderer->axisPlane.init(pcRenderer->axisWidget.origin ,
+                    pcRenderer->axisWidget.axes[chosenAxis] , 1);
+                double delta;
+                Plane plane;
+                plane.init(cameraPos + cameraFrame.n * 0.5 , -cameraFrame.n , 1);
+
+                std::vector<vec3d> ray = computeRay(x , y);
+                vec3d dir = ray.back() - ray.front();
+                dir.normalize();
+                // vec3d pos = pcRenderer->axisPlane.intersect(ray.front() , dir);
+                vec3d pos = plane.intersect(ray.front() , dir);
+                ray = computeRay(m_lastx , m_lasty);
+                dir = ray.back() - ray.front();
+                dir.normalize();
+                vec3d last_pos = plane.intersect(ray.front() , dir);
+
+                delta = pcRenderer->axisPlane.n.dot(pos - last_pos) * 5;
+                // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
+                pcRenderer->autoGenByTranslation(delta);
+                vec3d newPos = pcRenderer->axisPlane.p + pcRenderer->axisPlane.n * delta;
+                pcRenderer->axisWidget.origin += pcRenderer->axisPlane.n * delta;
+                pcRenderer->axisWidget.resamplePoints();
+                pcRenderer->dispCurveNet->updatePath(pcRenderer->pickedBsp ,
+                    pcRenderer->pickedCtrlNode , newPos , false);
+            }
+
+            if (!event.LeftIsDown() && isDrag)
+            {
+                chosenAxis = -1;
+                isDrag = false;
+
+                printf("finish point translation!\n");
+                if (isEditSpline && chosenBsp != -1 && m_pcUtils->pcRenderer->isAutoOpt)
+                {
+                    m_pcUtils->pcRenderer->dispCurveNet->updateConstraints(chosenBsp);
+                    m_pcUtils->pcRenderer->optUpdate(false);
+                }
+                // setNull(m_pcUtils->pcRenderer->dragStartPoint);
+                // setNull(m_pcUtils->pcRenderer->dragPlane.p);
+                // pcRenderer->dragPlane.setNull();
+                // isEditSpline = false;
+                pcRenderer->axisWidget.origin = pcRenderer->dispCurveNet->bsplines[chosenBsp].ctrlNodes[chosenCtrlNode];
+                pcRenderer->axisWidget.resamplePoints();
+            }
+
+            if (event.RightIsDown())
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                chosenBsp = chosenCtrlNode = -1;
+                isEditSpline = false;
+            }
+        }
         else if (crossPlanePicked) // cross plane operation, ignore all other editing operations
         {
             if (event.Dragging())
             {
                 //convert the mouse clicked locations to lie between [-1,1] for both X and Y
+                /*
                 double halfWidth = m_width/2.0;
                 double halfHeight = m_height/2.0;
                 double xNormalized = (x-halfWidth)/halfWidth;
                 double yNormalized = (halfHeight-y)/halfHeight;
                 double oldXNormalized = (m_lastx-halfWidth)/halfWidth;
                 double oldYNormalized = (halfHeight-m_lasty)/halfHeight;
-
+                */
                 // rotates screen
                 float rot[3]={0};
                 rot[1] -= (m_lasty - y) * 0.5;
@@ -884,15 +964,15 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                     if (!isEditSpline)
                     {
                         isEditSpline = true;
-                        chosenBsp = m_pcUtils->pcRenderer->pickedBsp;
-                        chosenCtrlNode = m_pcUtils->pcRenderer->pickedCtrlNode;
-                        m_pcUtils->pcRenderer->dragStartPoint = m_pcUtils->pcRenderer->dispCurveNet->bsplines[chosenBsp].ctrlNodes[chosenCtrlNode];
-                        Plane& plane = m_pcUtils->pcRenderer->dragPlane;
-                        std::vector<vec3d> rays = computeRay(x , y);
-                        plane.p = m_pcUtils->pcRenderer->dragStartPoint;
-                        plane.n = rays.back() - rays.front();
-                        plane.n.normalize();
-                        plane.d = -plane.p.dot(plane.n);
+                        printf("edit spline ready\n");
+                        chosenBsp = pcRenderer->pickedBsp;
+                        chosenCtrlNode = pcRenderer->pickedCtrlNode;
+                        pcRenderer->axisWidget.origin = pcRenderer->dispCurveNet->bsplines[chosenBsp].ctrlNodes[chosenCtrlNode];
+                        pcRenderer->axisWidget.resamplePoints();
+                        pcRenderer->isShowAxisWidget = true;
+                        pcRenderer->chosenAxis = -1;
+                        isDrag = false;
+                        pcRenderer->copyMode = 4;
                         m_pcUtils->pcRenderer->backup();
                     }
                 }
@@ -900,7 +980,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 {
                     pcRenderer->pickCurve(x , y , 3);
                 }
-                else if (!crossPlanePicked)
+                else if (!crossPlanePicked && !isEditSpline)
                 {
                     Plane& plane = pcRenderer->crossPlane;
                     std::vector<vec3d> rays = computeRay(x , y);
@@ -912,14 +992,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
                     pcRenderer->calcPointsNearCrossPlane();
                 }
-
-                if (isEditSpline)
-                {
-                    m_pcUtils->pcRenderer->pickedBsp = chosenBsp;
-                    m_pcUtils->pcRenderer->pickedCtrlNode = chosenCtrlNode;
-                    m_pcUtils->pcRenderer->dragPlane.p = m_pcUtils->pcRenderer->dragStartPoint;
-                }
-                m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 1);
+                // m_pcUtils->pcRenderer->pickCtrlNode(x , y , m_lastx , m_lasty , 1);
             }
             else if (event.RightIsDown()) // delete
             {
@@ -934,20 +1007,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                     // delete cycle and surface
                     m_pcUtils->pcRenderer->pickSavedCycle(x , y , 2);
                 }
-            }
-
-            if (!event.LeftIsDown())
-            {
-                if (isEditSpline && chosenBsp != -1 && m_pcUtils->pcRenderer->isAutoOpt)
-                {
-                    m_pcUtils->pcRenderer->dispCurveNet->updateConstraints(chosenBsp);
-                    m_pcUtils->pcRenderer->optUpdate(false);
-                }
-                chosenBsp = chosenCtrlNode = -1;
-                setNull(m_pcUtils->pcRenderer->dragStartPoint);
-                // setNull(m_pcUtils->pcRenderer->dragPlane.p);
-                pcRenderer->dragPlane.setNull();
-                isEditSpline = false;
             }
         }
 		Render();

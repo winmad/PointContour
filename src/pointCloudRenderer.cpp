@@ -1987,7 +1987,7 @@ bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
         }
         if (op == 3)
         {
-            isCurvesChosen[pickedCurve] = !isCurvesChosen[pickedCurve];
+            if (pickedCurve != -1) isCurvesChosen[pickedCurve] = !isCurvesChosen[pickedCurve];
         }
         return true;
     }

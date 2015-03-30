@@ -225,7 +225,7 @@ public:
     // 2: circle or arc, 3: free 2d sketch
     int drawMode;
 
-    // 0: none, 1: translation, 2: scaling
+    // 0: none, 1: translation, 2: scaling, 3: rotation, 4: moving one point
     int copyMode;
 
     std::vector<Cycle> unsavedCycles;
