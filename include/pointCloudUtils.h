@@ -207,6 +207,7 @@ public:
 	PointKDTree<Data> *tree;
 
     bool initialized;
+    bool needTransform;
 	BBox box;
 
 	vec3i gridRes;
@@ -314,7 +315,7 @@ public:
 				   Path& pathVertex);
 
     void laplacianSmooth(Path& path);
-    void gradientDescentSmooth(Path& path);
+    void gradientDescentSmooth(Path& path , bool moveEnds = false);
     void optimizeJunction(CurveNet* cn , const vec3d& pos);
 
 	// weak one

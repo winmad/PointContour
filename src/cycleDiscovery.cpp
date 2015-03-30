@@ -14,6 +14,7 @@
 
 #include "cycleDiscovery.h"
 #include "smallUtils.h"
+#include "macros.h"
 
 #ifdef _WIN32
 	#include "DrT.h"
@@ -151,6 +152,23 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
 	
 #endif
 
+#ifdef OUTPUT_CURVE_NET_WITH_NORMAL 
+    FILE* fout = fopen("curve_net_with_normal.txt" , "w");
+    fprintf(fout , "%d\n" , inCurveNums.size());
+    for (int i = 0; i < inCurveNums.size(); i++)
+    {
+        fprintf(fout , "\n");
+        fprintf(fout , "%d\n" , inCurveNums[i]);
+        for (int j = 0; j < inCurveNums[i]; j++)
+        {
+            fprintf(fout , "%.6f %.6f %.6f %.6f %.6f %.6f\n" , inCurvePoints[i][3 * j] ,
+                inCurvePoints[i][3 * j + 1] , inCurvePoints[i][3 * j + 2] ,
+                inCurveNormals[i][3 * j] , inCurveNormals[i][3 * j + 1] ,
+                inCurveNormals[i][3 * j + 2]);
+        }
+    }
+    fclose(fout);
+#endif
     delete m_cycleUtil;
 }
 

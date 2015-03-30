@@ -2,6 +2,7 @@
 #define PLANE_H
 
 #include "smallUtils.h"
+#include "LocalFrame.h"
 #include <map>
 #include <utility>
 #include <vector>
@@ -17,7 +18,10 @@ public:
 		const double& d , double weight = 1);
 	Plane(const double& cosTheta , const double& cosPhi , const double& d);
 
-	void normalize();
+    bool isValid();
+    void setNull();
+
+    void normalize();
 	void init(const vec3d& p, const vec3d& n, double weight);
 	void init(const double& x , const double& y , const double& z ,
 		const double& d , double weight);

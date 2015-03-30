@@ -9,6 +9,7 @@
 #include "cycleDiscovery.h"
 #include "colormap.h"
 #include "plane.h"
+#include "axisWidget.h"
 #include <vector>
 #include <string>
 
@@ -33,6 +34,8 @@ public:
     bool isShowCtrlNodes;
 	bool isShowCoplanes;
     bool isShowFeaturePoints;
+    bool isShowDebugPoints;
+    bool isShowAxisWidget;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
@@ -109,6 +112,8 @@ public:
     void renderSavedMeshes();
     void renderAutoGenPaths();
     void renderFreeSketches();
+    void renderCrossPlane();
+    void renderAxisWidget();
 
     void renderFeaturePoints();
     void renderDebug();
@@ -133,13 +138,16 @@ public:
     int ctrlNodeSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
-    bool pickCurve(int mouseX , int mouseY , int op);
+    bool pickCurve(int mouseX , int mouseY , int op); // extra: op = 3, choose/not
     bool pickAutoCurve(int mouseX , int mouseY , int op);
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
     void pickSavedCycle(int mouseX , int mouseY , int op);
     // op: 0 choose, 1 update
     bool pickCtrlNode(int mouseX , int mouseY , int lastX , int lastY , int op);
+
+    // op: 0 copy, 1 replace
+    void pickAllAutoCurves(int op);
 
     void initFreeSketchMode();
     void freeSketchOnPointCloud(std::vector<std::pair<unsigned , unsigned> >& seq);
@@ -163,8 +171,15 @@ public:
 	void cycleGroupUpdate();
 
     void autoGenBySymmetry();
+    void initTranslationMode();
+    void autoGenByTranslation(double offset);
+    void autoGenByScaling(double offset);
+    void autoGenByRotation(double offset);
     void autoGenByICP();
+    void autoGenByPclNurbsFitting();
     void clearAutoGen();
+
+    void calcPointsNearCrossPlane();
 
     void backup();
     void undo();
@@ -210,6 +225,9 @@ public:
     // 2: circle or arc, 3: free 2d sketch
     int drawMode;
 
+    // 0: none, 1: translation, 2: scaling
+    int copyMode;
+
     std::vector<Cycle> unsavedCycles;
     std::vector<bool> toBeSurfacing;
     std::vector<std::vector<Path> > unsavedCyclePoints;
@@ -236,12 +254,27 @@ public:
     std::vector<Path> autoGenPaths;
     std::vector<BSpline> autoGenBsp;
     std::vector<bool> autoPathStatus;
+    std::vector<int> autoPathOrigins;
 
     std::vector<vec3d> chosenPoints;
     Path sketchLine;
     std::vector<Path> freeSketchLines;
-    // for debug
+
+    Plane crossPlane;
+    std::vector<vec3d> crossPoints3d;
+    std::vector<vec2d> crossPoints2d;
+
+    Plane axisPlane;
+
     std::vector<bool> isChosen;
+    std::vector<bool> isCrossing;
+
+    std::vector<bool> isCurvesChosen;
+
+    AxisWidget axisWidget;
+    int chosenAxis;
+
+    // for debug
     std::vector<vec3d> debugPoints;
 
     std::vector<vec3uc> glObjColors;

@@ -10,8 +10,10 @@
 #include <vector>
 #include "colormap.h"
 #include "nvVector.h"
+#include "LocalFrame.h"
 
 class PointCloudUtils;
+class PointCloudRenderer;
 
 class SketchGLCanvas : public wxGLCanvas
 {
@@ -36,6 +38,7 @@ public:
 	void OnKeyDown(wxKeyEvent &event);
 
 	PointCloudUtils** getPointCloudUtils(){return &m_pcUtils;}
+    PointCloudRenderer** getPointCloudRenderer(){return &pcRenderer;}
 	void setViewPort();
 	void saveViewPort();
 
@@ -43,6 +46,10 @@ public:
 
     int getWidth() { return m_width; }
     int getHeight() { return m_height; }
+
+    void calcCameraFrame();
+    vec3d cameraPos;
+    LocalFrame cameraFrame;
 
 private:
 
@@ -55,6 +62,7 @@ private:
 		for data accessing
 	*/
 	PointCloudUtils* m_pcUtils;
+    PointCloudRenderer* pcRenderer;
 	bool startDraw;
 
 	/*
@@ -76,6 +84,7 @@ private:
     std::vector<std::pair<unsigned,unsigned> > sequence;
 	int lastKeyBoard;
 	bool isDrag;
+    int chosenAxis;
     bool isEditSpline;
 
 	int m_width;

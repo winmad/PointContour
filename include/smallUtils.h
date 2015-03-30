@@ -35,6 +35,8 @@ void setNull(vec3d& pos);
 bool isSameCycle(std::vector<unsigned>& c1 , std::vector<unsigned>& c2);
 bool isSameCycleGroup(CycleGroup& c1 , CycleGroup& c2);
 
+vec3d pointScaling(const vec3d& pos , const vec3d& origin , int chosenAxis , double scale);
+
 double weightBetweenSegs(const vec3d& x1 , const vec3d& y1 , 
 	const vec3d& x2 , const vec3d& y2);
 

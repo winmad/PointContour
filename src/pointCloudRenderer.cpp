@@ -8,6 +8,7 @@
 #include "colormap.h"
 #include "CoarseSuf.h"
 #include "pclUtils.h"
+#include "macros.h"
 
 #ifdef _WIN32
 	#include "SmoothPatch.h"
@@ -46,12 +47,20 @@ void PointCloudRenderer::init()
     isShowCtrlNodes = false;
 	isShowCoplanes = false;
     isShowFeaturePoints = false;
+    isShowDebugPoints = false;
+
+    isShowAxisWidget = false;
+    chosenAxis = -1;
+    axisWidget.init();
+
     constraintsVisual = 0;
     patchesVisual = 0;
     bspIndex = 0; curveIndex = 0;
-    setNull(dragPlane.p);
+    dragPlane.setNull();
     dragPlaneNormalIndex = 0;
+    crossPlane.setNull();
     drawMode = 0;
+    copyMode = 0;
 
     pathVertex.clear();
     bsp.clear();
@@ -74,6 +83,8 @@ void PointCloudRenderer::init()
     pickedSavedCycle = -1;
     pickedBsp = pickedCtrlNode = -1;
     toExpandCurve = pickedAutoCurve = -1;
+
+    isCurvesChosen.clear();
     
 	isCtrlPress = false;
     isAltPress = false;
@@ -576,14 +587,15 @@ void PointCloudRenderer::renderStoredPaths()
 {
     if (dispCurveNet == NULL) return;
     if (constraintsVisual != 0) return;
-    
-	glColor3f(0.f , 0.f , 1.f);
-	glLineWidth(3.f);
+
+    glLineWidth(3.f);
 	glEnable(GL_LINE_STIPPLE);
 	glLineStipple(2, 0xffff);
     
 	for (int i = 0; i < dispCurveNet->polyLines.size(); i++)
 	{
+        if (!isCurvesChosen[i]) glColor3f(0.f , 0.f , 1.f);
+        else glColor3f(1.f , 0.f , 1.f);
 		drawLines(dispCurveNet->polyLines[i]);
 	}
     
@@ -674,7 +686,7 @@ void PointCloudRenderer::renderCtrlNodes()
 void PointCloudRenderer::renderDragPlane()
 {
     if (!isShowCtrlNodes) return;
-    if (!isValid(dragPlane.p)) return;
+    if (!dragPlane.isValid()) return;
     
     glPointSize(12.f);
     glColor4f(0.f , 0.f , 0.f , 0.7f);
@@ -1085,9 +1097,111 @@ void PointCloudRenderer::renderFeaturePoints()
 
 void PointCloudRenderer::renderDebug()
 {
-    glPointSize(6.f);
+    if (!isShowDebugPoints) return;
+    glPointSize(4.f);
     glColor3f(1.f , 0.f , 1.f);
     drawPoints(debugPoints);
+    /*
+    std::vector<vec3d> rays = getRay(pcUtils->openGLView->getWidth() / 2 ,
+        pcUtils->openGLView->getHeight() / 2);
+    std::vector<vec3d> rays_d = getRay(pcUtils->openGLView->getWidth() / 2 ,
+        pcUtils->openGLView->getHeight() / 2 - 20);
+    vec3d dir = rays.back() - rays.front();
+    dir.normalize();
+    vec3d up = rays_d.front() - rays.front();
+    up.normalize();
+    LocalFrame frame = pcUtils->openGLView->cameraFrame;
+    frame.n = dir;
+    frame.t = up;
+    frame.s = dir.cross(up);
+    frame.s.normalize();
+    
+    vec3d origin(0.0);
+    glColor3f(1.f , 0.f , 0.f);
+    drawLine(origin , frame.n);
+    glColor3f(0.f , 1.f , 0.f);
+    drawLine(origin , frame.s);
+    glColor3f(0.f , 0.f , 1.f);
+    drawLine(origin , frame.t);
+    */
+}
+
+void PointCloudRenderer::renderCrossPlane()
+{
+    if (!crossPlane.isValid()) return;
+    glPointSize(12.f);
+    glColor4f(0.f , 0.f , 0.f , 0.7f);
+    drawPoint(crossPlane.p);
+
+    glColor4f(0.f , 0.f , 0.f , 0.7f);
+	glLineWidth(2.5f);
+	glEnable(GL_LINE_STIPPLE);
+	glLineStipple(2, 0xffff);
+    double ratio = 0.3;
+    drawLine(crossPlane.p - crossPlane.n * ratio , crossPlane.p + crossPlane.n * ratio);
+    glDisable(GL_LINE_STIPPLE);
+
+    glColor4f(176.f / 255.f , 226.f / 255.f , 1.f , 0.7f);
+    drawPlane(crossPlane , 1.2);
+
+    glPointSize(3.f);
+    glColor4f(1.f , 0.f , 0.f , 0.7f);
+    drawPoints(crossPoints3d);
+}
+
+void PointCloudRenderer::renderAxisWidget()
+{
+    if (!isShowAxisWidget) return;
+    glLineWidth(2.5f);
+
+    if (chosenAxis != -1)
+    {
+        glColor4f(1.f , 0.f , 0.f , 1.f);
+        drawLine(axisWidget.origin - axisWidget.axes[chosenAxis] * axisWidget.length * 2 ,
+            axisWidget.origin + axisWidget.axes[chosenAxis] * axisWidget.length * 2);
+        if (copyMode == 3)
+        {
+            for (int i = 0; i < axisWidget.axes.size(); i++)
+            {
+                if (i == chosenAxis)
+                {
+                    glPointSize(4.f);
+                    glColor4f(1.f , 0.f , 0.f , 0.7f);
+                }
+                else
+                {
+                    glPointSize(1.f);
+                    glColor4f(0.f , 0.f , 0.f , 0.7f);
+                }
+                drawPoints(axisWidget.globePoints[i]);
+            }
+        }
+    }
+    else
+    {
+        if (copyMode != 3)
+        {
+            for (int i = 0; i < axisWidget.axes.size(); i++)
+            {
+                glColor4f(0.f , 0.f , 0.f , 0.7f);
+                drawLine(axisWidget.origin , axisWidget.origin + axisWidget.axes[i] *
+                    axisWidget.length);
+            }
+        }
+        else if (copyMode == 3)
+        {
+            glPointSize(1.f);
+            for (int i = 0; i < axisWidget.axes.size(); i++)
+            {
+                glColor4f(0.f , 0.f , 0.f , 0.7f);
+                drawPoints(axisWidget.globePoints[i]);
+            }
+        }
+    }
+
+    glPointSize(8.f);
+    glColor4f(1.f , 0.f , 0.f , 0.7f);
+    drawPoint(axisWidget.origin);
 }
 
 void PointCloudRenderer::render()
@@ -1110,12 +1224,14 @@ void PointCloudRenderer::render()
     renderOrthogonalLines();
     renderTangentLines();
     renderAutoGenPaths();
+    renderCrossPlane();
 // #ifdef _WIN32
     renderUnsavedCycles();
     renderPickedMesh();
 	renderPickedCycle();
     renderPickedSavedMesh();
     renderSavedMeshes();
+    renderAxisWidget();
 // #else
     // renderUnsavedCycles();
     // renderPickedCycle();
@@ -1408,6 +1524,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
             {
                 // curveNet->breakPath(breakLine , breakPoint);
                 dispCurveNet->breakPath(breakLine , breakPoint , isAutoOpt);
+                isCurvesChosen.resize(dispCurveNet->numPolyLines , false);
                 newNode = false;
             }
             
@@ -1428,6 +1545,7 @@ void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
                 dispCurveNet->extendPath(lastDispPoint , dispPos , pathVertex ,
                     newNode , bsp , pathForComp[0] , isAutoOpt);
 
+                isCurvesChosen.resize(dispCurveNet->numPolyLines , false);
                 toExpandCurve = -1;
                 afterCurveNetUpdate();
                 if (isAutoOpt)
@@ -1719,7 +1837,7 @@ void PointCloudRenderer::evalUnsavedCycles()
             for (int j = 0; j < unsavedCycles[i].size(); j++)
 				printf(" %d " , unsavedCycles[i][j]);
             printf(")\n");
-            printf("score = %.6f, rank = %d/%d\n" , unsavedCycleScores[i] , unsavedCycleScoreRanks[i] , unsavedMeshes.size());
+            printf("score = %.6f, rank = %d/%lu\n" , unsavedCycleScores[i] , unsavedCycleScoreRanks[i] , unsavedMeshes.size());
         }
         pcUtils->timer.PopAndDisplayTime("\nCycle scoring time: %.6f\n");
     }
@@ -1812,24 +1930,24 @@ int PointCloudRenderer::curveSelectionByRay(int mouseX , int mouseY , int& nodeI
 		}
 	}
     double snapOffset = selectionOffset;
-    // printf("%d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
+    // printf("curve selection: %d %d , %.6f > %.6f\n" , res , nodeIndex , minDistance , snapOffset);
     if (res == -1) return res;
-    if (nodeIndex == 0 || nodeIndex == dispCurveNet->polyLines[res].size() - 1)
+    if (nodeIndex == 0 || nodeIndex == polyLines[res].size() - 1)
         snapOffset *= 2;
     if (minDistance > snapOffset) res = -1;
+    // printf("curve selection: choose node\n");
 	if (res != -1)
 	{
-		if ((dispCurveNet->polyLines[res][nodeIndex] - 
-			dispCurveNet->polyLines[res].front()).length() < 1e-2)
+		if ((polyLines[res][nodeIndex] - polyLines[res].front()).length() < 1e-2)
 		{
 			nodeIndex = 0;
 		}
-		else if ((dispCurveNet->polyLines[res][nodeIndex] -
-			dispCurveNet->polyLines[res].back()).length() < 1e-2)
+		else if ((polyLines[res][nodeIndex] - polyLines[res].back()).length() < 1e-2)
 		{
-			nodeIndex = (int)dispCurveNet->polyLines[res].size() - 1;
+			nodeIndex = (int)polyLines[res].size() - 1;
 		}
 	}
+    // printf("curve selection: success!\n");
     return res;
 }
 
@@ -1867,6 +1985,10 @@ bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
                 dispCurveNet->deleteNode(ni);
             }
         }
+        if (op == 3)
+        {
+            isCurvesChosen[pickedCurve] = !isCurvesChosen[pickedCurve];
+        }
         return true;
     }
     return false;
@@ -1881,10 +2003,12 @@ bool PointCloudRenderer::pickAutoCurve(int mouseX , int mouseY , int op)
     {
         if (op == 1)
         {
-            printf("begin store auto curve\n");
+            printf("begin storing auto curve\n");
             dispCurveNet->storeAutoPath(autoGenPaths[pickedAutoCurve] ,
                 autoGenBsp[pickedAutoCurve] , autoGenOriginPaths[pickedAutoCurve] ,
                 selectionOffset * 1.5 , isAutoOpt);
+            isCurvesChosen.resize(dispCurveNet->numPolyLines , false);
+
             toExpandCurve = -1;
             afterCurveNetUpdate();
             vec3d pos = dispCurveNet->polyLines.back().front();
@@ -1899,6 +2023,38 @@ bool PointCloudRenderer::pickAutoCurve(int mouseX , int mouseY , int op)
         return true;
     }
     return false;
+}
+
+void PointCloudRenderer::pickAllAutoCurves(int op)
+{
+    printf("begin storing translated auto curves\n");
+    if (op == 1)
+    {
+        for (int i = 0; i < autoPathOrigins.size(); i++)
+        {
+            int j = autoPathOrigins[i];
+            dispCurveNet->deletePath(j);
+        }
+    }
+    for (int i = 0; i < autoGenPaths.size(); i++)
+    {
+        pcUtils->gradientDescentSmooth(autoGenPaths[i] , false);
+        if (!ConstraintDetector::collinearTest(autoGenPaths[i] , autoGenBsp[i]))
+        {
+            convert2Spline(autoGenPaths[i] , autoGenBsp[i]);
+        }
+        autoGenBsp[i].calcCoefs();
+
+        dispCurveNet->storeAutoPath(autoGenPaths[i] ,
+            autoGenBsp[i] , autoGenOriginPaths[i] ,
+            selectionOffset * 1.5 , isAutoOpt);
+    }
+    isCurvesChosen.resize(dispCurveNet->numPolyLines , false);
+
+    autoGenOriginPaths.clear();
+    autoGenPaths.clear();
+    autoGenBsp.clear();
+    autoPathOrigins.clear();
 }
 
 int PointCloudRenderer::cycleSelectionByRay(int mouseX , int mouseY ,
@@ -2019,7 +2175,7 @@ void PointCloudRenderer::pickCycle(int mouseX , int mouseY , int op)
 	if (pickedCycle != -1)
     {
 		char buf[128];
-		sprintf(buf , "cycle score = %.6f, rank = %d/%d\n" , unsavedCycleScores[pickedCycle] ,
+		sprintf(buf , "cycle score = %.6f, rank = %d/%lu\n" , unsavedCycleScores[pickedCycle] ,
 			unsavedCycleScoreRanks[pickedCycle] , unsavedMeshes.size());
 		wxString str(buf);
 		pcUtils->statusBar->SetStatusText(str);
@@ -2164,9 +2320,26 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	mesh.clear();
 	meshNormals.clear();
 
+#if (OUTPUT_MESH_IN_CURVE)
+    FILE* fout = fopen("inCurves.txt" , "w");
+    fprintf(fout , "%d\n" , inCurves.size());
+    for (int i = 0; i < inCurves.size(); i++)
+    {
+        fprintf(fout , "\n");
+        fprintf(fout , "%d\n" , numPoints[i]);
+        for (int j = 0; j < numPoints[i]; j++)
+        {
+            fprintf(fout , "%.6f %.6f %.6f %.6f %.6f %.6f\n" , inCurves[i][3 * j] ,
+                inCurves[i][3 * j + 1] , inCurves[i][3 * j + 2] ,
+                inNorms[i][3 * j] , inNorms[i][3 * j + 1] , inNorms[i][3 * j + 2]);
+        }
+    }
+    fclose(fout);
+#endif
+
     bool smoothing;
 #ifdef _WIN32
-    smoothing = false;
+    smoothing = true;
 #else
     smoothing = false;
 #endif
@@ -2203,8 +2376,25 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
         settings.mnNumSubdivisions=1;
         settings.mnNumLaplacianSmooths=3;
 
+		fout = fopen("coarse_mesh.txt" , "w");
+		fprintf(fout , "%d\n" , numPositions);
+		for (int i = 0; i < numPositions; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				fprintf(fout , "%.6f " , pPositions[3 * i + j]);
+			}
+			fprintf(fout , "\n");
+		}
+		fprintf(fout , "%d\n" , numFaces);
         for (int i = 0; i < numFaces; i++)
         {
+			for (int j = 0; j < 3; j++)
+			{
+				fprintf(fout , "%d " , pFaceIndices[3 * i + j]);
+			}
+			fprintf(fout , "\n");
+			/*
             vec3i pi;
             for (int j = 0; j < 3; j++)
             {
@@ -2220,12 +2410,15 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
                 p.z = pPositions[3 * index + 2];
                 writeLog("(%.6f , %.6f , %.6f)\n" , p.x , p.y , p.z);
             }
+			*/
         }
+		fclose(fout);
 
         SP::SmoothPatchBuilder smoothPatchBuilder;
 
         smoothPatchBuilder.buildSmoothPatch(settings,spMesh,outputMesh);
 
+		int outPosNum = outputMesh.getVertexCount();
         int outFaceNum = outputMesh.getFaceCount();
 	
         int *pInd = outputMesh.getFaceIndices();
@@ -2249,6 +2442,27 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
             if (useNormal)
 			meshNormals.push_back(triNorms);
         }
+
+		fout = fopen("refined_mesh.txt" , "w");
+		fprintf(fout , "%d\n" , outPosNum);
+		for (int i = 0; i < outPosNum; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				fprintf(fout , "%.6f " , pPoints[3 * i + j]);
+			}
+			fprintf(fout , "\n");
+		}
+		fprintf(fout , "%d\n" , outFaceNum);
+        for (int i = 0; i < outFaceNum; i++)
+        {
+			for (int j = 0; j < 3; j++)
+			{
+				fprintf(fout , "%d " , pInd[3 * i + j]);
+			}
+			fprintf(fout , "\n");
+        }
+		fclose(fout);
 #endif
 	}
 	else
@@ -2267,13 +2481,36 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 				n.x = _pNormals[3 * face[k]];
 				n.y = _pNormals[3 * face[k] + 1];
 				n.z = _pNormals[3 * face[k] + 2];
-				triPos.push_back(p);
+                triPos.push_back(p);
 				triNorm.push_back(n);
 			}
 			mesh.push_back(triPos);
 			meshNormals.push_back(triNorm);
 		}
 	}
+
+#if (OUTPUT_MESH)
+    fout = fopen("coarse_mesh.txt" , "w");
+    fprintf(fout , "%d\n" , numPositions);
+    for (int i = 0; i < numPositions; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            fprintf(fout , "%.6f " , _pPositions[3 * i + j]);
+        }
+        fprintf(fout , "\n");
+    }
+    fprintf(fout , "%d\n" , numFaces);
+    for (int i = 0; i < numFaces; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            fprintf(fout , "%d " , _pFaceIndices[3 * i + j]);
+        }
+        fprintf(fout , "\n");
+    }
+    fclose(fout);
+#endif
 }
 
 int PointCloudRenderer::ctrlNodeSelectionByRay(int mouseX , int mouseY , int& nodeIndex)
@@ -2403,8 +2640,102 @@ void PointCloudRenderer::autoGenBySymmetry()
     }
 }
 
+void PointCloudRenderer::initTranslationMode()
+{
+    axisPlane = crossPlane;
+    autoGenOriginPaths.clear();
+    autoGenPaths.clear();
+    autoGenBsp.clear();
+    autoPathOrigins.clear();
+    bool isFirst = true;
+    for (int i = 0; i < dispCurveNet->numPolyLines; i++)
+    {
+        if (isCurvesChosen[i])
+        {
+            if (isFirst)
+            {
+                axisWidget.origin = dispCurveNet->polyLines[i][0];
+                axisWidget.resamplePoints();
+                /*
+                for (int j = 0; j < axisWidget.axes.size(); j++)
+                {
+                    resampleLine(axisWidget.origin - axisWidget.axes[j] * 0.5 ,
+                        axisWidget.origin + axisWidget.axes[j] * 0.5 , 500 ,
+                        axisWidget.axesPoints[j]);
+                }
+                */
+                isFirst = false;
+            }
+            autoGenOriginPaths.push_back(dispCurveNet->originPolyLines[i]);
+            autoGenPaths.push_back(dispCurveNet->polyLines[i]);
+            autoGenBsp.push_back(dispCurveNet->bsplines[i]);
+            autoPathOrigins.push_back(i);
+        }
+    }
+}
+
+void PointCloudRenderer::autoGenByTranslation(double offset)
+{
+    Path originPath , path;
+    BSpline bsp;
+    for (int i = 0; i < autoGenPaths.size(); i++)
+    {
+        // printf("  translate path %d\n" , i);
+        dispCurveNet->translatePath(autoGenOriginPaths[i] , autoGenPaths[i] ,
+            autoGenBsp[i] , axisPlane , offset , originPath , path , bsp);
+
+        autoGenOriginPaths[i] = originPath;
+        autoGenPaths[i] = path;
+        autoGenBsp[i] = bsp;
+    }
+    axisWidget.origin += axisPlane.n * offset;
+    axisWidget.resamplePoints();
+    /*
+    for (int i = 0; i < axisWidget.axesPoints.size(); i++)
+    {
+        for (int j = 0; j < axisWidget.axesPoints[i].size(); j++)
+        {
+            axisWidget.axesPoints[i][j] += axisPlane.n * offset;
+        }
+    }
+    */
+}
+
+void PointCloudRenderer::autoGenByScaling(double offset)
+{
+    Path originPath , path;
+    BSpline bsp;
+    for (int i = 0; i < autoGenPaths.size(); i++)
+    {
+        // printf("  translate path %d\n" , i);
+        dispCurveNet->scalePath(autoGenOriginPaths[i] , autoGenPaths[i] ,
+            autoGenBsp[i] , axisPlane , offset , originPath , path , bsp);
+
+        autoGenOriginPaths[i] = originPath;
+        autoGenPaths[i] = path;
+        autoGenBsp[i] = bsp;
+    }
+}
+
+void PointCloudRenderer::autoGenByRotation(double offset)
+{
+    Path originPath , path;
+    BSpline bsp;
+    for (int i = 0; i < autoGenPaths.size(); i++)
+    {
+        // printf("  translate path %d\n" , i);
+        dispCurveNet->rotatePath(autoGenOriginPaths[i] , autoGenPaths[i] ,
+            autoGenBsp[i] , axisPlane , offset , originPath , path , bsp);
+
+        autoGenOriginPaths[i] = originPath;
+        autoGenPaths[i] = path;
+        autoGenBsp[i] = bsp;
+    }
+}
+
 void PointCloudRenderer::autoGenByICP()
 {
+#if defined(__APPLE__)
     autoGenOriginPaths.clear();
     autoGenPaths.clear();
     autoGenBsp.clear();
@@ -2526,6 +2857,74 @@ void PointCloudRenderer::autoGenByICP()
     bsp.calcCoefs();
     */
     dispCurveNet->transformPath(matchedCurve , transMat , originPath , path , bsp);
+
+    pcUtils->gradientDescentSmooth(path , true);
+    if (!ConstraintDetector::collinearTest(path , bsp))
+    {
+        convert2Spline(path , bsp);
+    }
+    bsp.calcCoefs();
+
+    autoGenOriginPaths.push_back(originPath);
+    autoGenPaths.push_back(path);
+    autoGenBsp.push_back(bsp);
+#endif
+}
+
+void PointCloudRenderer::autoGenByPclNurbsFitting()
+{
+    autoGenOriginPaths.clear();
+    autoGenPaths.clear();
+    autoGenBsp.clear();
+
+    pcl::on_nurbs::NurbsDataCurve2d inputPoints2d;
+    LocalFrame frame;
+    frame.buildFromNormal(crossPlane.n);
+    for (int i = 0; i < chosenPoints.size(); i++)
+    {
+        vec3d posLocal = frame.toLocal(chosenPoints[i] - crossPlane.p);
+        inputPoints2d.interior.push_back(Eigen::Vector2d(posLocal.x , posLocal.z));
+    }
+    pcl::on_nurbs::FittingCurve2d::Parameter curve_params;
+    curve_params.smoothness = 0.000001;
+    curve_params.rScale = 1.0;
+    unsigned order = 3;
+    unsigned numCtrlPoints = std::max((unsigned)6 , (unsigned)(chosenPoints.size() / 4 + 1));
+    printf("num_ctrl_points = %d\n" , numCtrlPoints);
+
+    ON_NurbsCurve curve = pcl::on_nurbs::FittingCurve2d::initNurbsPCA(order ,
+        &inputPoints2d , numCtrlPoints);
+    pcl::on_nurbs::FittingCurve2d fit(&inputPoints2d , curve);
+    fit.assemble(curve_params);
+    fit.solve();
+
+    // resample on nurbs
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::on_nurbs::Triangulation::convertCurve2PointCloud(fit.m_nurbs , cloud , 8);
+
+    // bspline fitting by my matlab code
+    Path originPath , path;
+    BSpline bsp;
+    // printf("cloud_size = %lu\n" , cloud->size());
+    for (int i = 0; i < cloud->size(); i++)
+    {
+        pcl::PointXYZRGB &p = cloud->at(i);
+        // printf("%.6f %.6f %.6f\n" , p.x , p.y , p.z);
+        vec3d posLocal(p.x , 0 , p.y);
+        vec3d pos = crossPlane.p + frame.toWorld(posLocal);
+        originPath.push_back(pos);
+    }
+    path = originPath;
+
+    /*
+    pcUtils->gradientDescentSmooth(path , true);
+    */
+    if (!ConstraintDetector::collinearTest(path , bsp))
+    {
+        convert2Spline(path , bsp);
+    }
+    bsp.calcCoefs();
+
     autoGenOriginPaths.push_back(originPath);
     autoGenPaths.push_back(path);
     autoGenBsp.push_back(bsp);
@@ -2555,6 +2954,9 @@ void PointCloudRenderer::freeSketchOnPointCloud(std::vector<std::pair<unsigned ,
         int pointIndex = selectionByColorMap(x , y);
         if (pointIndex != -1 && !isChosen[pointIndex])
         {
+            if (crossPlane.isValid() && pointIndex < isCrossing.size() &&
+                !isCrossing[pointIndex]) continue;
+
             isChosen[pointIndex] = true;
             chosenPoints.push_back(pcUtils->pcData[pointIndex].pos);
 
@@ -2568,6 +2970,39 @@ void PointCloudRenderer::freeSketchOnPointCloud(std::vector<std::pair<unsigned ,
                 // ray.front().x , ray.front().y , ray.front().z ,
                 // dir.x , dir.y , dir.z , t ,
                 // sketchLine.back().x , sketchLine.back().y , sketchLine.back().z);
+        }
+    }
+}
+
+void PointCloudRenderer::calcPointsNearCrossPlane()
+{
+    if (!crossPlane.isValid()) return;
+    crossPoints3d.clear();
+    crossPoints2d.clear();
+    double threshold = 0.01;
+    isCrossing.resize(pcUtils->pcData.size());
+    for (int i = 0; i < pcUtils->pcData.size(); i++)
+    {
+        vec3d pos = pcUtils->pcData[i].pos;
+        double d = std::abs(crossPlane.dist(pos));
+        if (d < threshold)
+        {
+            crossPoints3d.push_back(pos);
+            LocalFrame frame;
+            frame.buildFromNormal(crossPlane.n);
+            vec3d posLocal = frame.toLocal(pos - crossPlane.p);
+            /*
+            if (std::abs(posLocal.y) > threshold)
+            {
+                printf("proj error: %.6f\n" , posLocal.y);
+            }
+            */
+            crossPoints2d.push_back(vec2d(posLocal.x , posLocal.z));
+            isCrossing[i] = true;
+        }
+        else
+        {
+            isCrossing[i] = false;
         }
     }
 }

@@ -3,6 +3,7 @@
 #include "TimeManager.h"
 #include "curveNet.h"
 #include "RandGenerator.h"
+#include "macros.h"
 #include <omp.h>
 #include <queue>
 #include <algorithm>
@@ -156,8 +157,54 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 
 	// phase 2
 	gaussianSmooth(originF , f , _filterRadius / 3.0);
+#if (OUTPUT_DIST_FIELD)
+    FILE* fout = fopen("field_grid.txt" , "w");
+    fprintf(fout , "%d %d %d\n" , sizeOriginF.x , sizeOriginF.y , sizeOriginF.z);
+    for (int i = 0; i < sizeOriginF.x; i++)
+    {
+        for (int j = 0; j < sizeOriginF.y; j++)
+        {
+            for (int k = 0; k < sizeOriginF.z; k++)
+            {
+                fprintf(fout , "%.6f %.6f %.6f %.6f\n" , extXval[i] , extYval[j] ,
+                    extZval[k] , f[i][j][k]);
+            }
+        }
+    }
 
-	// phase 3
+    pcRenderer->debugPoints.clear();
+    for (int i = 0; i < sizeOriginF.x; i++)
+    {
+        for (int j = 0; j < sizeOriginF.y; j++)
+        {
+            for (int k = 0; k < sizeOriginF.z; k++)
+            {
+                if (f[i][j][k] < 0.005) pcRenderer->debugPoints.push_back(vec3d(extXval[i] ,
+                        extYval[j] , extZval[k]));
+            }
+        }
+    }
+    fclose(fout);
+#endif
+    /*
+    double threshold_f = 0.005;
+    pcRenderer->debugPoints.clear();
+    for (int i = 0; i < sizeOriginF.x; i++)
+    {
+        for (int j = 0; j < sizeOriginF.y; j++)
+        {
+            for (int k = 0; k < sizeOriginF.z; k++)
+            {
+                if (f[i][j][k] < threshold_f)
+                {
+                    pcRenderer->debugPoints.push_back(vec3d(extXval[i] , extYval[j] , extZval[k]));
+                }
+            }
+        }
+    }
+    */
+
+    // phase 3
 	calcHessian(f);
 	alpha1 = _alpha1; alpha2 = _alpha2;
     alphaN = _alphaN;
@@ -202,6 +249,10 @@ void PointCloudUtils::getBBox()
         center = center + pcData[i].pos;
 	}
     center = center / (double)pcData.size();
+
+#if (PC_NOT_NEED_TRANSFORM)
+    return;
+#endif
     
     // translate
     for (int i = 0; i < pcData.size(); i++)
@@ -220,6 +271,23 @@ void PointCloudUtils::getBBox()
     {
         pcData[i].pos *= scale;
     }
+
+    printf("translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
+    printf("scale = %.6f\n" , scale);
+    FILE *fp = fopen("transformation.txt" , "w");
+    fprintf(fp , "translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
+    fprintf(fp , "scale = %.6f\n" , scale);
+    fclose(fp);
+
+#if (OUTPUT_TRANSFORMED_PC)
+    fp = fopen("transformed_point_cloud.npts" , "w");
+    for (int i = 0; i < pcData.size(); i++)
+    {
+        fprintf(fp , "%.6f %.6f %.6f %.6f %.6f %.6f\n" , pcData[i].pos.x , pcData[i].pos.y ,
+            pcData[i].pos.z , pcData[i].n.x , pcData[i].n.y , pcData[i].n.z);
+    }
+    fclose(fp);
+#endif
 }
 
 void PointCloudUtils::buildUniformGrid(vec3i size)
@@ -725,9 +793,11 @@ double PointCloudUtils::calcEdgeWeight(const vec3d& _v ,
 	const Tensor& st , const Tensor& ed)
 {
     Vector3d dv(_v.x , _v.y , _v.z);
-    
-    double w = 0.5 * (sqrt((double)(dv.transpose() * st.tensor * dv)) +
-                      sqrt((double)(dv.transpose() * ed.tensor * dv)));
+    //Vector3d dv_transpose = dv.transpose();
+	double w1 = (double)(dv.transpose() * st.tensor * dv);
+	double w2 = (double)(dv.transpose() * ed.tensor * dv);
+
+    double w = 0.5 * (w1 + w2);
     /*
 	double cos_theta = std::min(1.f , std::abs(v.dot(st.axis[0])));
 	double sin_theta = sqrt(1.f - cos_theta * cos_theta);
@@ -1300,6 +1370,35 @@ double lineSearch(const vec3d& d , const vec3d& pos1 , const Matrix3d& t1 ,
     return res;
 }
 
+double lineSearch(const vec3d& d , const vec3d& pos1 , const Matrix3d& t1 ,
+    const vec3d& pos2 , const Matrix3d& t2)
+{
+    vec3d grad = calcGradient(pos2 - pos1 , t1) + calcGradient(pos2 - pos1 , t2);
+    Vector3d f1(grad.x , grad.y , grad.z);
+    Matrix3d f2 = lineSearchHessian(pos2 - pos1 , t1) + lineSearchHessian(pos2 - pos1 , t2);
+    Vector3d vd(d.x , d.y , d.z);
+    double denom = vd.transpose() * f2 * vd;
+    double res = -f1.dot(vd) / denom;
+    /*
+    if (abs(denom) < 1.0)
+    {
+        //return 0.0;
+        printf("line search: %.8lf / %.8lf = %.8lf\n" , -f1.dot(vd) ,
+            denom , res);
+        printf("grad = (%.8lf, %.8lf, %.8lf)\n" , grad.x , grad.y , grad.z);
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                printf("%.8lf " , f2(i , j));
+            }
+            printf("\n");
+        }
+    }
+    */
+    return res;
+}
+
 double lineSearchSecant(const vec3d& d ,
     const vec3d& pos1 , const Matrix3d& t1 ,
     const vec3d& pos2 , const Matrix3d& t2 ,
@@ -1319,7 +1418,7 @@ double lineSearchSecant(const vec3d& d ,
     return res;
 }
 
-void PointCloudUtils::gradientDescentSmooth(Path& path)
+void PointCloudUtils::gradientDescentSmooth(Path& path , bool moveEnds)
 {
     if (path.size() <= 2)
         return;
@@ -1410,8 +1509,40 @@ void PointCloudUtils::gradientDescentSmooth(Path& path)
         
         path[i] = oldPath[i] + d * alpha * pcRenderer->smoothScale;
     }
-    path[0] = oldPath[0];
-    path[path.size() - 1] = oldPath[path.size() - 1];
+
+    if (moveEnds)
+    {
+        vec3d grad(0.0);
+        vec3d v , p , mid , d;
+        double alpha;
+
+        v = oldPath[0] - oldPath[1];
+        if (v.length() > 1e-3)
+        {
+            grad += calcGradient(v , ts[0]) + calcGradient(v , ts[1]);
+            grad.normalize();
+            d = -grad;
+            alpha = lineSearch(d , oldPath[1] , ts[1] , oldPath[0] , ts[0]);
+            alpha = std::min(alpha , 0.05);
+            path[0] = oldPath[0] + d * alpha * pcRenderer->smoothScale;
+        }
+        v = oldPath[path.size() - 1] - oldPath[path.size() - 2];
+        if (v.length() > 1e-3)
+        {
+            grad += calcGradient(v , ts[path.size() - 1]) + calcGradient(v , ts[path.size() - 2]);
+            grad.normalize();
+            d = -grad;
+            alpha = lineSearch(d , oldPath[path.size() - 2] , ts[path.size() - 2] ,
+                oldPath[path.size() - 1] , ts[path.size() - 1]);
+            alpha = std::min(alpha , 0.05);
+            path[path.size() - 1] = oldPath[path.size() - 1] + d * alpha * pcRenderer->smoothScale;
+        }
+    }
+    else
+    {
+        path[0] = oldPath[0];
+        path[path.size() - 1] = oldPath[path.size() - 1];
+    }
     
     /*
     printf("========================\n");
