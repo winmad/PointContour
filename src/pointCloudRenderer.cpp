@@ -2320,7 +2320,7 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	mesh.clear();
 	meshNormals.clear();
 
-#if (OUTPUT_MESH_IN_CURVE)
+#if OUTPUT_MESH_IN_CURVE
     FILE* fout = fopen("inCurves.txt" , "w");
     fprintf(fout , "%d\n" , inCurves.size());
     for (int i = 0; i < inCurves.size(); i++)
@@ -2376,7 +2376,7 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
         settings.mnNumSubdivisions=1;
         settings.mnNumLaplacianSmooths=3;
 
-		fout = fopen("coarse_mesh.txt" , "w");
+		FILE *fout = fopen("coarse_mesh.txt" , "w");
 		fprintf(fout , "%d\n" , numPositions);
 		for (int i = 0; i < numPositions; i++)
 		{
@@ -2873,6 +2873,7 @@ void PointCloudRenderer::autoGenByICP()
 
 void PointCloudRenderer::autoGenByPclNurbsFitting()
 {
+#if defined(__MACH__) && defined(__APPLE__)
     autoGenOriginPaths.clear();
     autoGenPaths.clear();
     autoGenBsp.clear();
@@ -2928,6 +2929,7 @@ void PointCloudRenderer::autoGenByPclNurbsFitting()
     autoGenOriginPaths.push_back(originPath);
     autoGenPaths.push_back(path);
     autoGenBsp.push_back(bsp);
+#endif
 }
 
 void PointCloudRenderer::clearAutoGen()

@@ -483,12 +483,8 @@ PointContourGUIFrame::PointContourGUIFrame(wxWindow* parent,wxWindowID id)
 
     m_pcUtils = new PointCloudUtils();
     *(m_openGLView->getPointCloudUtils()) = m_pcUtils;
-<<<<<<< HEAD
-	m_pcUtils->openGLView = m_openGLView;
-=======
     *(m_openGLView->getPointCloudRenderer()) = m_pcUtils->pcRenderer;
 	m_pcUtils->openGLView = m_openGLView;
->>>>>>> winmad
 	m_config = new ConfigManager(m_pcUtils);
 	m_config->load("config.xml");
 	m_pcUtils->globalInit();

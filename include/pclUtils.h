@@ -5,8 +5,11 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
+
+#if defined(__MACH__) && defined(__APPLE__)
 #include <pcl/surface/on_nurbs/fitting_curve_2d.h>
 #include <pcl/surface/on_nurbs/triangulation.h>
+#endif
 
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;

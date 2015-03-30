@@ -869,7 +869,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 dir.normalize();
                 vec3d last_pos = plane.intersect(ray.front() , dir);
 
-                delta = pcRenderer->axisPlane.n.dot(pos - last_pos) * 5;
+                delta = pcRenderer->axisPlane.n.dot(pos - last_pos) * 8;
                 // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
                 pcRenderer->autoGenByTranslation(delta);
                 vec3d newPos = pcRenderer->axisPlane.p + pcRenderer->axisPlane.n * delta;

@@ -87,22 +87,25 @@
     <ClInclude Include="include\SketchGLCanvas.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\partialSymmetry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\RandGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\partialSymmetry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\axisWidget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\LocalFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\pclUtils.h">
+    <ClInclude Include="include\macros.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\macros.h">
+    <ClInclude Include="include\partialSymmetry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pclUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -161,9 +164,6 @@
     <ClCompile Include="src\constraints.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\partialSymmetry.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\SketchGLCanvas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -173,10 +173,16 @@
     <ClCompile Include="src\partialSymmetry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\plane.cpp">
+    <ClCompile Include="src\axisWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\partialSymmetry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\pclUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\plane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

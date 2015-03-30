@@ -157,7 +157,7 @@ void PointCloudUtils::preprocess(const int& _gridResX , const int& _gridResY , c
 
 	// phase 2
 	gaussianSmooth(originF , f , _filterRadius / 3.0);
-#if (OUTPUT_DIST_FIELD)
+#if OUTPUT_DIST_FIELD
     FILE* fout = fopen("field_grid.txt" , "w");
     fprintf(fout , "%d %d %d\n" , sizeOriginF.x , sizeOriginF.y , sizeOriginF.z);
     for (int i = 0; i < sizeOriginF.x; i++)
@@ -1251,7 +1251,7 @@ vec3d calcGradient(const vec3d& v , const Matrix3d& tensor)
     Vector3d grad = tensor * dv;
     vec3d res(grad(0) , grad(1) , grad(2));
     res *= 0.5;
-    double denom = sqrt(dv.transpose() * tensor * dv);
+	double denom = std::sqrt(dv.transpose() * tensor * dv);
     res /= denom;
     return res;
 }
@@ -1269,16 +1269,16 @@ double calcAnisDist(const vec3d& pos1 , const Matrix3d& t1 , const vec3d& pos2 ,
     vec3d v = pos2 - pos1;
     Vector3d dv(v.x , v.y , v.z);
     double tp = dv.transpose() * t1 * dv;
-    res += sqrt(tp);
+	res += std::sqrt(tp);
     tp = dv.transpose() * t2 * dv;
-    res += sqrt(tp);
+	res += std::sqrt(tp);
     v = pos2 - pos3;
     for (int i = 0; i < 3; i++)
         dv(i) = v[i];
     tp = dv.transpose() * t2 * dv;
-    res += sqrt(tp);
+	res += std::sqrt(tp);
     tp = dv.transpose() * t3 * dv;
-    res += sqrt(tp);
+	res += std::sqrt(tp);
     return res * 0.5;
 }
 
@@ -1301,8 +1301,8 @@ Matrix3d lineSearchHessian(const vec3d& v , const Matrix3d& tensor)
                 t1 += tensor(i , k) * dv(k);
                 t2 += tensor(j , k) * dv(k);
             }
-            res(i , j) = (0.5 * tensor(i , j) * upscale) / (sqrt(denom) * upscale) -
-                (0.5 * t1 * upscale * t2) / (denom * upscale * sqrt(denom));
+			res(i , j) = (0.5 * tensor(i , j) * upscale) / (std::sqrt(denom) * upscale) -
+				(0.5 * t1 * upscale * t2) / (denom * upscale * std::sqrt(denom));
         }
     }
     /*
