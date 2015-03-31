@@ -906,6 +906,63 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 isEditSpline = false;
             }
         }
+        else if (pcRenderer->copyMode == 5)
+        {
+            int nodeIndex = -1;
+            if (!isDrag)
+            {
+                pcRenderer->chosenAxis = pcRenderer->curveSelectionByRay(x , y , nodeIndex ,
+                    pcRenderer->axisWidget.axesPoints);
+            }
+            // printf("chosen axis = %d\n" , pcRenderer->chosenAxis);
+            if (event.Dragging() && pcRenderer->chosenAxis != -1)
+            {
+                if (!isDrag)
+                {
+                    isDrag = true;
+                    chosenAxis = pcRenderer->chosenAxis;
+
+                    printf("start moving axis widget, fixed axis = %d\n" , chosenAxis);
+                }
+
+                pcRenderer->axisPlane.init(pcRenderer->axisWidget.origin ,
+                    pcRenderer->axisWidget.axes[chosenAxis] , 1);
+                double delta;
+                Plane plane;
+                plane.init(cameraPos + cameraFrame.n * 0.5 , -cameraFrame.n , 1);
+
+                std::vector<vec3d> ray = computeRay(x , y);
+                vec3d dir = ray.back() - ray.front();
+                dir.normalize();
+                // vec3d pos = pcRenderer->axisPlane.intersect(ray.front() , dir);
+                vec3d pos = plane.intersect(ray.front() , dir);
+                ray = computeRay(m_lastx , m_lasty);
+                dir = ray.back() - ray.front();
+                dir.normalize();
+                vec3d last_pos = plane.intersect(ray.front() , dir);
+
+                delta = pcRenderer->axisPlane.n.dot(pos - last_pos) * 8;
+                // delta = pcRenderer->axisWidget.axes[chosenAxis].dot(pos - pcRenderer->axisWidget.origin);
+                pcRenderer->axisWidget.origin += pcRenderer->axisPlane.n * delta;
+                pcRenderer->axisWidget.resamplePoints();
+            }
+
+            if (event.RightIsDown() && pcRenderer->pickedBsp != -1 &&
+                pcRenderer->pickedCtrlNode != -1 &&
+                (pcRenderer->pickedCtrlNode == 0 ||
+                    pcRenderer->pickedCtrlNode == pcRenderer->dispCurveNet->bsplines[pcRenderer->pickedBsp].ctrlNodes.size() - 1))
+            {
+                printf("%d %d\n" , pcRenderer->pickedBsp , pcRenderer->pickedCtrlNode);
+                pcRenderer->axisWidget.origin = pcRenderer->dispCurveNet->bsplines[pcRenderer->pickedBsp].ctrlNodes[pcRenderer->pickedCtrlNode];
+                pcRenderer->axisWidget.resamplePoints();
+            }
+
+            if (!event.LeftIsDown() && isDrag)
+            {
+                chosenAxis = -1;
+                isDrag = false;
+            }
+        }
         else if (crossPlanePicked) // cross plane operation, ignore all other editing operations
         {
             if (event.Dragging())
@@ -1175,6 +1232,23 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
                 pcRenderer->copyMode = 3;
                 pcRenderer->isShowAxisWidget = true;
                 wxString str("copy by rotation\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
+        else if (uc == 'A')
+        {
+            if (pcRenderer->copyMode != 5)
+            {
+                pcRenderer->copyMode = 5;
+                pcRenderer->isShowAxisWidget = true;
+                wxString str("moving axis widget\n");
                 m_pcUtils->statusBar->SetStatusText(str);
             }
             else
