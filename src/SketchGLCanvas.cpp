@@ -138,15 +138,16 @@ void SketchGLCanvas::Initialize()
 
 
     // ****** Material properties ******
-    GLfloat mat_specular[] = { 0.1f, 0.1f, 0.1f, 0.5f};
-    //GLfloat mat_specular[] = { 0.7f, 0.7f, 0.7f, 1.0f};
+    // GLfloat mat_specular[] = { 0.1f, 0.1f, 0.1f, 0.5f};
+    GLfloat mat_specular[] = { 0.2f, 0.2f, 0.15f, 1.0f};
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
 
     GLfloat mat_shininess[] = { 2 };
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
 
     //GLfloat mat_diffuseB[] = { 0.6f, 0.6f, 0.8f, 1.0f };
-    GLfloat mat_diffuseB[] = { 0.8f, 0.75f, 0.35f, 1.0f };
+    // GLfloat mat_diffuseB[] = { 0.8f, 0.75f, 0.35f, 1.0f };
+    GLfloat mat_diffuseB[] = { 0.8f , 0.55f , 0.f , 1.f};
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE , mat_diffuseB);
 
     GLfloat mat_ambient_front[] = { 0.15f, 0.12f, .02f, 1.0f };
@@ -686,10 +687,14 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             else if (event.MiddleIsDown())
             {
                 pcRenderer->pickAllAutoCurves(0);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
             }
             else if (event.RightIsDown())
             {
                 pcRenderer->pickAllAutoCurves(1);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
             }
 
             if (!event.LeftIsDown() && isDrag)
@@ -743,10 +748,14 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             else if (event.MiddleIsDown())
             {
                 pcRenderer->pickAllAutoCurves(0);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
             }
             else if (event.RightIsDown())
             {
                 pcRenderer->pickAllAutoCurves(1);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
             }
 
             if (!event.LeftIsDown() && isDrag)
@@ -817,10 +826,14 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
             else if (event.MiddleIsDown())
             {
                 pcRenderer->pickAllAutoCurves(0);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
             }
             else if (event.RightIsDown())
             {
                 pcRenderer->pickAllAutoCurves(1);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
             }
 
             if (!event.LeftIsDown() && isDrag)
@@ -885,11 +898,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 isDrag = false;
 
                 printf("finish point translation!\n");
-                if (isEditSpline && chosenBsp != -1 && m_pcUtils->pcRenderer->isAutoOpt)
-                {
-                    m_pcUtils->pcRenderer->dispCurveNet->updateConstraints(chosenBsp);
-                    m_pcUtils->pcRenderer->optUpdate(false);
-                }
                 // setNull(m_pcUtils->pcRenderer->dragStartPoint);
                 // setNull(m_pcUtils->pcRenderer->dragPlane.p);
                 // pcRenderer->dragPlane.setNull();
@@ -900,6 +908,11 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
 
             if (event.RightIsDown())
             {
+                if (isEditSpline && chosenBsp != -1 && m_pcUtils->pcRenderer->isAutoOpt)
+                {
+                    m_pcUtils->pcRenderer->dispCurveNet->updateConstraints(chosenBsp);
+                    m_pcUtils->pcRenderer->optUpdate(false);
+                }
                 pcRenderer->copyMode = 0;
                 pcRenderer->isShowAxisWidget = false;
                 chosenBsp = chosenCtrlNode = -1;
@@ -963,19 +976,35 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 isDrag = false;
             }
         }
+        else if (pcRenderer->copyMode == 6)
+        {
+            if (event.LeftIsDown())
+            {
+                vec3d newPos = pcRenderer->pickedDispPoint;
+                setNull(pcRenderer->pickedDispPoint);
+                vec3d dir = newPos - pcRenderer->axisWidget.origin;
+                double delta = dir.length();
+                dir /= delta;
+                pcRenderer->axisPlane.init(pcRenderer->axisWidget.origin , dir , 1);
+                pcRenderer->autoGenByTranslation(delta);
+            }
+            else if (event.RightIsDown())
+            {
+                pcRenderer->pickAllAutoCurves(1);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+            }
+            else if (event.MiddleIsDown())
+            {
+                pcRenderer->pickAllAutoCurves(0);
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+            }
+        }
         else if (crossPlanePicked) // cross plane operation, ignore all other editing operations
         {
             if (event.Dragging())
             {
-                //convert the mouse clicked locations to lie between [-1,1] for both X and Y
-                /*
-                double halfWidth = m_width/2.0;
-                double halfHeight = m_height/2.0;
-                double xNormalized = (x-halfWidth)/halfWidth;
-                double yNormalized = (halfHeight-y)/halfHeight;
-                double oldXNormalized = (m_lastx-halfWidth)/halfWidth;
-                double oldYNormalized = (halfHeight-m_lasty)/halfHeight;
-                */
                 // rotates screen
                 float rot[3]={0};
                 rot[1] -= (m_lasty - y) * 0.5;
@@ -987,12 +1016,6 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 for (unsigned int i=0;i<3;i++)
                     if (rot[i] > 360 || rot[i] < -360)
                         rot[i] = 0;
-
-                // std::vector<vec3d> rays = computeRay(m_width / 2 , m_height / 2);
-                // vec3d dir = rays.back() - rays.front();
-                // dir.normalize();
-                // LocalFrame frame;
-                // frame.buildFromNormal(dir);
 
                 Plane& crossPlane = pcRenderer->crossPlane;
                 Eigen::Matrix3d rotateMat;
@@ -1192,7 +1215,9 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         {
             if (pcRenderer->copyMode != 1)
             {
-                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode();
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
+                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
+
                 pcRenderer->copyMode = 1;
                 pcRenderer->isShowAxisWidget = true;
                 wxString str("copy by translation\n");
@@ -1210,7 +1235,9 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         {
             if (pcRenderer->copyMode != 2)
             {
-                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode();
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
+                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
+
                 pcRenderer->copyMode = 2;
                 pcRenderer->isShowAxisWidget = true;
                 wxString str("copy by scaling\n");
@@ -1228,7 +1255,9 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         {
             if (pcRenderer->copyMode != 3)
             {
-                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode();
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
+                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
+
                 pcRenderer->copyMode = 3;
                 pcRenderer->isShowAxisWidget = true;
                 wxString str("copy by rotation\n");
@@ -1249,6 +1278,26 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
                 pcRenderer->copyMode = 5;
                 pcRenderer->isShowAxisWidget = true;
                 wxString str("moving axis widget\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
+        else if (uc == 'E')
+        {
+            if (pcRenderer->copyMode != 6)
+            {
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
+                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
+
+                pcRenderer->copyMode = 6;
+                pcRenderer->isShowAxisWidget = true;
+                wxString str("Easy translation mode\n");
                 m_pcUtils->statusBar->SetStatusText(str);
             }
             else
@@ -1311,11 +1360,11 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         else if (uc == 'C')
         {
             m_pcUtils->pcRenderer->dispCurveNet->refreshAllConstraints();
-			//m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet);
+			//m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet , m_pcUtils);
         }
 		else if (uc == 'V')
 		{
-			m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet);
+			m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet , m_pcUtils);
 		}
 		else if (uc == 'H')
 		{
@@ -1328,6 +1377,14 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         else if (uc == 'D')
         {
             m_pcUtils->pcRenderer->clearAutoGen();
+            for (int i = 0; i < pcRenderer->isCurvesChosen.size(); i++)
+            {
+                pcRenderer->isCurvesChosen[i] = false;
+            }
+            pcRenderer->copyMode = 0;
+            pcRenderer->isShowAxisWidget = false;
+            wxString str("");
+            m_pcUtils->statusBar->SetStatusText(str);
         }
         else if (uc == ' ')
         {

@@ -20,6 +20,7 @@ public:
     std::vector<double> sinTable;
 
     std::vector<vec3d> axes;
+    std::vector<vec3f> axesColors;
     std::vector<Path> axesPoints;
     std::vector<Path> globePoints;
 };

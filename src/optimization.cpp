@@ -1,8 +1,10 @@
+#define _WCHAR_H_CPLUSPLUS_98_CONFORMANCE_
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
 #include "optimization.h"
 #include "splineUtils.h"
+#include "pointCloudUtils.h"
 
 using namespace std;
 
@@ -21,14 +23,15 @@ Optimization::~Optimization()
     delete net;
 }
 
-void Optimization::init(CurveNet *_net)
+void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
 {
     net = _net;
+    pcUtils = _pcUtils;
 
 	// for debug
 	largeBound = 3;
     smallBound = 2;
-	numStartPoints = 16;
+	numStartPoints = 120;
 	maxRealTime = 0.2;
 
     numVars = 0;
@@ -626,15 +629,12 @@ void Optimization::generateMOD(string file)
 		fout << "+";
 		switch(cons[i].type)
 		{
-            //case ConstraintsType::st_collinear:
             case st_collinear:
                 fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
                 break;
-                //case ConstraintsType::st_coplanar:
-            case st_coplanar:
-                fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
-                break;
-                //case ConstraintsType::st_ortho:
+            // case st_coplanar:
+                // fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                // break;
             case st_ortho:
                 fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
                 break;
@@ -711,7 +711,7 @@ void Optimization::generateMOD(string file)
             default:
                 break;
 		}
-		fout << " <= 0.1;\n";
+		fout << " <= 0.01;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -719,7 +719,7 @@ void Optimization::generateMOD(string file)
 		{
 			fout << "subject to coplanar" << i << "_" << j << ": "
 				 << generateCoplanar(i, coplanarPoints[i][j])
-				 << " <= 0.1;\n";
+				 << " <= 0.01;\n";
 		}
 	}
     /*
@@ -843,9 +843,15 @@ void Optimization::run(CurveNet *net)
 	if (totError > 0.1 * vars.size()) 
 	{
 		fin.close();
-		printf("bad optimization result!\n");
+		wxString str("bad optimization result!\n");
+        pcUtils->statusBar->SetStatusText(str);
 		return;
 	}
+    else
+    {
+        wxString str("good optimization result!\n");
+        pcUtils->statusBar->SetStatusText(str);
+    }
     std::vector<vec3d> varbuff;
     for (int i = 0; i < vars.size(); i++)
     {

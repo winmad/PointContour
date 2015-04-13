@@ -11,6 +11,11 @@ void AxisWidget::init()
     axes.push_back(vec3d(0.0 , 1.0 , 0.0));
     axes.push_back(vec3d(0.0 , 0.0 , 1.0));
 
+    axesColors.clear();
+    axesColors.push_back(vec3f(1.0 , 0.0 , 0.0));
+    axesColors.push_back(vec3f(0.0 , 1.0 , 0.0));
+    axesColors.push_back(vec3f(0.0 , 0.0 , 1.0));
+
     tableSize = 90;
     cosTable.resize(tableSize);
     sinTable.resize(tableSize);

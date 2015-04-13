@@ -2,7 +2,7 @@
 
 AdjMatrix::AdjMatrix()
 {
-    maxN = 200;
+    maxN = 800;
     // mat = new int*[maxN];
     // for (int i = 0; i < maxN; i++) mat[i] = new int[maxN];
     mat.resize(maxN);
@@ -23,7 +23,7 @@ void AdjMatrix::clear()
 
 void AdjMatrix::newCurve(int bspIndex , int curveIndex)
 {
-    int x = bspIndex * 1000 + curveIndex;
+    int x = bspIndex * 10000 + curveIndex;
     curveDict[x] = numCurves++;
     curveId.push_back(x);
 }
@@ -50,13 +50,13 @@ int AdjMatrix::getMark(int bspIndex1 , int curveIndex1 , int bspIndex2 , int cur
 
 int AdjMatrix::forHash(int bspIndex , int curveIndex)
 {
-    return curveDict[bspIndex * 1000 + curveIndex];
+    return curveDict[bspIndex * 10000 + curveIndex];
 }
 
 std::pair<int , int> AdjMatrix::backHash(int index)
 {
     int x = curveId[index];
-    return std::make_pair(x / 1000 , x % 1000);
+    return std::make_pair(x / 10000 , x % 10000);
 }
 
 void AdjMatrix::printLog()

@@ -10,7 +10,7 @@ void DisjointSet::clear()
 
 void DisjointSet::makeSet(int bspIndex , int curveIndex)
 {
-    int x = bspIndex * 1000 + curveIndex;
+    int x = bspIndex * 10000 + curveIndex;
     curveDict[x] = numCurves++;
     curveId.push_back(x);
     curveColor.push_back(numCurves - 1);
@@ -73,13 +73,13 @@ void DisjointSet::merge(int bspIndex1 , int curveIndex1 , int bspIndex2 , int cu
 
 int DisjointSet::forHash(int bspIndex , int curveIndex)
 {
-    return curveDict[bspIndex * 1000 + curveIndex];
+    return curveDict[bspIndex * 10000 + curveIndex];
 }
 
 std::pair<int , int> DisjointSet::backHash(int index)
 {
     int x = curveId[index];
-    return std::make_pair(x / 1000 , x % 1000);
+    return std::make_pair(x / 10000 , x % 10000);
 }
 
 void DisjointSet::printLog()

@@ -5,11 +5,14 @@
 #include "TimeManager.h"
 #include "Plane.h"
 
+class PointCloudUtils;
+
 struct OptVariable
 {
     // type 0: ni = node index
     // type 1: ni = bspline index, ci = ctrlNodes index
     int type , ni , ci;
+    double weight;
 
     OptVariable() {}
     
@@ -54,7 +57,7 @@ class Optimization
 public:
     Optimization();
     ~Optimization();
-    void init(CurveNet *net);
+    void init(CurveNet *net , PointCloudUtils *pcUtils);
 	void generateDAT(std::string file);
 	void generateMOD(std::string file);
 	void generateRUN(std::string file);
@@ -90,6 +93,7 @@ private:
     std::pair<OptVariable , OptVariable> bsp2var(int bspIndex , int curveIndex , int numCtrlCurves);
 
     CurveNet *net;
+    PointCloudUtils *pcUtils;
 
 	int tmpVarNum;
     int numVars;

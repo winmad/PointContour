@@ -171,7 +171,7 @@ public:
 	void cycleGroupUpdate();
 
     void autoGenBySymmetry();
-    void initTranslationMode();
+    void initTranslationMode(bool initAxisOrigin);
     void autoGenByTranslation(double offset);
     void autoGenByScaling(double offset);
     void autoGenByRotation(double offset);
@@ -227,6 +227,7 @@ public:
 
     // 0: none, 1: translation, 2: scaling, 3: rotation,
     // 4: moving one point, 5: moving axisWidget
+    // 6: easy translation
     int copyMode;
 
     std::vector<Cycle> unsavedCycles;

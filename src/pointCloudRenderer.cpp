@@ -1156,7 +1156,9 @@ void PointCloudRenderer::renderAxisWidget()
 
     if (chosenAxis != -1)
     {
-        glColor4f(1.f , 0.f , 0.f , 1.f);
+        // glColor4f(1.f , 0.f , 0.f , 1.f);
+        glColor4f(axisWidget.axesColors[chosenAxis].x , axisWidget.axesColors[chosenAxis].y ,
+                    axisWidget.axesColors[chosenAxis].z , 0.7f);
         drawLine(axisWidget.origin - axisWidget.axes[chosenAxis] * axisWidget.length * 2 ,
             axisWidget.origin + axisWidget.axes[chosenAxis] * axisWidget.length * 2);
         if (copyMode == 3)
@@ -1166,13 +1168,15 @@ void PointCloudRenderer::renderAxisWidget()
                 if (i == chosenAxis)
                 {
                     glPointSize(4.f);
-                    glColor4f(1.f , 0.f , 0.f , 0.7f);
+                    // glColor4f(1.f , 0.f , 0.f , 0.7f);
                 }
                 else
                 {
                     glPointSize(1.f);
-                    glColor4f(0.f , 0.f , 0.f , 0.7f);
+                    // glColor4f(0.f , 0.f , 0.f , 0.7f);
                 }
+                glColor4f(axisWidget.axesColors[i].x , axisWidget.axesColors[i].y ,
+                    axisWidget.axesColors[i].z , 0.7f);
                 drawPoints(axisWidget.globePoints[i]);
             }
         }
@@ -1183,9 +1187,11 @@ void PointCloudRenderer::renderAxisWidget()
         {
             for (int i = 0; i < axisWidget.axes.size(); i++)
             {
-                glColor4f(0.f , 0.f , 0.f , 0.7f);
-                drawLine(axisWidget.origin , axisWidget.origin + axisWidget.axes[i] *
-                    axisWidget.length);
+                // glColor4f(0.f , 0.f , 0.f , 0.7f);
+                glColor4f(axisWidget.axesColors[i].x , axisWidget.axesColors[i].y ,
+                    axisWidget.axesColors[i].z , 0.7f);
+                drawLine(axisWidget.origin - axisWidget.axes[i] * axisWidget.length ,
+                    axisWidget.origin + axisWidget.axes[i] * axisWidget.length);
             }
         }
         else if (copyMode == 3)
@@ -1193,14 +1199,16 @@ void PointCloudRenderer::renderAxisWidget()
             glPointSize(1.f);
             for (int i = 0; i < axisWidget.axes.size(); i++)
             {
-                glColor4f(0.f , 0.f , 0.f , 0.7f);
+                // glColor4f(0.f , 0.f , 0.f , 0.7f);
+                glColor4f(axisWidget.axesColors[i].x , axisWidget.axesColors[i].y ,
+                    axisWidget.axesColors[i].z , 0.7f);
                 drawPoints(axisWidget.globePoints[i]);
             }
         }
     }
 
     glPointSize(8.f);
-    glColor4f(1.f , 0.f , 0.f , 0.7f);
+    glColor4f(0.f , 0.f , 0.f , 0.7f);
     drawPoint(axisWidget.origin);
 }
 
@@ -1372,7 +1380,7 @@ void PointCloudRenderer::afterCurveNetUpdate()
     if (isAutoOpt)
     {
         printf("opt init\n");
-        pcUtils->opt.init(dispCurveNet);
+        pcUtils->opt.init(dispCurveNet , pcUtils);
         printf("opt run\n");
         pcUtils->opt.run(dispCurveNet);
         printf("after opt\n");
@@ -1381,6 +1389,7 @@ void PointCloudRenderer::afterCurveNetUpdate()
     // dispCurveNet->collinearSet.printLog();
     // dispCurveNet->collinearSet.test();
 
+    /*
     // find cycle
     printf("start cycle discovery\n");
     cycleDisc();
@@ -1391,6 +1400,7 @@ void PointCloudRenderer::afterCurveNetUpdate()
     surfacingUnsavedCycles();
 #endif
     evalUnsavedCycles();
+    */
 }
 
 void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
@@ -1587,7 +1597,7 @@ void PointCloudRenderer::optUpdate(bool isRefreshConst)
 {
     if (isRefreshConst)
         dispCurveNet->refreshAllConstraints();
-    pcUtils->opt.init(dispCurveNet);
+    pcUtils->opt.init(dispCurveNet , pcUtils);
     pcUtils->opt.run(dispCurveNet);
 	if (dispCurveNet->numPolyLines > 0)
 	{
@@ -2050,6 +2060,16 @@ void PointCloudRenderer::pickAllAutoCurves(int op)
             selectionOffset * 1.5 , isAutoOpt);
     }
     isCurvesChosen.resize(dispCurveNet->numPolyLines , false);
+
+    afterCurveNetUpdate();
+    for (int i = dispCurveNet->polyLines.size() - autoGenPaths.size();
+         i < dispCurveNet->polyLines.size(); i++)
+    {
+        vec3d pos = dispCurveNet->polyLines[i].front();
+        pcUtils->addPointToGraph(pos);
+        pos = dispCurveNet->polyLines[i].back();
+        pcUtils->addPointToGraph(pos);
+    }
 
     autoGenOriginPaths.clear();
     autoGenPaths.clear();
@@ -2640,14 +2660,14 @@ void PointCloudRenderer::autoGenBySymmetry()
     }
 }
 
-void PointCloudRenderer::initTranslationMode()
+void PointCloudRenderer::initTranslationMode(bool initAxisOrigin)
 {
     axisPlane = crossPlane;
     autoGenOriginPaths.clear();
     autoGenPaths.clear();
     autoGenBsp.clear();
     autoPathOrigins.clear();
-    bool isFirst = true;
+    bool isFirst = initAxisOrigin;
     for (int i = 0; i < dispCurveNet->numPolyLines; i++)
     {
         if (isCurvesChosen[i])
