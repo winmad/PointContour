@@ -1,5 +1,6 @@
 #include "constraints.h"
 #include "curveNet.h"
+#include "macros.h"
 #include <Eigen/Dense>
 
 const double ConstraintDetector::collinearThr = 0.05;
@@ -139,6 +140,10 @@ bool ConstraintDetector::checkParallel(const vec3d& x1 , const vec3d& y1 ,
     v1.normalize();
     v2 = y2 - x2;
     v2.normalize();
+#if (DEBUG_OUTPUT_SCORE)
+    vec3d n = (y1 - x1).cross(y2 - x2);
+    writeLog("parallel score: cross prod = %.6f; dot prod = %.6f\n" , n.length() , v1.dot(v2));
+#endif
     if (1.0 - std::abs(v1.dot(v2)) > threshold) return false;
     return true;
 }
@@ -152,22 +157,26 @@ bool ConstraintDetector::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
     v1 = y1 - x1; v2 = x2 - x1;
     v1.normalize(); v2.normalize();
     double cosine = v1.dot(v2);
+    // printf("collinear cosine 1: %.6f\n" , cosine);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
     //v1 = y1 - x1;
     v2 = y2 - x1;
     v2.normalize();
     cosine = v1.dot(v2);
+    // printf("collinear cosine 2: %.6f\n" , cosine);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
     v1 = x2 - y1; v2 = y2 - y1;
     v1.normalize(); v2.normalize();
     cosine = v1.dot(v2);
+    // printf("collinear cosine 3: %.6f\n" , cosine);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
     v1 = x2 - x1; v2 = y2 - x1;
     v1.normalize(); v2.normalize();
     cosine = v1.dot(v2);
+    // printf("collinear cosine 4: %.6f\n" , cosine);
     if (1.0 - std::abs(cosine) > threshold) return false;
     
 	v1 = y1 - x1; v2 = y2 - x2;
@@ -177,7 +186,9 @@ bool ConstraintDetector::checkCollinear(const vec3d& x1 , const vec3d& y1 ,
     vec3d denom = v1.cross(v2) * len1 * len2;
     vec3d numer = (x2 - x1).dot(denom);
     double d = numer.length() / denom.length();
-    // printf("dist = %.6f\n" , d);
+#if (DEBUG_OUTPUT_SCORE)
+    writeLog("collinear score: lines dist = %.6f\n" , d);
+#endif
     if (d > 0.01) return false;
     
     return true;
@@ -191,6 +202,9 @@ bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
     if (bsp1.ctrlNodes.size() > 2 && bsp2.ctrlNodes.size() > 2)
     {
         // printf("type 3 & type 3\n");
+#if (DEBUG_OUTPUT_SCORE)
+        writeLog("coplanar score: plane dist = %.6f\n" , plane1.dist(plane2));
+#endif
         if (plane1.dist(plane2) > threshold) return false;
     }
     else if (bsp1.ctrlNodes.size() > 2 && bsp2.ctrlNodes.size() == 2)
@@ -203,6 +217,9 @@ bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
             res += std::abs(plane1.dist(path[i]));
         }
         res /= (double)path.size();
+#if (DEBUG_OUTPUT_SCORE)
+        writeLog("coplanar score: line2plane dist = %.6f\n" , res);
+#endif
         if (res > threshold) return false;
     }
     else if (bsp1.ctrlNodes.size() == 2 && bsp2.ctrlNodes.size() > 2)
@@ -215,6 +232,9 @@ bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
             res += std::abs(plane2.dist(path[i]));
         }
         res /= (double)path.size();
+#if (DEBUG_OUTPUT_SCORE)
+        writeLog("coplanar score: line2plane dist = %.6f\n" , res);
+#endif
         if (res > threshold) return false;
     }
     else if (bsp1.ctrlNodes.size() == 2 && bsp2.ctrlNodes.size() == 2)
@@ -229,6 +249,9 @@ bool ConstraintDetector::checkCoplanar(BSpline& bsp1 , Plane& plane1 ,
         n.normalize();
         vec3d d = (x2 + y2) * 0.5 - (x1 + y1) * 0.5;
         res = std::abs(d.dot(n));
+#if (DEBUG_OUTPUT_SCORE)
+        writeLog("coplanar score: line2line dist = %.6f\n" , res);
+#endif
         if (res > threshold) return false;
     }
     return true;
@@ -293,6 +316,9 @@ bool ConstraintDetector::checkOrtho(const vec3d& x0 , const vec3d& x1 ,
     v2.normalize();
     // printf("v1 = (%.6f,%.6f,%.6f) , v2 = (%.6f,%.6f,%.6f)\n" , v1.x , v1.y , v1.z ,
     // v2.x , v2.y , v2.z);
+#if (DEBUG_OUTPUT_SCORE)
+    writeLog("orthogonal score: dot prod = %.6f\n" , (x1 - x0).dot(x2 - x0));
+#endif
     if (std::abs(v1.dot(v2)) < threshold) return true;
     return false;
 }
@@ -304,6 +330,10 @@ bool ConstraintDetector::checkTangent(const vec3d& x0 , const vec3d& x1 ,
     v1.normalize();
     vec3d v2 = x2 - x0;
     v2.normalize();
+#if (DEBUG_OUTPUT_SCORE)
+    vec3d n = (x1 - x0).cross(x2 - x0);
+    writeLog("tangent score: cross prod = %.6f; dot prod = %.6f\n" , n.length() , v1.dot(v2));
+#endif
     if (1.0 - std::abs(v1.dot(v2)) < threshold) return true;
     return false;
 }

@@ -16,14 +16,14 @@ struct OptVariable
 
     OptVariable() {}
     
-    OptVariable(int _type , int _ni)
+    OptVariable(int _type , int _ni , double _weight = 0)
     {
-        type = _type; ni = _ni; ci = 0;
+        type = _type; ni = _ni; ci = 0; weight = _weight;
     }
 
-    OptVariable(int _type , int _ni , int _ci)
+    OptVariable(int _type , int _ni , int _ci , double _weight = 0)
     {
-        type = _type; ni = _ni; ci = _ci;
+        type = _type; ni = _ni; ci = _ci; weight = _weight;
     }
 };
 

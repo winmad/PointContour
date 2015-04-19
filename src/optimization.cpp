@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <algorithm>
 #include "optimization.h"
 #include "splineUtils.h"
 #include "pointCloudUtils.h"
@@ -54,15 +55,41 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
     for (int i = 0; i < net->numNodes; i++)
     {
         if (!net->nodesStat[i]) continue;
-        addOptVariable(OptVariable(0 , i));
+        double weight;
+        if (net->nodesEditType[i] == 0)
+        {
+            weight = 5;
+        }
+        else if (net->nodesEditType[i] == 1)
+        {
+            weight = 1;
+        }
+        else if (net->nodesEditType[i] == 2)
+        {
+            weight = 15;
+        }
+        addOptVariable(OptVariable(0 , i , weight));
     }
     for (int i = 0; i < net->numPolyLines; i++)
     {
         if (net->curveType[i] == -1) continue;
         if (net->bsplines[i].ctrlNodes.size() <= 2) continue;
+        double weight;
+        if (net->bspEditType[i] == 0)
+        {
+            weight = 5;
+        }
+        else if (net->bspEditType[i] == 1)
+        {
+            weight = 1;
+        }
+        else if (net->bspEditType[i] == 2)
+        {
+            weight = 15;
+        }
         for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; j++)
         {
-            addOptVariable(OptVariable(1 , i , j));
+            addOptVariable(OptVariable(1 , i , j , weight));
         }
     }
 
@@ -450,6 +477,14 @@ void Optimization::generateDAT(string file)
 	}
 	fout << ";\n";
 
+    fout << "param p_weight :=\n";
+    for (int i = 0; i < numVars; ++ i)
+    {
+        fout << " " << i << " ";
+        fout << vars[i].weight << "\n";
+    }
+    fout << ";\n";
+
 	fout << "param PN := " << (int)coplanes.size() - 1 << ";\n";
 	
 	fout << "param init_plane :=\n";
@@ -598,8 +633,9 @@ void Optimization::generateMOD(string file)
 	fout << "param BPN {0..BN};\n";
 	fout << "param bp {i in 0..BN, 0..BPN[i], Dim3};\n";
 	fout << "param coef {i in 0..BN, 0..BPN[i], 0..CN[i]};\n";
-	
-	fout << "\n# variables\n";
+	fout << "param p_weight {0..N};\n";
+
+    fout << "\n# variables\n";
 	fout << "var p {i in 0..N, t in Dim3} >= init_p[i, t] - p_bound[i], <= init_p[i, t] + p_bound[i], := init_p[i, t];\n";
 	fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - largeBound, <= init_plane[i, t] + largeBound, := init_plane[i, t];\n";
     //fout << "var plane {i in 0..PN, t in Dim4} >= init_plane[i, t] - 0.05, <= init_plane[i, t] + 0.05, := init_plane[i, t];\n";
@@ -611,22 +647,22 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "500 * (sum {i in 0..N, t in Dim3} "
-		 << "(p[i, t] - init_p[i, t]) ^ 2)\n";
-	fout << "+ 50 * (sum{i in 0..SN}(sum{j in 0..SPN[i]}"
+	fout << "100 * (sum {i in 0..N, t in Dim3} "
+		 << "p_weight[i] * (p[i, t] - init_p[i, t]) ^ 2)\n";
+	fout << "+ 10 * (sum{i in 0..SN} p_weight[sidx[i,2]] * (sum{j in 0..SPN[i]}"
 		<< "sum{t in Dim3}("
 		<< "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
 		<< "-(sp[i,j,t]-p[sidx[i,2],t])"
 		<< ")^2"
 		<< ")/SPN[i])\n";
-	fout << "+ 50 * (sum{i in 0..BN}(sum{j in 0..BPN[i]}"
+	fout << "+ 10 * (sum{i in 0..BN} p_weight[bidx[i,0]] * (sum{j in 0..BPN[i]}"
 		 << "sum{t in Dim3}("
 		 << "bp[i,j,t]-sum{k in 0..CN[i]}coef[i,j,k]*p[bidx[i,k],t]"
 		 << ")^2"
 		 << ")/BPN[i])\n";
 	for (int i = 0; i < numCons; ++ i)
 	{
-		fout << "+";
+		fout << "+ 100 * ";
 		switch(cons[i].type)
 		{
             case st_collinear:
@@ -655,7 +691,7 @@ void Optimization::generateMOD(string file)
 	{
 		for (int j = 0; j < coplanarPoints[i].size(); ++ j)
 		{
-			fout << "+"
+			fout << "+ 100 * "
 				 << generateCoplanar(i, coplanarPoints[i][j])
 				 << "\n";
 		}
@@ -842,10 +878,10 @@ void Optimization::run(CurveNet *net)
 	fin >> totError;
 	if (totError > 0.1 * vars.size()) 
 	{
-		fin.close();
+		// fin.close();
 		wxString str("bad optimization result!\n");
         pcUtils->statusBar->SetStatusText(str);
-		return;
+		// return;
 	}
     else
     {
@@ -905,6 +941,11 @@ void Optimization::run(CurveNet *net)
         resampleBsp(net->bsplines[i] , net->polyLines[i]);
     }
 	fin.close();
+
+    // post process curve net
+    net->evalCurveNetQuality();
+    std::fill(net->nodesEditType.begin() , net->nodesEditType.end() , 0);
+    std::fill(net->bspEditType.begin() , net->bspEditType.end() , 0);
     // timer.PopAndDisplayTime("\n\n***** post processing time = %.6f *****\n\n");
 }
 
@@ -1027,7 +1068,7 @@ string Optimization::generateLineTangent(int u1, int u2, int v1, int v2)
 string Optimization::generateCoplanar(int plane, int point)
 {
 	stringstream ss;
-	ss << "10 * abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
+	ss << "abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
 	   << " + plane[" << plane << ", 4]) / "
 	   << "sqrt(sum{i in Dim3} (plane[" << plane << ", i] ^ 2))";
 	return ss.str();

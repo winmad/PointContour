@@ -88,6 +88,8 @@ public:
     void updateConstraints(int bspIndex);
     void refreshAllConstraints();
 
+    void evalCurveNetQuality();
+
     void mapOrigin2polyLines(int bspIndex);
 
     void test();
@@ -107,6 +109,10 @@ public:
 	std::vector<std::vector<int> > mapOrigin;
     std::vector<BSpline> bsplines;
     std::vector<PolyLineIndex> polyLinesIndex;
+
+    // 0: normal, 1: new, can change more, 2: user edit, can only change little
+    std::vector<int> nodesEditType;
+    std::vector<int> bspEditType;
 
 	// 1: line, 2: nothing, 3: coplanar
 	std::vector<int> curveType;

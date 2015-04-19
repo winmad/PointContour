@@ -4,6 +4,7 @@
 #include "pclUtils.h"
 #include "macros.h"
 #include <map>
+#include <algorithm>
 #ifdef __APPLE__
     #include <sys/uio.h>
 #else
@@ -41,6 +42,9 @@ void CurveNet::clear()
     cycleCenters.clear();
     meshes.clear();
     meshNormals.clear();
+
+    nodesEditType.clear();
+    bspEditType.clear();
 }
 
 void CurveNet::copyFrom(const CurveNet& net)
@@ -61,6 +65,8 @@ void CurveNet::copyFrom(const CurveNet& net)
     meshNormals = net.meshNormals;
     curveType = net.curveType;
     planes = net.planes;
+    nodesEditType = net.nodesEditType;
+    bspEditType = net.bspEditType;
     conSet->copyFrom(net.conSet);
 }
 
@@ -72,6 +78,8 @@ void CurveNet::startPath(const vec3d& st)
     numNodes++;
     edges.resize(numNodes);
     edges[numNodes - 1].clear();
+
+    nodesEditType.push_back(0);
 }
 
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
@@ -127,6 +135,25 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     {
         updateConstraints(numPolyLines - 1);
     }
+
+    if (newNode)
+    {
+        nodesEditType.push_back(1);
+    }
+    else
+    {
+        nodesEditType[ed_ni] = 1;
+    }
+    nodesEditType[st_ni] = 1;
+    bspEditType.push_back(1);
+    /*
+    printf("#node: %d\n" , nodes.size());
+    for (int i = 0; i < nodes.size(); i++) printf("%d " , nodesEditType[i]);
+    printf("\n");
+    printf("#curve: %d\n" , bsplines.size());
+    for (int i = 0; i < bsplines.size(); i++) printf("%d " , bspEditType[i]);
+    printf("\n");
+    */
 }
 
 void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
@@ -224,6 +251,11 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
             updateConstraints(bspIndex[t]);
         }
     }
+
+    nodesEditType.push_back(1);
+    nodesEditType[st_ni] = nodesEditType[ed_ni] = 1;
+    bspEditType[breakLine] = 1;
+    bspEditType.push_back(1);
 }
 
 void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
@@ -234,6 +266,7 @@ void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
     bsplines[bspIndex].updateBSpline(nodeIndex , newPos);
     resampleBsp(bsplines[bspIndex] , polyLines[bspIndex]);
     modifiedBsp.push_back(bspIndex);
+
     if (nodeIndex == 0 || nodeIndex == (int)bsplines[bspIndex].ctrlNodes.size() - 1)
     {
         int ni = getNodeIndex(pos);
@@ -254,6 +287,8 @@ void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
             resampleBsp(bsplines[pli] , polyLines[pli]);
             modifiedBsp.push_back(pli);
         }
+
+        nodesEditType[ni] = 2;
     }
     
     for (int i = 0; i < modifiedBsp.size(); i++)
@@ -271,6 +306,7 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
 {
     int st_ni , ed_ni;
     bool isSnap = false;
+
     st_ni = getNodeIndex(path.front() , offset);
     if (st_ni == -1)
     {
@@ -280,11 +316,13 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
         numNodes++;
         edges.resize(numNodes);
         edges[numNodes - 1].clear();
+        nodesEditType.push_back(1);
     }
     else
     {
         isSnap = true;
         path.front() = nodes[st_ni];
+        nodesEditType[st_ni] = 1;
     }
     ed_ni = getNodeIndex(path.back() , offset);
     if (ed_ni == -1)
@@ -295,11 +333,13 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
         numNodes++;
         edges.resize(numNodes);
         edges[numNodes - 1].clear();
+        nodesEditType.push_back(1);
     }
     else
     {
         isSnap = true;
         path.back() = nodes[ed_ni];
+        nodesEditType[ed_ni] = 1;
     }
 
     if (isSnap)
@@ -334,6 +374,184 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
     {
         updateConstraints(numPolyLines - 1);
     }
+
+    bspEditType.push_back(1);
+}
+
+void CurveNet::evalCurveNetQuality()
+{
+    writeLog("/**********************************/\n");
+    writeLog("====== eval: collinear ======\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        if (curveType[i] != 1) continue;
+        for (int j = i + 1; j < numPolyLines; j++)
+        {
+            if (curveType[j] != 1) continue;
+            if (!conSet->collinearSet.sameRoot(i , 0 , j , 0)) continue;
+            writeLog("%d <-> %d: " , i , j);
+            if (ConstraintDetector::checkCollinear(bsplines[i].ctrlNodes.front() ,
+                    bsplines[i].ctrlNodes.back() , bsplines[j].ctrlNodes.front() ,
+                    bsplines[j].ctrlNodes.back() , ConstraintDetector::collinearThr))
+            {
+                writeLog("yes\n");
+            }
+            else
+            {
+                writeLog("no\n");
+            }
+        }
+    }
+    writeLog("====== eval: parallel ======\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        if (curveType[i] != 1) continue;
+        for (int j = i + 1; j < numPolyLines; j++)
+        {
+            if (curveType[j] != 1) continue;
+            if (!conSet->parallelSet.sameRoot(i , 0 , j , 0)) continue;
+            writeLog("%d <-> %d: " , i , j);
+            if (ConstraintDetector::checkParallel(bsplines[i].ctrlNodes.front() ,
+                    bsplines[i].ctrlNodes.back() , bsplines[j].ctrlNodes.front() ,
+                    bsplines[j].ctrlNodes.back() , ConstraintDetector::parallelThr))
+            {
+                writeLog("yes\n");
+            }
+            else
+            {
+                writeLog("no\n");
+            }
+        }
+    }
+    writeLog("====== eval: orthogonal ======\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        if (curveType[i] == -1) continue;
+        for (int j = i + 1; j < numPolyLines; j++)
+        {
+            if (curveType[j] == -1) continue;
+            int candidatesX[2] = {0 , (int)bsplines[i].ctrlNodes.size() - 2};
+            int candidatesY[2] = {0 , (int)bsplines[j].ctrlNodes.size() - 2};
+            for (int candiX = 0; candiX < 2; candiX++)
+            {
+                for (int candiY = 0; candiY < 2; candiY++)
+                {
+                    int x = candidatesX[candiX];
+                    int y = candidatesY[candiY];
+                    int mark = conSet->orthoSet.getMark(i , x , j , y);
+                    if (mark == 1)
+                    {
+                        vec3d x0 , x1 , x2;
+                        if (candiX == 0)
+                        {
+                            x0 = bsplines[i].ctrlNodes[x];
+                            x1 = bsplines[i].ctrlNodes[x + 1];
+                        }
+                        else
+                        {
+                            x0 = bsplines[i].ctrlNodes[x + 1];
+                            x1 = bsplines[i].ctrlNodes[x];
+                        }
+                        if (candiY == 0)
+                        {
+                            x2 = bsplines[j].ctrlNodes[y + 1];
+                            if (!isEqual(x0 , bsplines[j].ctrlNodes[y])) continue;
+                        }
+                        else
+                        {
+                            x2 = bsplines[j].ctrlNodes[y];
+                            if (!isEqual(x0 , bsplines[j].ctrlNodes[y + 1])) continue;
+                        }
+                        writeLog("(%d , %d) <-> (%d , %d): " , i , x , j , y);
+                        if (ConstraintDetector::checkOrtho(x0 , x1 , x2 ,
+                                ConstraintDetector::orthoThr))
+                        {
+                            writeLog("yes\n");
+                        }
+                        else
+                        {
+                            writeLog("no\n");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    writeLog("====== eval: tangent ======\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        if (curveType[i] == -1) continue;
+        for (int j = i + 1; j < numPolyLines; j++)
+        {
+            if (curveType[j] == -1) continue;
+            int candidatesX[2] = {0 , (int)bsplines[i].ctrlNodes.size() - 2};
+            int candidatesY[2] = {0 , (int)bsplines[j].ctrlNodes.size() - 2};
+            for (int candiX = 0; candiX < 2; candiX++)
+            {
+                for (int candiY = 0; candiY < 2; candiY++)
+                {
+                    int x = candidatesX[candiX];
+                    int y = candidatesY[candiY];
+                    int mark = conSet->orthoSet.getMark(i , x , j , y);
+                    if (mark == 2)
+                    {
+                        vec3d x0 , x1 , x2;
+                        if (candiX == 0)
+                        {
+                            x0 = bsplines[i].ctrlNodes[x];
+                            x1 = bsplines[i].ctrlNodes[x + 1];
+                        }
+                        else
+                        {
+                            x0 = bsplines[i].ctrlNodes[x + 1];
+                            x1 = bsplines[i].ctrlNodes[x];
+                        }
+                        if (candiY == 0)
+                        {
+                            x2 = bsplines[j].ctrlNodes[y + 1];
+                            if (!isEqual(x0 , bsplines[j].ctrlNodes[y])) continue;
+                        }
+                        else
+                        {
+                            x2 = bsplines[j].ctrlNodes[y];
+                            if (!isEqual(x0 , bsplines[j].ctrlNodes[y + 1])) continue;
+                        }
+                        writeLog("(%d , %d) <-> (%d , %d): " , i , x , j , y);
+                        if (ConstraintDetector::checkTangent(x0 , x1 , x2 ,
+                                ConstraintDetector::tangentThr))
+                        {
+                            writeLog("yes\n");
+                        }
+                        else
+                        {
+                            writeLog("no\n");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    writeLog("====== eval: coplanar ======\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        if (curveType[i] != 1 && curveType[i] != 3) continue;
+        for (int j = i + 1; j < numPolyLines; j++)
+        {
+            if (curveType[j] != 1 && curveType[j] != 3) continue;
+            if (!conSet->parallelSet.sameRoot(i , 0 , j , 0)) continue;
+            writeLog("%d <-> %d: " , i , j);
+            if (ConstraintDetector::checkCoplanar(bsplines[i] , planes[i] ,
+                    bsplines[j] , planes[j] , ConstraintDetector::coplanarThr))
+            {
+                writeLog("yes\n");
+            }
+            else
+            {
+                writeLog("no\n");
+            }
+        }
+    }
+    writeLog("\n\n");
 }
 
 bool CurveNet::reflSymPath(const int& bspIndex , const Plane& plane ,
@@ -1057,6 +1275,8 @@ void CurveNet::loadCurveNet(const char* fileName)
     int tp;
     clear();
     fscanf(fp , "%d %d" , &numNodes , &numPolyLines);
+    nodesEditType.resize(numNodes , 0);
+    bspEditType.resize(numPolyLines , 0);
     for (int i = 0; i < numNodes; i++)
     {
         fscanf(fp , "%lf %lf %lf" , &p.x , &p.y , &p.z);
