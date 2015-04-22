@@ -1001,6 +1001,18 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
                 pcRenderer->isShowAxisWidget = false;
             }
         }
+        else if (pcRenderer->copyMode == 7)
+        {
+            if (event.LeftIsDown())
+            {
+                pcRenderer->pickCurve(x , y , 4);
+            }
+            else if (event.MiddleIsDown())
+            {
+                std::fill(pcRenderer->dispCurveNet->isNodesFixed.begin() , pcRenderer->dispCurveNet->isNodesFixed.end() , false);
+                std::fill(pcRenderer->dispCurveNet->isCurvesFixed.begin() , pcRenderer->dispCurveNet->isCurvesFixed.end() , false);
+            }
+        }
         else if (crossPlanePicked) // cross plane operation, ignore all other editing operations
         {
             if (event.Dragging())
@@ -1308,6 +1320,23 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
                 m_pcUtils->statusBar->SetStatusText(str);
             }
         }
+        else if (uc == 'F')
+        {
+            if (pcRenderer->copyMode != 7)
+            {
+                pcRenderer->copyMode = 7;
+                pcRenderer->isShowFixCurves = true;
+                wxString str("Choosing fixed curves & nodes\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowFixCurves = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
 		else if (uc == 'J')
 		{
 			m_pcUtils->pcRenderer->incBspCurveIndex();
@@ -1392,12 +1421,9 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
             m_pcUtils->pcRenderer->surfacingUnsavedCycles();
             m_pcUtils->pcRenderer->evalUnsavedCycles();
         }
-        else if (uc == 'F')
-        {
-            m_pcUtils->pcRenderer->isShowFeaturePoints = !m_pcUtils->pcRenderer->isShowFeaturePoints;
-        }
         else if (uc == 'B')
         {
+            m_pcUtils->pcRenderer->isShowFeaturePoints = !m_pcUtils->pcRenderer->isShowFeaturePoints;
             m_pcUtils->pcRenderer->isShowDebugPoints = !m_pcUtils->pcRenderer->isShowDebugPoints;
         }
 	}

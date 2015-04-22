@@ -30,12 +30,12 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
     pcUtils = _pcUtils;
 
 	// for debug
-	largeBound = 3;
+	largeBound = 2;
     smallBound = 2;
 	numStartPoints = 120;
 	maxRealTime = 0.2;
 
-    numVars = 0;
+    numVars = numConsts = numVaris = 0;
     vars.clear();
     double2vi.clear();
 
@@ -90,6 +90,51 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
         for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; j++)
         {
             addOptVariable(OptVariable(1 , i , j , weight));
+        }
+    }
+
+    for (int i = 0; i < numVars; i++)
+    {
+        if (vars[i].type == 0)
+        {
+            if (net->isNodesFixed[vars[i].ni])
+            {
+                vars[i].isVar = false;
+                vars[i].index = numConsts++;
+            }
+            else
+            {
+                bool flag = true;
+                for (int j = 0; j < net->edges[vars[i].ni].size(); j++)
+                {
+                    int pli = net->edges[vars[i].ni][j].pli;
+                    if (net->isCurvesFixed[pli])
+                    {
+                        vars[i].isVar = false;
+                        vars[i].index = numConsts++;
+                        flag = false;
+                        break;
+                    }
+                }
+                if (flag)
+                {
+                    vars[i].isVar = true;
+                    vars[i].index = numVaris++;
+                }
+            }
+        }
+        else if (vars[i].type == 1)
+        {
+            if (!net->isCurvesFixed[vars[i].ni])
+            {
+                vars[i].isVar = true;
+                vars[i].index = numVaris++;
+            }
+            else
+            {
+                vars[i].isVar = false;
+                vars[i].index = numConsts++;
+            }
         }
     }
 
@@ -647,22 +692,22 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "100 * (sum {i in 0..N, t in Dim3} "
+	fout << "5 * (sum {i in 0..N, t in Dim3} "
 		 << "p_weight[i] * (p[i, t] - init_p[i, t]) ^ 2)\n";
-	fout << "+ 10 * (sum{i in 0..SN} p_weight[sidx[i,2]] * (sum{j in 0..SPN[i]}"
+	fout << "+ 1 * (sum{i in 0..SN} p_weight[sidx[i,2]] * (sum{j in 0..SPN[i]}"
 		<< "sum{t in Dim3}("
 		<< "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
 		<< "-(sp[i,j,t]-p[sidx[i,2],t])"
 		<< ")^2"
 		<< ")/SPN[i])\n";
-	fout << "+ 10 * (sum{i in 0..BN} p_weight[bidx[i,0]] * (sum{j in 0..BPN[i]}"
+	fout << "+ 1 * (sum{i in 0..BN} p_weight[bidx[i,0]] * (sum{j in 0..BPN[i]}"
 		 << "sum{t in Dim3}("
 		 << "bp[i,j,t]-sum{k in 0..CN[i]}coef[i,j,k]*p[bidx[i,k],t]"
 		 << ")^2"
 		 << ")/BPN[i])\n";
 	for (int i = 0; i < numCons; ++ i)
 	{
-		fout << "+ 100 * ";
+		fout << "+ 10 * ";
 		switch(cons[i].type)
 		{
             case st_collinear:
@@ -691,7 +736,7 @@ void Optimization::generateMOD(string file)
 	{
 		for (int j = 0; j < coplanarPoints[i].size(); ++ j)
 		{
-			fout << "+ 100 * "
+			fout << "+ 10 * "
 				 << generateCoplanar(i, coplanarPoints[i][j])
 				 << "\n";
 		}
@@ -876,17 +921,20 @@ void Optimization::run(CurveNet *net)
     // timer.PushCurrentTime();
 	double totError;
 	fin >> totError;
+    bool iterFlag;
 	if (totError > 0.1 * vars.size()) 
 	{
 		// fin.close();
 		wxString str("bad optimization result!\n");
         pcUtils->statusBar->SetStatusText(str);
+        iterFlag = false;
 		// return;
 	}
     else
     {
         wxString str("good optimization result!\n");
         pcUtils->statusBar->SetStatusText(str);
+        iterFlag = true;
     }
     std::vector<vec3d> varbuff;
     for (int i = 0; i < vars.size(); i++)
@@ -946,7 +994,37 @@ void Optimization::run(CurveNet *net)
     net->evalCurveNetQuality();
     std::fill(net->nodesEditType.begin() , net->nodesEditType.end() , 0);
     std::fill(net->bspEditType.begin() , net->bspEditType.end() , 0);
+    if (iterFlag)
+    {
+        /*
+        for (int i = 0; i < net->numPolyLines; i++)
+        {
+            if (net->curveType[i] == -1) continue;
+            for (int j = 0; j < net->originPolyLines.size(); j++)
+            {
+                net->originPolyLines[i][j] = net->polyLines[i][j];
+            }
+        }
+        for (int i = 0; i < net->numPolyLines; i++)
+        {
+            if (net->curveType[i] != 3) continue;
+            ConstraintDetector::coplanarTest(net->bsplines[i] , net->planes[i]);
+        }
+        */
+    }
     // timer.PopAndDisplayTime("\n\n***** post processing time = %.6f *****\n\n");
+}
+
+string Optimization::var2str(int varIndex , int k)
+{
+    stringstream ss;
+    if (vars[varIndex].isVar) ss << "p[" << vars[varIndex].index;
+    else ss << "p_const[" << vars[varIndex].index;
+
+    if (k == -1) ss << ",t]";
+    else ss << "," << k << "]";
+
+    return ss.str();
 }
 
 string Optimization::generateLineOrtho(int u1, int u2, int v1, int v2)
@@ -1069,8 +1147,9 @@ string Optimization::generateCoplanar(int plane, int point)
 {
 	stringstream ss;
 	ss << "abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
-	   << " + plane[" << plane << ", 4]) / "
-	   << "sqrt(sum{i in Dim3} (plane[" << plane << ", i] ^ 2))";
+       << " + plane[" << plane << ", 4])";
+    //<< " + plane[" << plane << ", 4]) / "
+    //<< "sqrt(sum{i in Dim3} (plane[" << plane << ", i] ^ 2))";
 	return ss.str();
 }
 

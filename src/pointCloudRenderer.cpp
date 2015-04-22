@@ -538,13 +538,15 @@ void PointCloudRenderer::renderSelectedPoints()
     if (dispCurveNet == NULL)
         return;
 
-	glColor3f(1.f , 0.f , 0.f);
 	glPointSize(12.f);
 	for (int i = 0; i < (int)dispCurveNet->nodes.size(); i++)
 	{
         if (!dispCurveNet->nodesStat[i]) continue;
         if (pickedBsp != -1 && pickedCtrlNode != -1 &&
             isEqual(dispCurveNet->nodes[i] , dispCurveNet->bsplines[bspIndex].ctrlNodes[pickedCtrlNode])) continue;
+        if (dispCurveNet->isNodesFixed[i]) glColor3f(0.f , 0.f , 0.f);
+        else glColor3f(1.f , 0.f , 0.f);
+
 		drawPoint(dispCurveNet->nodes[i]);
 	}
 
@@ -594,8 +596,11 @@ void PointCloudRenderer::renderStoredPaths()
     
 	for (int i = 0; i < dispCurveNet->polyLines.size(); i++)
 	{
-        if (!isCurvesChosen[i]) glColor3f(0.f , 0.f , 1.f);
-        else glColor3f(1.f , 0.f , 1.f);
+        if (dispCurveNet->curveType[i] == -1) continue;
+
+        if (isCurvesChosen[i]) glColor3f(1.f , 0.f , 1.f);
+        else if (dispCurveNet->isCurvesFixed[i]) glColor3f(0.f , 0.f , 0.f);
+        else glColor3f(0.f , 0.f , 1.f);
 		drawLines(dispCurveNet->polyLines[i]);
 	}
     
@@ -833,8 +838,8 @@ void PointCloudRenderer::renderOrthogonalLines()
         {
             if (i == bspIndex && j == curveIndex) continue;
             if (dispCurveNet->conSet->orthoSet.getMark(bspIndex , curveIndex , i , j) != 1) continue;
-            printf("ortho: (%d , %d) <==> (%d , %d), %d\n" , bspIndex , curveIndex , i , j ,
-                dispCurveNet->conSet->orthoSet.getMark(bspIndex , curveIndex , i , j));
+            // printf("ortho: (%d , %d) <==> (%d , %d), %d\n" , bspIndex , curveIndex , i , j ,
+                // dispCurveNet->conSet->orthoSet.getMark(bspIndex , curveIndex , i , j));
             drawLine(dispCurveNet->bsplines[i].ctrlNodes[j] ,
                 dispCurveNet->bsplines[i].ctrlNodes[j + 1]);
         }
@@ -1998,6 +2003,21 @@ bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
         if (op == 3)
         {
             if (pickedCurve != -1) isCurvesChosen[pickedCurve] = !isCurvesChosen[pickedCurve];
+        }
+        if (op == 4)
+        {
+            if (!pickNode)
+            {
+                if (pickedCurve != -1)
+                {
+                    dispCurveNet->isCurvesFixed[pickedCurve] = !dispCurveNet->isCurvesFixed[pickedCurve];
+                }
+            }
+            else
+            {
+                int ni = dispCurveNet->getNodeIndex(pickedDispPoint);
+                if (ni != -1) dispCurveNet->isNodesFixed[ni] = !dispCurveNet->isNodesFixed[ni];
+            }
         }
         return true;
     }

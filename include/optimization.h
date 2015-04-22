@@ -14,6 +14,9 @@ struct OptVariable
     int type , ni , ci;
     double weight;
 
+    bool isVar;
+    int index; // index of var or const
+
     OptVariable() {}
     
     OptVariable(int _type , int _ni , double _weight = 0)
@@ -72,6 +75,7 @@ public:
     double largeBound , smallBound;
 
 private:
+    std::string var2str(int varIndex , int k);
 	std::string generateLineOrtho(int, int, int, int);
 	std::string generateLineParallel(int, int, int, int);
 	std::string generateLineCoplanar(int, int, int, int);
@@ -96,7 +100,8 @@ private:
     PointCloudUtils *pcUtils;
 
 	int tmpVarNum;
-    int numVars;
+    int numVars; // numVars = numConsts + numVaris;
+    int numConsts , numVaris;
     std::vector<OptVariable> vars;
     std::map<double , int> double2vi;
 

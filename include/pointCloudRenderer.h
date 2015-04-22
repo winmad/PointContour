@@ -36,6 +36,7 @@ public:
     bool isShowFeaturePoints;
     bool isShowDebugPoints;
     bool isShowAxisWidget;
+    bool isShowFixCurves;
     int constraintsVisual;
     int patchesVisual;
 	int patchesDraw;
@@ -138,7 +139,7 @@ public:
     int ctrlNodeSelectionByRay(int mouseX , int mouseY , int& nodeIndex);
     // op: 0 choose, 1 store, 2 delete
 	void pickPoint(int mouseX , int mouseY , int op);
-    bool pickCurve(int mouseX , int mouseY , int op); // extra: op = 3, choose/not
+    bool pickCurve(int mouseX , int mouseY , int op); // extra: op = 3, choose/not; op = 4, fix
     bool pickAutoCurve(int mouseX , int mouseY , int op);
 	// op: 3 add to group, 4 remove from group
     void pickCycle(int mouseX , int mouseY , int op);
@@ -228,6 +229,7 @@ public:
     // 0: none, 1: translation, 2: scaling, 3: rotation,
     // 4: moving one point, 5: moving axisWidget
     // 6: easy translation
+    // 7: fix part of curveNet
     int copyMode;
 
     std::vector<Cycle> unsavedCycles;

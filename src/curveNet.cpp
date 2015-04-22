@@ -45,6 +45,9 @@ void CurveNet::clear()
 
     nodesEditType.clear();
     bspEditType.clear();
+
+    isCurvesFixed.clear();
+    isNodesFixed.clear();
 }
 
 void CurveNet::copyFrom(const CurveNet& net)
@@ -67,6 +70,8 @@ void CurveNet::copyFrom(const CurveNet& net)
     planes = net.planes;
     nodesEditType = net.nodesEditType;
     bspEditType = net.bspEditType;
+    isCurvesFixed = net.isCurvesFixed;
+    isNodesFixed = net.isNodesFixed;
     conSet->copyFrom(net.conSet);
 }
 
@@ -80,6 +85,7 @@ void CurveNet::startPath(const vec3d& st)
     edges[numNodes - 1].clear();
 
     nodesEditType.push_back(0);
+    isNodesFixed.push_back(false);
 }
 
 void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
@@ -139,6 +145,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     if (newNode)
     {
         nodesEditType.push_back(1);
+        isNodesFixed.push_back(false);
     }
     else
     {
@@ -146,6 +153,7 @@ void CurveNet::extendPath(const vec3d& st , const vec3d& ed ,
     }
     nodesEditType[st_ni] = 1;
     bspEditType.push_back(1);
+    isCurvesFixed.push_back(false);
     /*
     printf("#node: %d\n" , nodes.size());
     for (int i = 0; i < nodes.size(); i++) printf("%d " , nodesEditType[i]);
@@ -253,9 +261,12 @@ void CurveNet::breakPath(const int& breakLine , const int& breakPoint ,
     }
 
     nodesEditType.push_back(1);
+    isNodesFixed.push_back(false);
     nodesEditType[st_ni] = nodesEditType[ed_ni] = 1;
     bspEditType[breakLine] = 1;
     bspEditType.push_back(1);
+    if (isCurvesFixed[breakLine]) isCurvesFixed.push_back(true);
+    else isCurvesFixed.push_back(false);
 }
 
 void CurveNet::updatePath(const int& bspIndex , const int& nodeIndex ,
@@ -317,6 +328,7 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
         edges.resize(numNodes);
         edges[numNodes - 1].clear();
         nodesEditType.push_back(1);
+        isNodesFixed.push_back(false);
     }
     else
     {
@@ -334,6 +346,7 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
         edges.resize(numNodes);
         edges[numNodes - 1].clear();
         nodesEditType.push_back(1);
+        isNodesFixed.push_back(false);
     }
     else
     {
@@ -376,11 +389,24 @@ void CurveNet::storeAutoPath(Path& path , BSpline& bsp , Path& originPath ,
     }
 
     bspEditType.push_back(1);
+    isCurvesFixed.push_back(false);
 }
 
 void CurveNet::evalCurveNetQuality()
 {
     writeLog("/**********************************/\n");
+    writeLog("====== eval: point-point distance ======\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        if (curveType[i] == -1) continue;
+        double dist = 0;
+        for (int j = 0; j < polyLines[i].size(); j++)
+        {
+            dist += (polyLines[i][j] - originPolyLines[i][j]).length();
+        }
+        dist /= polyLines[i].size();
+        writeLog("curve %d: avg dist = %.6f\n" , i , dist);
+    }
     writeLog("====== eval: collinear ======\n");
     for (int i = 0; i < numPolyLines; i++)
     {
@@ -535,6 +561,35 @@ void CurveNet::evalCurveNetQuality()
     for (int i = 0; i < numPolyLines; i++)
     {
         if (curveType[i] != 1 && curveType[i] != 3) continue;
+        double min_dist = 1e20;
+        int coplaneIdx = -1;
+        for (int j = 0; j < coplanes.size(); j++)
+        {
+            double dist = 0.0;
+            for (int k = 0; k < polyLines[i].size(); k++)
+            {
+                dist += std::abs(coplanes[j].dist(polyLines[i][k]));
+            }
+            dist /= polyLines[i].size();
+            if (dist < min_dist)
+            {
+                min_dist = dist;
+                coplaneIdx = j;
+            }
+        }
+        if (coplaneIdx == -1) continue;
+        writeLog("curve %d -> plane (%.6f,%.6f,%.6f;%.6f), dist = %.6f: " , i ,
+            coplanes[coplaneIdx].n.x , coplanes[coplaneIdx].n.y , coplanes[coplaneIdx].n.z ,
+            coplanes[coplaneIdx].d , min_dist);
+        if (min_dist < ConstraintDetector::coplanarThr)
+        {
+            writeLog("yes\n");
+        }
+        else
+        {
+            writeLog("no\n");
+        }
+        /*
         for (int j = i + 1; j < numPolyLines; j++)
         {
             if (curveType[j] != 1 && curveType[j] != 3) continue;
@@ -550,6 +605,7 @@ void CurveNet::evalCurveNetQuality()
                 writeLog("no\n");
             }
         }
+        */
     }
     writeLog("\n\n");
 }
@@ -1257,6 +1313,16 @@ void CurveNet::saveCurveNet(const char* fileName)
         fprintf(fp , "%d " , curveType[i]);
     }
     fprintf(fp , "\n");
+    for (int i = 0; i < numNodes; i++)
+    {
+        fprintf(fp , "%d " , isNodesFixed[i] ? 1 : 0);
+    }
+    fprintf(fp , "\n");
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fprintf(fp , "%d " , isCurvesFixed[i] ? 1 : 0);
+    }
+    fprintf(fp , "\n");
     fclose(fp);
     printf("Curve saved!\n");
 }
@@ -1363,6 +1429,18 @@ void CurveNet::loadCurveNet(const char* fileName)
         fscanf(fp , "%d" , &tp);
         curveType.push_back(tp);
         planes.push_back(Plane());
+    }
+    for (int i = 0; i < numNodes; i++)
+    {
+        fscanf(fp , "%d" , &tp);
+        if (tp == 1) isNodesFixed.push_back(true);
+        else isNodesFixed.push_back(false);
+    }
+    for (int i = 0; i < numPolyLines; i++)
+    {
+        fscanf(fp , "%d" , &tp);
+        if (tp == 1) isCurvesFixed.push_back(true);
+        else isCurvesFixed.push_back(false);
     }
     fclose(fp);
     printf("Curve loaded!\n");

@@ -114,6 +114,9 @@ public:
     std::vector<int> nodesEditType;
     std::vector<int> bspEditType;
 
+    std::vector<bool> isCurvesFixed;
+    std::vector<bool> isNodesFixed;
+
 	// 1: line, 2: nothing, 3: coplanar
 	std::vector<int> curveType;
     // meaningful if curveType = 3
