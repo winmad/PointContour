@@ -3,6 +3,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <algorithm>
+#include <cassert>
 #include "optimization.h"
 #include "splineUtils.h"
 #include "pointCloudUtils.h"
@@ -31,7 +32,7 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
 
 	// for debug
 	largeBound = 2;
-    smallBound = 2;
+    smallBound = 0;
 	numStartPoints = 120;
 	maxRealTime = 0.2;
 
@@ -156,13 +157,17 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
 		if (net->curveType[i] == -1) continue;
 		if (net->curveType[i] == 1)
 		{
-            std::pair<OptVariable , OptVariable> vars = bsp2var(i , 0 , 1);
-			int tmpidx = getOptVarIndex(vars.first);
+            std::pair<OptVariable , OptVariable> curveVars = bsp2var(i , 0 , 1);
+			int tmpidx = getOptVarIndex(curveVars.first);
 			tmpvec.push_back(tmpidx);
-			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
-			tmpidx = getOptVarIndex(vars.second);
+			tmpidx = getOptVarIndex(curveVars.second);
 			tmpvec.push_back(tmpidx);
-			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
+            bool flag_all_const = true;
+            for (int j = 0; j < tmpvec.size(); j++)
+            {
+                if (vars[tmpvec[j]].isVar) flag_all_const = true;
+            }
+            if (flag_all_const) continue;
 			straightlines.push_back(tmpvec);
 			featurelines.push_back(tmpvec);
 			curveIdx.push_back(straightlinesIdx.size());
@@ -171,20 +176,23 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
 		else
 		{
             int numCtrlCurves = (int)net->bsplines[i].ctrlNodes.size() - 1;
-            std::pair<OptVariable , OptVariable> vars = bsp2var(i , 0 , numCtrlCurves);
-			int tmpidx = getOptVarIndex(vars.first);
+            std::pair<OptVariable , OptVariable> curveVars = bsp2var(i , 0 , numCtrlCurves);
+			int tmpidx = getOptVarIndex(curveVars.first);
 			tmpvec.push_back(tmpidx);
-			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			for (int j = 1; j < (int)net->bsplines[i].ctrlNodes.size() - 1; ++ j)
 			{
 				tmpidx = getOptVarIndex(OptVariable(1, i, j));
 				tmpvec.push_back(tmpidx);
-				if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
 			}
-            vars = bsp2var(i , numCtrlCurves - 1 , numCtrlCurves);
-			tmpidx = getOptVarIndex(vars.second);
+            curveVars = bsp2var(i , numCtrlCurves - 1 , numCtrlCurves);
+			tmpidx = getOptVarIndex(curveVars.second);
 			tmpvec.push_back(tmpidx);
-			if (i == net->numPolyLines - 1) lastDraw[tmpidx] = true;
+            bool flag_all_const = true;
+            for (int j = 0; j < tmpvec.size(); j++)
+            {
+                if (vars[tmpvec[j]].isVar) flag_all_const = true;
+            }
+            if (flag_all_const) continue;
 			bsplines.push_back(tmpvec);
 			featurelines.push_back(tmpvec);
 			curveIdx.push_back(bsplinesIdx.size());
@@ -223,6 +231,7 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
             u2 = getOptVarIndex(OptVariable(0 , u.ni[1]));
             v1 = getOptVarIndex(OptVariable(0 , v.ni[0]));
             v2 = getOptVarIndex(OptVariable(0 , v.ni[1]));
+            if (isAllConst(u1 , u2 , v1 , v2)) continue;
             cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_collinear));
         }
         // parallel
@@ -247,6 +256,7 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
             u2 = getOptVarIndex(OptVariable(0 , u.ni[1]));
             v1 = getOptVarIndex(OptVariable(0 , v.ni[0]));
             v2 = getOptVarIndex(OptVariable(0 , v.ni[1]));
+            if (isAllConst(u1 , u2 , v1 , v2)) continue;
             cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_parallel));
         }
     }
@@ -455,13 +465,38 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
                         int u2 = getOptVarIndex(u.second);
                         int v1 = getOptVarIndex(v.first);
                         int v2 = getOptVarIndex(v.second);
+
+                        if (isAllConst(u1 , u2 , v1 , v2)) continue;
+                        bool flag = (u1 == v1) || (u1 == v2) || (u2 == v1) || (u2 == v2);
+                        assert(flag);
+                        int x0 , x1 , x2;
+                        if (u1 == v1)
+                        {
+                            x0 = u1; x1 = u2; x2 = v2;
+                        }
+                        else if (u1 == v2)
+                        {
+                            x0 = u1; x1 = u2; x2 = v1;
+                        }
+                        else if (u2 == v1)
+                        {
+                            x0 = u2; x1 = u1; x2 = v2;
+                        }
+                        else if (u2 == v2)
+                        {
+                            x0 = u2; x1 = u1; x2 = v1;
+                        }
+                        else
+                        {
+                            assert(false);
+                        }
                         if (mark == 1)
                         {
-                            cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_ortho));
+                            cons.push_back(OptConstraints(x0 , x1 , x0 , x2 , st_ortho));
                         }
                         else if (mark == 2)
                         {
-                            cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_tangent));
+                            cons.push_back(OptConstraints(x0 , x1 , x0 , x2 , st_tangent));
                         }
                     }
                 }
@@ -489,14 +524,18 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
 void Optimization::generateDAT(string file)
 {
 	ofstream fout(file.data());
-    fout << "param N := " << numVars - 1 << ";\n";
+    // fout << "param N := " << numVars - 1 << ";\n";
+    fout << "param N := " << numVaris - 1 << ";\n";
+    fout << "param N_const := " << numConsts - 1 << ";\n";
     fout << "param largeBound := " << largeBound << ";\n";
     fout << "param smallBound := " << smallBound << ";\n";
 
     fout << "param init_p :=\n";
 	for (int i = 0; i < numVars; ++ i)
 	{
-		fout << "\t[" << i << ", *]";
+        if (!vars[i].isVar) continue;
+		fout << "\t[" << vars[i].index << ", *]";
+        // fout << "\t[" << i << ", *]";
 		if (vars[i].type == 0)
 		{
 			fout << " 1 " << net->nodes[vars[i].ni].x
@@ -513,19 +552,46 @@ void Optimization::generateDAT(string file)
 		}
 	}
 	fout << ";\n";
-	fout << "param p_bound :=\n";
+
+    fout << "param p_const :=\n";
+    for (int i = 0; i < numVars; ++ i)
+	{
+        if (vars[i].isVar) continue;
+		fout << "\t[" << vars[i].index << ", *]";
+        // fout << "\t[" << i << ", *]";
+		if (vars[i].type == 0)
+		{
+			fout << " 1 " << net->nodes[vars[i].ni].x
+				 << " 2 " << net->nodes[vars[i].ni].y
+				 << " 3 " << net->nodes[vars[i].ni].z
+				 << "\n";
+		}
+		else
+		{
+			fout << " 1 " << net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci].x
+				 << " 2 " << net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci].y
+				 << " 3 " << net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci].z
+				 << "\n";
+		}
+	}
+    fout << ";\n";
+
+    fout << "param p_bound :=\n";
 	for (int i = 0; i < numVars; ++ i)
 	{
-		fout << " " << i << " ";
-		if (lastDraw[i]) fout << largeBound << "\n";
-		else fout << smallBound << "\n";
+        if (!vars[i].isVar) continue;
+		fout << " " << vars[i].index << " ";
+        fout << largeBound << "\n";
+        // if (vars[i].isVar) fout << largeBound << "\n";
+        // else fout << smallBound << "\n";
 	}
 	fout << ";\n";
 
     fout << "param p_weight :=\n";
     for (int i = 0; i < numVars; ++ i)
     {
-        fout << " " << i << " ";
+        if (!vars[i].isVar) continue;
+        fout << " " << vars[i].index << " ";
         fout << vars[i].weight << "\n";
     }
     fout << ";\n";
@@ -662,7 +728,9 @@ void Optimization::generateMOD(string file)
     fout << "param smallBound;\n";
 
 	fout << "param N;\n";
+    fout << "param N_const;\n";
 	fout << "param init_p {0..N, Dim3};\n";
+    fout << "param p_const {0..N_const, Dim3};\n";
 	fout << "param p_bound {0..N};\n";
 	fout << "param PN;\n";
 	fout << "param init_plane {0..PN, Dim4};\n";
@@ -687,24 +755,38 @@ void Optimization::generateMOD(string file)
     fout << "var symmetric_plane {i in 0..RPN, t in Dim4} >= init_symmetric_plane[i, t] - largeBound, <= init_symmetric_plane[i, t] + largeBound, := init_symmetric_plane[i, t];\n";
 
 	fout << "\n# intermediate variables\n";
-	fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 2], t] - p[sidx[i, 1], t])"
-		 << " / sqrt(sum{j in Dim3} (p[sidx[i, 1], j] - p[sidx[i, 2], j]) ^ 2);\n";
+	// fout << "var dir {i in 0..SN, t in Dim3} = (p[sidx[i, 2], t] - p[sidx[i, 1], t])"
+		 // << " / sqrt(sum{j in Dim3} (p[sidx[i, 1], j] - p[sidx[i, 2], j]) ^ 2);\n";
+    for (int i = 0; i < straightlines.size(); i++)
+    {
+        fout << "var dir" << i << " {t in Dim3} = ("
+             << var2str(straightlines[i][1] , -1) << " - "
+             << var2str(straightlines[i][0] , -1) << ")"
+             << "/ sqrt(sum{j in Dim3} (" << var2str(straightlines[i][0] , -2) << " - "
+             << var2str(straightlines[i][1] , -2) << ") ^ 2);\n";
+    }
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
 	fout << "5 * (sum {i in 0..N, t in Dim3} "
 		 << "p_weight[i] * (p[i, t] - init_p[i, t]) ^ 2)\n";
+    /*
 	fout << "+ 1 * (sum{i in 0..SN} p_weight[sidx[i,2]] * (sum{j in 0..SPN[i]}"
 		<< "sum{t in Dim3}("
 		<< "(sum{k in Dim3}(sp[i,j,k]-p[sidx[i,2],k])*dir[i,k])*dir[i,t]"
 		<< "-(sp[i,j,t]-p[sidx[i,2],t])"
 		<< ")^2"
 		<< ")/SPN[i])\n";
+    */
+    fout << generateStraightLineDist();
+    /*
 	fout << "+ 1 * (sum{i in 0..BN} p_weight[bidx[i,0]] * (sum{j in 0..BPN[i]}"
 		 << "sum{t in Dim3}("
 		 << "bp[i,j,t]-sum{k in 0..CN[i]}coef[i,j,k]*p[bidx[i,k],t]"
 		 << ")^2"
 		 << ")/BPN[i])\n";
+    */
+    fout << generateBsplineDist();
 	for (int i = 0; i < numCons; ++ i)
 	{
 		fout << "+ 10 * ";
@@ -953,20 +1035,24 @@ void Optimization::run(CurveNet *net)
         {
             int ni = net->getNodeIndex(net->bsplines[i].ctrlNodes[ci[j]]);
             int vi = getOptVarIndex(OptVariable(0 , ni));
-            net->bsplines[i].ctrlNodes[ci[j]] = varbuff[vi];
+            if (vars[vi].isVar)
+            {
+                net->bsplines[i].ctrlNodes[ci[j]] = varbuff[vars[vi].index];
+            }
         }
     }
 
     printf("change nodes...\n");
     for (int i = 0; i < vars.size(); ++ i)
 	{
+        if (!vars[i].isVar) continue;
 		if (vars[i].type == 0)
 		{
-			net->nodes[vars[i].ni] = varbuff[i];
+			net->nodes[vars[i].ni] = varbuff[vars[i].index];
 		}
 		else
 		{
-			net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci] = varbuff[i];
+			net->bsplines[vars[i].ni].ctrlNodes[vars[i].ci] = varbuff[vars[i].index];
 		}
 	}
 
@@ -1022,8 +1108,56 @@ string Optimization::var2str(int varIndex , int k)
     else ss << "p_const[" << vars[varIndex].index;
 
     if (k == -1) ss << ",t]";
+    else if (k == -2) ss << ",j]";
+    else if (k == -3) ss << ",k]";
     else ss << "," << k << "]";
 
+    return ss.str();
+}
+
+string Optimization::generateStraightLineDist()
+{
+    if (straightlines.size() == 0) return string("");
+    stringstream ss;
+    ss << "+ 1 * (";
+    for (int i = 0; i < straightlines.size(); i++)
+    {
+        if (i > 0) ss << "+ ";
+        ss << "p_weight[" << straightlines[i][1] << "] * (sum{j in 0..SPN[" << i << "]}"
+           << "sum{t in Dim3}("
+           << "(sum{k in Dim3}(sp[" << i << ",j,k]-" << var2str(straightlines[i][1] , -3)
+           << ")*dir" << i << "[k])*dir" << i << "[t]"
+           << "-(sp[" << i << ",j,t]-" << var2str(straightlines[i][1] , -1) << ")"
+           << ")^2"
+           << ")/SPN[" << i << "]";
+        if (i < straightlines.size() - 1) ss << "\n";
+    }
+    ss << ")\n";
+    return ss.str();
+}
+
+string Optimization::generateBsplineDist()
+{
+    if (bsplines.size() == 0) return string("");
+    stringstream ss;
+    ss << "+ 1 * (";
+    for (int i = 0; i < bsplines.size(); i++)
+    {
+        if (i > 0) ss << "+ ";
+        ss << "p_weight[" << bsplines[i][0] << "] * (sum{j in 0..BPN[" << i << "]}"
+           << "sum{t in Dim3}("
+           << "bp[" << i << ",j,t]-(";
+        for (int k = 0; k < bsplines[i].size(); k++)
+        {
+            if (k > 0) ss << "+";
+            ss << "coef[" << i << ",j," << k << "]*" << var2str(bsplines[i][k] , -1);
+        }
+        ss << ")"
+           << ")^2"
+           << ")/BPN[" << i << "]";
+        if (i < bsplines.size() - 1) ss << "\n";
+    }
+    ss << ")\n";
     return ss.str();
 }
 
@@ -1031,15 +1165,15 @@ string Optimization::generateLineOrtho(int u1, int u2, int v1, int v2)
 {
 	stringstream ss;
 	ss << "abs(sum {t in Dim3}"
-	   << "((p[" << u1 << ",t] - p[" << u2 << ",t])"
+       << "((" << var2str(u1 , -1) << " - " << var2str(u2 , -1) << ")"
 	   << " * "
-	   << "(p[" << v1 << ",t] - p[" << v2 << ",t])))"
+       << "(" << var2str(v1 , -1) << " - " << var2str(v2 , -1) << ")))"
 	   << " / "
 	   << "sqrt(sum {t in Dim3}"
-	   << "(p[" << u1 << ",t] - p[" << u2 << ",t]) ^ 2)"
+       << "(" << var2str(u1 , -1) << " - " << var2str(u2 , -1) << ") ^ 2)"
 	   << " / "
 	   << "sqrt(sum {t in Dim3}"
-	   << "(p[" << v1 << ",t] - p[" << v2 << ",t]) ^ 2)";
+       << "(" << var2str(v1 , -1) << " - " << var2str(v2 , -1) << ") ^ 2)";
 	return ss.str();
 }
 
@@ -1047,15 +1181,15 @@ string Optimization::generateLineParallel(int u1, int u2, int v1, int v2)
 {
 	stringstream ss;
 	ss << "abs(abs(sum {t in Dim3}"
-	   << "((p[" << u1 << ",t] - p[" << u2 << ",t])"
+       << "((" << var2str(u1 , -1) << " - " << var2str(u2 , -1) << ")"
 	   << " * "
-	   << "(p[" << v1 << ",t] - p[" << v2 << ",t])))"
+       << "(" << var2str(v1 , -1) << " - " << var2str(v2 , -1) << ")))"
 	   << " / "
 	   << "sqrt(sum {t in Dim3}"
-	   << "(p[" << u1 << ",t] - p[" << u2 << ",t]) ^ 2)"
+       << "(" << var2str(u1 , -1) << " - " << var2str(u2 , -1) << ") ^ 2)"
 	   << " / "
 	   << "sqrt(sum {t in Dim3}"
-	   << "(p[" << v1 << ",t] - p[" << v2 << ",t]) ^ 2)"
+       << "(" << var2str(v1 , -1) << " - " << var2str(v2 , -1) << ") ^ 2)"
 	   << " - 1)";
 	return ss.str();
 }
@@ -1139,14 +1273,15 @@ string Optimization::generateLineTangent(int u1, int u2, int v1, int v2)
 	stringstream ss;
 	ss << generateLineParallel(u1, u2, v1, v2)
 	   << " + "
-	   << generateLineParallel(u1, u2, u1, v1);
+	   << generateLineParallel(u1, u2, u2, v2);
 	return ss.str();
 }
 
 string Optimization::generateCoplanar(int plane, int point)
 {
 	stringstream ss;
-	ss << "abs((sum{i in Dim3} (plane[" << plane << ", i] * p[" << point << ", i]))"
+	ss << "abs((sum{j in Dim3} (plane[" << plane << ", j] *"
+       << var2str(point , -2) << "))"
        << " + plane[" << plane << ", 4])";
     //<< " + plane[" << plane << ", 4]) / "
     //<< "sqrt(sum{i in Dim3} (plane[" << plane << ", i] ^ 2))";
@@ -1384,4 +1519,9 @@ std::pair<OptVariable , OptVariable> Optimization::bsp2var(int bspIndex , int cu
         u2 = OptVariable(1 , bspIndex , curveIndex + 1);
     }
     return std::make_pair(u1 , u2);
+}
+
+bool Optimization::isAllConst(int u1 , int u2 , int v1 , int v2)
+{
+    return (!vars[u1].isVar) && (!vars[u2].isVar) && (!vars[v1].isVar) && (!vars[v2].isVar);
 }

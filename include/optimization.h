@@ -76,6 +76,8 @@ public:
 
 private:
     std::string var2str(int varIndex , int k);
+    std::string generateStraightLineDist();
+    std::string generateBsplineDist();
 	std::string generateLineOrtho(int, int, int, int);
 	std::string generateLineParallel(int, int, int, int);
 	std::string generateLineCoplanar(int, int, int, int);
@@ -95,6 +97,7 @@ private:
     int getOptVarIndex(const OptVariable& optVar);
     double var2double(const OptVariable& v);
     std::pair<OptVariable , OptVariable> bsp2var(int bspIndex , int curveIndex , int numCtrlCurves);
+    bool isAllConst(int u1 , int u2 , int v1 , int v2);
 
     CurveNet *net;
     PointCloudUtils *pcUtils;
