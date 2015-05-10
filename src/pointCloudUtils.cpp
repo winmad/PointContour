@@ -274,6 +274,7 @@ void PointCloudUtils::getBBox()
 
     printf("translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
     printf("scale = %.6f\n" , scale);
+    printf("diagonal length = %.6f\n" , (box.rt - box.lb).length());
     FILE *fp = fopen("transformation.txt" , "w");
     fprintf(fp , "translate = (%.6f , %.6f , %.6f)\n" , -center.x , -center.y , -center.z);
     fprintf(fp , "scale = %.6f\n" , scale);

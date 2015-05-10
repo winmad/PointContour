@@ -3,9 +3,9 @@
 #include "macros.h"
 #include <Eigen/Dense>
 
-const double ConstraintDetector::collinearThr = 0.05;
+const double ConstraintDetector::collinearThr = 0.03;
 const double ConstraintDetector::coplanarThr = 0.03;
-const double ConstraintDetector::parallelThr = 0.05;
+const double ConstraintDetector::parallelThr = 0.03;
 const double ConstraintDetector::orthoThr = 0.1;
 const double ConstraintDetector::tangentThr = 0.1;
 const double ConstraintDetector::symmetryThr = 0.1;

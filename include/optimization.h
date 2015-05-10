@@ -44,6 +44,7 @@ struct OptConstraints
 {
     int u1 , u2;
     int v1 , v2;
+    double weight;
     ConstraintsType type;
 
     OptConstraints() {}
@@ -76,15 +77,15 @@ public:
 
 private:
     std::string var2str(int varIndex , int k);
-    std::string generateStraightLineDist();
-    std::string generateBsplineDist();
-	std::string generateLineOrtho(int, int, int, int);
-	std::string generateLineParallel(int, int, int, int);
-	std::string generateLineCoplanar(int, int, int, int);
-	std::string generateLineCollinear(int, int, int, int);
-	std::string generateLineTangent(int, int, int, int);
+    std::string generateStraightLineDist(double weight);
+    std::string generateBsplineDist(double weight);
+	std::string generateLineOrtho(int, int, int, int, double weight = 1.0);
+	std::string generateLineParallel(int, int, int, int, double weight = 1.0);
+	std::string generateLineCoplanar(int, int, int, int, double weight = 1.0);
+	std::string generateLineCollinear(int, int, int, int, double weight = 1.0);
+	std::string generateLineTangent(int, int, int, int, double weight = 1.0);
 	std::string generateSamePoint(int, int);
-	std::string generateCoplanar(int, int);
+	std::string generateCoplanar(int, int, double weight = 1.0);
 	std::string generateSymmetryLine(int, std::pair<int, int>);
 	std::string generateSymmetryPoint(int, int, int);
 	std::string generateSelfSymmPoint(int, int);
@@ -121,6 +122,8 @@ private:
 	std::vector<Plane> coplanes;
 	std::vector<std::vector<int> > coplanarPoints;
 
+    // 0: collinear, 1: parallel, 2: orthogonal, 3: tangent, 4: coplane
+    std::vector<int> constraintTypeCount;
     TimeManager timer;
 };
 

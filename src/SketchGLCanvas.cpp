@@ -1219,71 +1219,11 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
     wxChar uc = event.GetUnicodeKey();
 	if (uc != WXK_NONE && uc >= 32)
 	{
-		if (uc == 127)
+		if (uc == 127) // backspace
 		{
 			m_pcUtils->pcRenderer->clearPaths();
 		}
-        else if (uc == 'T') // translation mode
-        {
-            if (pcRenderer->copyMode != 1)
-            {
-                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
-                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
-
-                pcRenderer->copyMode = 1;
-                pcRenderer->isShowAxisWidget = true;
-                wxString str("copy by translation\n");
-                m_pcUtils->statusBar->SetStatusText(str);
-            }
-            else
-            {
-                pcRenderer->copyMode = 0;
-                pcRenderer->isShowAxisWidget = false;
-                wxString str("");
-                m_pcUtils->statusBar->SetStatusText(str);
-            }
-        }
-        else if (uc == 'S')
-        {
-            if (pcRenderer->copyMode != 2)
-            {
-                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
-                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
-
-                pcRenderer->copyMode = 2;
-                pcRenderer->isShowAxisWidget = true;
-                wxString str("copy by scaling\n");
-                m_pcUtils->statusBar->SetStatusText(str);
-            }
-            else
-            {
-                pcRenderer->copyMode = 0;
-                pcRenderer->isShowAxisWidget = false;
-                wxString str("");
-                m_pcUtils->statusBar->SetStatusText(str);
-            }
-        }
-        else if (uc == 'R')
-        {
-            if (pcRenderer->copyMode != 3)
-            {
-                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
-                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
-
-                pcRenderer->copyMode = 3;
-                pcRenderer->isShowAxisWidget = true;
-                wxString str("copy by rotation\n");
-                m_pcUtils->statusBar->SetStatusText(str);
-            }
-            else
-            {
-                pcRenderer->copyMode = 0;
-                pcRenderer->isShowAxisWidget = false;
-                wxString str("");
-                m_pcUtils->statusBar->SetStatusText(str);
-            }
-        }
-        else if (uc == 'A')
+        else if (uc == 'A') // moving axis widget
         {
             if (pcRenderer->copyMode != 5)
             {
@@ -1300,7 +1240,30 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
                 m_pcUtils->statusBar->SetStatusText(str);
             }
         }
-        else if (uc == 'E')
+        else if (uc == 'B') // show/hide debug points
+        {
+            m_pcUtils->pcRenderer->isShowFeaturePoints = !m_pcUtils->pcRenderer->isShowFeaturePoints;
+            m_pcUtils->pcRenderer->isShowDebugPoints = !m_pcUtils->pcRenderer->isShowDebugPoints;
+        }
+        else if (uc == 'C') // cycle discovery
+        {
+            m_pcUtils->pcRenderer->cycleDisc();
+            m_pcUtils->pcRenderer->surfacingUnsavedCycles();
+            m_pcUtils->pcRenderer->evalUnsavedCycles();
+        }
+        else if (uc == 'D') // cancel chosen curves
+        {
+            m_pcUtils->pcRenderer->clearAutoGen();
+            for (int i = 0; i < pcRenderer->isCurvesChosen.size(); i++)
+            {
+                pcRenderer->isCurvesChosen[i] = false;
+            }
+            pcRenderer->copyMode = 0;
+            pcRenderer->isShowAxisWidget = false;
+            wxString str("");
+            m_pcUtils->statusBar->SetStatusText(str);
+        }
+        else if (uc == 'E') // easy translation mode
         {
             if (pcRenderer->copyMode != 6)
             {
@@ -1320,7 +1283,7 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
                 m_pcUtils->statusBar->SetStatusText(str);
             }
         }
-        else if (uc == 'F')
+        else if (uc == 'F') // fix part of curves
         {
             if (pcRenderer->copyMode != 7)
             {
@@ -1337,17 +1300,40 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
                 m_pcUtils->statusBar->SetStatusText(str);
             }
         }
-		else if (uc == 'J')
-		{
-			m_pcUtils->pcRenderer->incBspCurveIndex();
-		}
-		else if (uc == 'K')
-		{
-			m_pcUtils->pcRenderer->decBspCurveIndex();
-		}
-		else if (uc == 'P')
-		{
-			//m_pcUtils->curveNet->conSet->collinearSet.printLog();
+        else if (uc == 'G') // generate by symmetry
+        {
+            m_pcUtils->pcRenderer->autoGenBySymmetry();
+        }
+        else if (uc == 'H') // show/hide coplanes
+        {
+            m_pcUtils->pcRenderer->isShowCoplanes = !m_pcUtils->pcRenderer->isShowCoplanes;
+        }
+        else if (uc == 'I')
+        {
+        }
+        else if (uc == 'J')
+        {
+            m_pcUtils->pcRenderer->incBspCurveIndex();
+        }
+        else if (uc == 'K')
+        {
+            m_pcUtils->pcRenderer->decBspCurveIndex();
+        }
+        else if (uc == 'L')
+        {
+        }
+        else if (uc == 'M')
+        {
+        }
+        else if (uc == 'N')
+        {
+        }
+        else if (uc == 'O') 
+        {
+        }
+        else if (uc == 'P') // print debug info
+        {
+            //m_pcUtils->curveNet->conSet->collinearSet.printLog();
             //m_pcUtils->curveNet->conSet->orthoSet.printLog();
 			//m_pcUtils->curveNet->debugLog();
             writeLog("CurveNet polylines\n");
@@ -1381,50 +1367,93 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
 					plane.n.x , plane.n.y , plane.n.z);
 			}
             */
-		}
-        else if (uc == 'O')
-        {
-            m_pcUtils->pcRenderer->optUpdate(true);
         }
-        else if (uc == 'C')
+        else if (uc == 'Q')
+        {
+        }
+        else if (uc == 'R') // rotation mode
+        {
+            if (pcRenderer->copyMode != 3)
+            {
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
+                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
+
+                pcRenderer->copyMode = 3;
+                pcRenderer->isShowAxisWidget = true;
+                wxString str("copy by rotation\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
+        else if (uc == 'S') // scaling mode
+        {
+            if (pcRenderer->copyMode != 2)
+            {
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
+                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
+
+                pcRenderer->copyMode = 2;
+                pcRenderer->isShowAxisWidget = true;
+                wxString str("copy by scaling\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
+        else if (uc == 'T') // translation mode
+        {
+            if (pcRenderer->copyMode != 1)
+            {
+                if (pcRenderer->copyMode == 0) pcRenderer->initTranslationMode(true);
+                else if (pcRenderer->copyMode == 5) pcRenderer->initTranslationMode(false);
+
+                pcRenderer->copyMode = 1;
+                pcRenderer->isShowAxisWidget = true;
+                wxString str("copy by translation\n");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+            else
+            {
+                pcRenderer->copyMode = 0;
+                pcRenderer->isShowAxisWidget = false;
+                wxString str("");
+                m_pcUtils->statusBar->SetStatusText(str);
+            }
+        }
+        else if (uc == 'U') // refresh constraints
         {
             m_pcUtils->pcRenderer->dispCurveNet->refreshAllConstraints();
-			//m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet , m_pcUtils);
         }
-		else if (uc == 'V')
-		{
-			m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet , m_pcUtils);
-		}
-		else if (uc == 'H')
-		{
-			m_pcUtils->pcRenderer->isShowCoplanes = !m_pcUtils->pcRenderer->isShowCoplanes;
-		}
-        else if (uc == 'G')
+        else if (uc == 'V') // optimization init
         {
-            m_pcUtils->pcRenderer->autoGenBySymmetry();
+            m_pcUtils->opt.init(m_pcUtils->pcRenderer->dispCurveNet , m_pcUtils);
         }
-        else if (uc == 'D')
+        else if (uc == 'W')
         {
-            m_pcUtils->pcRenderer->clearAutoGen();
-            for (int i = 0; i < pcRenderer->isCurvesChosen.size(); i++)
-            {
-                pcRenderer->isCurvesChosen[i] = false;
-            }
-            pcRenderer->copyMode = 0;
-            pcRenderer->isShowAxisWidget = false;
-            wxString str("");
-            m_pcUtils->statusBar->SetStatusText(str);
         }
-        else if (uc == ' ')
+        else if (uc == 'X')
         {
-            m_pcUtils->pcRenderer->cycleDisc();
-            m_pcUtils->pcRenderer->surfacingUnsavedCycles();
-            m_pcUtils->pcRenderer->evalUnsavedCycles();
         }
-        else if (uc == 'B')
+        else if (uc == 'Y')
         {
-            m_pcUtils->pcRenderer->isShowFeaturePoints = !m_pcUtils->pcRenderer->isShowFeaturePoints;
-            m_pcUtils->pcRenderer->isShowDebugPoints = !m_pcUtils->pcRenderer->isShowDebugPoints;
+        }
+        else if (uc == 'Z')
+        {
+        }
+        else if (uc == ' ') // optimization
+        {
+            m_pcUtils->pcRenderer->optUpdate(true);
         }
 	}
 	else

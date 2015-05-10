@@ -7,6 +7,7 @@
 #include "optimization.h"
 #include "splineUtils.h"
 #include "pointCloudUtils.h"
+#include "constraints.h"
 
 using namespace std;
 
@@ -150,7 +151,6 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
     
 	//find var index for lines
     printf("finding var index for lines...\n");
-	for (int i = 0; i < numVars; ++ i) lastDraw.push_back(false);
 	for (int i = 0; i < net->numPolyLines; ++ i)
 	{
 		vector<int> tmpvec;
@@ -165,7 +165,7 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
             bool flag_all_const = true;
             for (int j = 0; j < tmpvec.size(); j++)
             {
-                if (vars[tmpvec[j]].isVar) flag_all_const = true;
+                if (vars[tmpvec[j]].isVar) flag_all_const = false;
             }
             if (flag_all_const) continue;
 			straightlines.push_back(tmpvec);
@@ -190,7 +190,7 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
             bool flag_all_const = true;
             for (int j = 0; j < tmpvec.size(); j++)
             {
-                if (vars[tmpvec[j]].isVar) flag_all_const = true;
+                if (vars[tmpvec[j]].isVar) flag_all_const = false;
             }
             if (flag_all_const) continue;
 			bsplines.push_back(tmpvec);
@@ -510,6 +510,40 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
 	}
     numCons = cons.size();
 
+    constraintTypeCount.clear();
+    constraintTypeCount.resize(5 , 0);
+    for (int i = 0; i < numCons; i++)
+    {
+        int type;
+        if (cons[i].type == st_collinear) type = 0;
+        else if (cons[i].type == st_parallel) type = 1;
+        else if (cons[i].type == st_ortho) type = 2;
+        else if (cons[i].type == st_tangent) type = 3;
+        else type = -1;
+
+        if (type != -1) constraintTypeCount[type]++;
+    }
+    for (int i = 0; i < coplanes.size(); i++) constraintTypeCount[4] += coplanarPoints[i].size();
+    for (int i = 0; i < numCons; i++)
+    {
+        if (cons[i].type == st_collinear)
+        {
+            cons[i].weight = 1.0 / ConstraintDetector::collinearThr;
+        }
+        else if (cons[i].type == st_parallel)
+        {
+            cons[i].weight = 1.0 / ConstraintDetector::parallelThr;
+        }
+        else if (cons[i].type == st_ortho)
+        {
+            cons[i].weight = 1.0 / ConstraintDetector::orthoThr;
+        }
+        else if (cons[i].type == st_tangent)
+        {
+            cons[i].weight = 1.0 / ConstraintDetector::tangentThr;
+        }
+    }
+
     /*
     // print constraints
     writeLog("===== cons =====\n");
@@ -768,7 +802,7 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "5 * (sum {i in 0..N, t in Dim3} "
+	fout << "100 * (sum {i in 0..N, t in Dim3} "
 		 << "p_weight[i] * (p[i, t] - init_p[i, t]) ^ 2)\n";
     /*
 	fout << "+ 1 * (sum{i in 0..SN} p_weight[sidx[i,2]] * (sum{j in 0..SPN[i]}"
@@ -778,7 +812,7 @@ void Optimization::generateMOD(string file)
 		<< ")^2"
 		<< ")/SPN[i])\n";
     */
-    fout << generateStraightLineDist();
+    fout << generateStraightLineDist(100);
     /*
 	fout << "+ 1 * (sum{i in 0..BN} p_weight[bidx[i,0]] * (sum{j in 0..BPN[i]}"
 		 << "sum{t in Dim3}("
@@ -786,28 +820,28 @@ void Optimization::generateMOD(string file)
 		 << ")^2"
 		 << ")/BPN[i])\n";
     */
-    fout << generateBsplineDist();
+    fout << generateBsplineDist(100);
 	for (int i = 0; i < numCons; ++ i)
 	{
-		fout << "+ 10 * ";
+        fout << "+ ";
 		switch(cons[i].type)
 		{
             case st_collinear:
-                fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2, cons[i].weight);
                 break;
             // case st_coplanar:
                 // fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
                 // break;
             case st_ortho:
-                fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2, cons[i].weight);
                 break;
                 //case ConstraintsType::st_parallel:
             case st_parallel:
-                fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2, cons[i].weight);
                 break;
                 //case ConstraintsType::st_tangent:
             case st_tangent:
-                fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2, cons[i].weight);
                 break;
             default:
                 break;
@@ -818,8 +852,8 @@ void Optimization::generateMOD(string file)
 	{
 		for (int j = 0; j < coplanarPoints[i].size(); ++ j)
 		{
-			fout << "+ 10 * "
-				 << generateCoplanar(i, coplanarPoints[i][j])
+			fout << "+"
+				 << generateCoplanar(i, coplanarPoints[i][j], 200)
 				 << "\n";
 		}
 	}
@@ -851,30 +885,27 @@ void Optimization::generateMOD(string file)
 		fout << "subject to constraint" << i << ": ";
 		switch(cons[i].type)
 		{
-            //case ConstraintsType::st_collinear:
             case st_collinear:
-                fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineCollinear(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2) << " <= " << ConstraintDetector::collinearThr * 0.5 << ";\n";
                 break;
-                //case ConstraintsType::st_coplanar:
+                /*
             case st_coplanar:
-                fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineCoplanar(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2)  << " <= " << 0.01 << ";\n";
                 break;
-                //case ConstraintsType::st_ortho:
+                */
             case st_ortho:
-                fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineOrtho(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2)  << " <= " << ConstraintDetector::orthoThr * 0.5 << ";\n";
                 break;
-                //case ConstraintsType::st_parallel:
             case st_parallel:
-                fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineParallel(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2)  << " <= " << ConstraintDetector::parallelThr * 0.5 << ";\n";
                 break;
-                //case ConstraintsType::st_tangent:
             case st_tangent:
-                fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2);
+                fout << generateLineTangent(cons[i].u1, cons[i].u2, cons[i].v1, cons[i].v2) << " <= " << ConstraintDetector::parallelThr * 0.5 << ";\n";
                 break;
             default:
                 break;
 		}
-		fout << " <= 0.01;\n";
+		//fout << " <= 0.01;\n";
 	}
 	for (int i = 0; i < coplanes.size(); ++ i)
 	{
@@ -1115,15 +1146,24 @@ string Optimization::var2str(int varIndex , int k)
     return ss.str();
 }
 
-string Optimization::generateStraightLineDist()
+string Optimization::generateStraightLineDist(double weight)
 {
     if (straightlines.size() == 0) return string("");
     stringstream ss;
-    ss << "+ 1 * (";
+    ss << "+ " << weight << " * (";
     for (int i = 0; i < straightlines.size(); i++)
     {
+        int choose;
+        for (int j = 0; j < straightlines[i].size(); i++)
+        {
+            if (vars[straightlines[i][j]].isVar)
+            {
+                choose = j;
+                break;
+            }
+        }
         if (i > 0) ss << "+ ";
-        ss << "p_weight[" << straightlines[i][1] << "] * (sum{j in 0..SPN[" << i << "]}"
+        ss << "p_weight[" << vars[straightlines[i][choose]].index << "] * (sum{j in 0..SPN[" << i << "]}"
            << "sum{t in Dim3}("
            << "(sum{k in Dim3}(sp[" << i << ",j,k]-" << var2str(straightlines[i][1] , -3)
            << ")*dir" << i << "[k])*dir" << i << "[t]"
@@ -1136,15 +1176,24 @@ string Optimization::generateStraightLineDist()
     return ss.str();
 }
 
-string Optimization::generateBsplineDist()
+string Optimization::generateBsplineDist(double weight)
 {
     if (bsplines.size() == 0) return string("");
     stringstream ss;
-    ss << "+ 1 * (";
+    ss << "+ " << weight << " * (";
     for (int i = 0; i < bsplines.size(); i++)
     {
+        int choose;
+        for (int j = 0; j < bsplines[i].size(); i++)
+        {
+            if (vars[bsplines[i][j]].isVar)
+            {
+                choose = j;
+                break;
+            }
+        }
         if (i > 0) ss << "+ ";
-        ss << "p_weight[" << bsplines[i][0] << "] * (sum{j in 0..BPN[" << i << "]}"
+        ss << "p_weight[" << vars[bsplines[i][choose]].index << "] * (sum{j in 0..BPN[" << i << "]}"
            << "sum{t in Dim3}("
            << "bp[" << i << ",j,t]-(";
         for (int k = 0; k < bsplines[i].size(); k++)
@@ -1161,9 +1210,11 @@ string Optimization::generateBsplineDist()
     return ss.str();
 }
 
-string Optimization::generateLineOrtho(int u1, int u2, int v1, int v2)
+string Optimization::generateLineOrtho(int u1, int u2, int v1, int v2, double weight)
 {
 	stringstream ss;
+    if (std::abs(weight) < 1e-6) return "";
+    if (std::abs(weight - 1.0) > 1e-6) ss << weight << " * ";
 	ss << "abs(sum {t in Dim3}"
        << "((" << var2str(u1 , -1) << " - " << var2str(u2 , -1) << ")"
 	   << " * "
@@ -1177,10 +1228,12 @@ string Optimization::generateLineOrtho(int u1, int u2, int v1, int v2)
 	return ss.str();
 }
 
-string Optimization::generateLineParallel(int u1, int u2, int v1, int v2)
+string Optimization::generateLineParallel(int u1, int u2, int v1, int v2, double weight)
 {
 	stringstream ss;
-	ss << "abs(abs(sum {t in Dim3}"
+    if (std::abs(weight) < 1e-6) return "";
+	if (std::abs(weight - 1.0) > 1e-6) ss << weight << " * ";
+    ss << "abs(abs(sum {t in Dim3}"
        << "((" << var2str(u1 , -1) << " - " << var2str(u2 , -1) << ")"
 	   << " * "
        << "(" << var2str(v1 , -1) << " - " << var2str(v2 , -1) << ")))"
@@ -1194,16 +1247,19 @@ string Optimization::generateLineParallel(int u1, int u2, int v1, int v2)
 	return ss.str();
 }
 
-string Optimization::generateLineCollinear(int u1, int u2, int v1, int v2)
+string Optimization::generateLineCollinear(int u1, int u2, int v1, int v2, double weight)
 {
 	stringstream ss;
+    if (std::abs(weight) < 1e-6) return "";
 	ss << generateLineParallel(u1, u2, u1, v1);
 	return ss.str();
 }
 
-string Optimization::generateLineCoplanar(int u1, int u2, int v1, int v2)
+string Optimization::generateLineCoplanar(int u1, int u2, int v1, int v2, double weight)
 {
 	stringstream ss;
+    if (std::abs(weight) < 1e-6) return "";
+    if (std::abs(weight - 1.0) > 1e-6) ss << weight << " * ";
 	ss << "abs("
 	   << "(" << "(p[" << u1 << ",2]-p[" << u2 << ",2])"
 	   << "*"
@@ -1268,18 +1324,22 @@ string Optimization::generateLineCoplanar(int u1, int u2, int v1, int v2)
 	return ss.str();
 }
 
-string Optimization::generateLineTangent(int u1, int u2, int v1, int v2)
+string Optimization::generateLineTangent(int u1, int u2, int v1, int v2, double weight)
 {
 	stringstream ss;
-	ss << generateLineParallel(u1, u2, v1, v2)
+    if (std::abs(weight) < 1e-6) return "";
+    if (std::abs(weight - 1.0) > 1e-6) ss << weight << " * ";
+	ss << "(" << generateLineParallel(u1, u2, v1, v2)
 	   << " + "
-	   << generateLineParallel(u1, u2, u2, v2);
+	   << generateLineParallel(u1, u2, u2, v2) << ")";
 	return ss.str();
 }
 
-string Optimization::generateCoplanar(int plane, int point)
+string Optimization::generateCoplanar(int plane, int point, double weight)
 {
 	stringstream ss;
+    if (std::abs(weight) < 1e-6) return "";
+    if (std::abs(weight - 1.0) > 1e-6) ss << weight << " * ";
 	ss << "abs((sum{j in Dim3} (plane[" << plane << ", j] *"
        << var2str(point , -2) << "))"
        << " + plane[" << plane << ", 4])";
