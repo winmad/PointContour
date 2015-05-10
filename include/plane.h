@@ -39,12 +39,15 @@ public:
 	void fitFromPoints(Path& path);
 
     void calculateAngle();
+    void buildFrame();
 
     vec3d p;
 	vec3d n;
 	double d;
 	double weight;
 	double phi, theta, r;
+
+    LocalFrame *frame;
 };
 
 #endif //PLANE_H

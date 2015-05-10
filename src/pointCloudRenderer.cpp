@@ -1,6 +1,7 @@
 #define _WCHAR_H_CPLUSPLUS_98_CONFORMANCE_
 #include <GL/glut.h>
 #include <algorithm>
+#include <cassert>
 #include "curveNet.h"
 #include "pointCloudUtils.h"
 #include "pointCloudRenderer.h"
@@ -61,6 +62,7 @@ void PointCloudRenderer::init()
     crossPlane.setNull();
     drawMode = 0;
     copyMode = 0;
+    lt_x = lt_y = -1;
 
     pathVertex.clear();
     bsp.clear();
@@ -1217,6 +1219,22 @@ void PointCloudRenderer::renderAxisWidget()
     drawPoint(axisWidget.origin);
 }
 
+void PointCloudRenderer::renderChoosingRectangle()
+{
+    if (lt_x == -1) return;
+    vec3d a , b , c , d;
+    a = mouseLocationTo3D(std::min(lt_x , rb_x) , std::min(lt_y , rb_y));
+    b = mouseLocationTo3D(std::min(lt_x , rb_x) , std::max(lt_y , rb_y));
+    c = mouseLocationTo3D(std::max(lt_x , rb_x) , std::max(lt_y , rb_y));
+    d = mouseLocationTo3D(std::max(lt_x , rb_x) , std::min(lt_y , rb_y));
+    glLineWidth(2.5f);
+    glColor4f(0.f , 0.7f , 0.f , 0.7f);
+    drawLine(a , b);
+    drawLine(b , c);
+    drawLine(c , d);
+    drawLine(d , a);
+}
+
 void PointCloudRenderer::render()
 {
     renderFreeSketches();
@@ -1245,6 +1263,7 @@ void PointCloudRenderer::render()
     renderPickedSavedMesh();
     renderSavedMeshes();
     renderAxisWidget();
+    renderChoosingRectangle();
 // #else
     // renderUnsavedCycles();
     // renderPickedCycle();
@@ -2020,6 +2039,43 @@ bool PointCloudRenderer::pickCurve(int mouseX , int mouseY , int op)
             }
         }
         return true;
+    }
+    if (op == 5)
+    {
+        pickedCurve = -1;
+        setNull(pickedDispPoint);
+        std::fill(isCurvesChosen.begin() , isCurvesChosen.end() , false);
+        vec2d lt = spaceLocationTo2D(mouseLocationTo3D(lt_x , lt_y) , sketchPlane);
+        vec2d rb = spaceLocationTo2D(mouseLocationTo3D(rb_x , rb_y) , sketchPlane);
+        vec2d rec[4];
+        rec[0] = vec2d(std::min(lt.x , rb.x) , std::min(lt.y , rb.y));
+        rec[1] = vec2d(std::min(lt.x , rb.x) , std::max(lt.y , rb.y));
+        rec[2] = vec2d(std::max(lt.x , rb.x) , std::max(lt.y , rb.y));
+        rec[3] = vec2d(std::max(lt.x , rb.x) , std::min(lt.y , rb.y));
+        for (int i = 0; i < dispCurveNet->bsplines.size(); i++)
+        {
+            if (dispCurveNet->curveType[i] == -1) continue;
+            for (int j = 0; j < dispCurveNet->bsplines[i].ctrlNodes.size() - 1; j++)
+            {
+                vec3d st = pcUtils->openGLView->cameraPos;
+                vec3d dir = dispCurveNet->bsplines[i].ctrlNodes[j] - st;
+                dir.normalize();
+                vec2d p1 = spaceLocationTo2D(sketchPlane.intersect(st , dir) , sketchPlane);
+                dir = dispCurveNet->bsplines[i].ctrlNodes[j + 1] - st;
+                dir.normalize();
+                vec2d p2 = spaceLocationTo2D(sketchPlane.intersect(st , dir) , sketchPlane);
+                if (isIntersected2D(rec[0] , rec[1] , p1 , p2) ||
+                    isIntersected2D(rec[1] , rec[2] , p1 , p2) ||
+                    isIntersected2D(rec[2] , rec[3] , p1 , p2) ||
+                    isIntersected2D(rec[3] , rec[0] , p1 , p2) ||
+                    (p1.x >= rec[0].x && p1.x <= rec[2].x && p1.y >= rec[0].y && p1.y <= rec[2].y) ||
+                    (p2.x >= rec[0].x && p2.x <= rec[2].x && p2.y >= rec[0].y && p2.y <= rec[2].y))
+                {
+                    isCurvesChosen[i] = true;
+                    break;
+                }
+            }
+        }
     }
     return false;
 }
@@ -3047,6 +3103,27 @@ void PointCloudRenderer::calcPointsNearCrossPlane()
             isCrossing[i] = false;
         }
     }
+}
+
+vec3d PointCloudRenderer::mouseLocationTo3D(int mouseX , int mouseY)
+{
+    std::vector<vec3d> ray = getRay(mouseX , mouseY);
+    vec3d dir = ray.back() - ray.front();
+    dir.normalize();
+    return sketchPlane.intersect(ray.front() , dir);
+}
+
+vec2d PointCloudRenderer::spaceLocationTo2D(vec3d pos , Plane& plane)
+{
+    vec3d local = plane.frame->toLocal(pos - plane.p);
+    assert(std::abs(local.y) < 1e-6);
+    return vec2d(local.x , local.z);
+}
+
+vec3d PointCloudRenderer::planeLocationTo3D(vec2d pos , Plane& plane)
+{
+    vec3d local(pos.x , 0 , pos.y);
+    return plane.p + plane.frame->toWorld(local);
 }
 
 void PointCloudRenderer::cycleColorGenByRandom(std::vector<Cycle>& cycles , 

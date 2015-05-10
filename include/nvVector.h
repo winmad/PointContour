@@ -276,6 +276,11 @@ public:
 		return os;
 	}
 
+    T cross(const vec2<T> & rhs) const{
+		const vec2<T> & lhs = *this;
+        return lhs.x * rhs.y - rhs.x * lhs.y;
+    }
+
     //data intentionally left public to allow vec2.x
     union {
         struct {

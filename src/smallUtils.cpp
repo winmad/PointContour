@@ -105,6 +105,16 @@ double weightBetweenSegs(const vec3d& x1 , const vec3d& y1 ,
 	return std::exp(-SQR(((x1 + y1) * 0.5 - (x2 + y2) * 0.5).length() * 3));
 }
 
+bool isIntersected2D(const vec2d& u1 , const vec2d& u2 , const vec2d& v1 , const vec2d& v2)
+{
+    return (std::max(u1.x , u2.x) >= std::min(v1.x , v2.x) &&
+        std::max(v1.x , v2.x) >= std::min(u1.x , u2.x) &&
+        std::max(u1.y , u2.y) >= std::min(v1.y , v2.y) &&
+        std::max(v1.y , v2.y) >= std::min(u1.y , u2.y) &&
+        (v1 - u1).cross(u2 - u1) * (v2 - u1).cross(u2 - u1) < 0 &&
+        (u1 - v1).cross(v2 - v1) * (u2 - v1).cross(v2 - v1) < 0);
+}
+
 void writeBMP(const char* filename , int w , int h ,
               unsigned char* rgb)
 {

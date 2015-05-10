@@ -46,6 +46,7 @@ void Plane::init(const vec3d& p, const vec3d& n, double weight)
 	this->n.normalize();
 	d = -p.dot(n);
 	this->weight = weight;
+    this->frame = NULL;
 }
 
 void Plane::init(const double& x , const double& y , const double& z ,
@@ -70,6 +71,7 @@ void Plane::init(const double& x , const double& y , const double& z ,
 	this->n /= normLen;
     this->d /= normLen;
 	this->weight = weight;
+    this->frame = NULL;
 }
 
 double Plane::dist(vec3d& point)
@@ -225,4 +227,10 @@ void Plane::calculateAngle()
     r = std::abs(d);
     phi = acos(n.z);
     theta = acos(n.y / sin(phi));
+}
+
+void Plane::buildFrame()
+{
+    frame = new LocalFrame();
+    frame->buildFromNormal(n);
 }

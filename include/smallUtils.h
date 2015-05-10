@@ -40,6 +40,8 @@ vec3d pointScaling(const vec3d& pos , const vec3d& origin , int chosenAxis , dou
 double weightBetweenSegs(const vec3d& x1 , const vec3d& y1 , 
 	const vec3d& x2 , const vec3d& y2);
 
+bool isIntersected2D(const vec2d& u1 , const vec2d& u2 , const vec2d& v1 , const vec2d& v2);
+
 template<typename T>
 T clampValue(const T& x , const T& minval , const T& maxval)
 {

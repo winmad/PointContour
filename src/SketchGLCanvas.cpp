@@ -422,6 +422,7 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         // dir.normalize();
         // m_pcUtils->pcRenderer->sketchPlane.init(rays.front() + dir * 0.5 , -dir , 1);
         pcRenderer->sketchPlane.init(cameraPos + cameraFrame.n * 0.5 , -cameraFrame.n , 1);
+        pcRenderer->sketchPlane.buildFrame();
         m_pcUtils->pcRenderer->freeSketchLines.clear();
 	}
 
@@ -1005,12 +1006,49 @@ void SketchGLCanvas::OnMouse ( wxMouseEvent &event )
         {
             if (event.LeftIsDown())
             {
-                pcRenderer->pickCurve(x , y , 4);
+                if (event.Dragging())
+                {
+                    if (!isDrag)
+                    {
+                        isDrag = true;
+                        pcRenderer->lt_x = x;
+                        pcRenderer->lt_y = y;
+                        // printf("start drawing rectangle, lt = (%d,%d)\n" ,
+                            // pcRenderer->lt_x , pcRenderer->lt_y);
+                    }
+                    else
+                    {
+                        pcRenderer->rb_x = x;
+                        pcRenderer->rb_y = y;
+                        // printf("dragging, rb = (%d,%d)\n" ,
+                            // pcRenderer->rb_x , pcRenderer->rb_y);
+                        pcRenderer->pickCurve(x , y , 5);
+                    }
+                }
+                else
+                {
+                    if (!isDrag) pcRenderer->pickCurve(x , y , 4);
+                }
             }
             else if (event.MiddleIsDown())
             {
                 std::fill(pcRenderer->dispCurveNet->isNodesFixed.begin() , pcRenderer->dispCurveNet->isNodesFixed.end() , false);
                 std::fill(pcRenderer->dispCurveNet->isCurvesFixed.begin() , pcRenderer->dispCurveNet->isCurvesFixed.end() , false);
+            }
+
+            if (!event.LeftIsDown() && isDrag)
+            {
+                // printf("not dragging...\n");
+                isDrag = false;
+                pcRenderer->lt_x = pcRenderer->lt_y = -1;
+                for (int i = 0; i < pcRenderer->dispCurveNet->numPolyLines; i++)
+                {
+                    if (pcRenderer->isCurvesChosen[i])
+                    {
+                        pcRenderer->dispCurveNet->isCurvesFixed[i] = !pcRenderer->dispCurveNet->isCurvesFixed[i];
+                        pcRenderer->isCurvesChosen[i] = false;
+                    }
+                }
             }
         }
         else if (crossPlanePicked) // cross plane operation, ignore all other editing operations

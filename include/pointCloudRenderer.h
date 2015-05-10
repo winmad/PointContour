@@ -115,6 +115,7 @@ public:
     void renderFreeSketches();
     void renderCrossPlane();
     void renderAxisWidget();
+    void renderChoosingRectangle();
 
     void renderFeaturePoints();
     void renderDebug();
@@ -181,6 +182,11 @@ public:
     void clearAutoGen();
 
     void calcPointsNearCrossPlane();
+
+    vec3d mouseLocationTo3D(int mouseX , int mouseY);
+
+    vec2d spaceLocationTo2D(vec3d pos , Plane& plane);
+    vec3d planeLocationTo3D(vec2d pos , Plane& plane);
 
     void backup();
     void undo();
@@ -277,6 +283,9 @@ public:
 
     AxisWidget axisWidget;
     int chosenAxis;
+
+    int lt_x , lt_y; // left top coordinates of rectangle
+    int rb_x , rb_y; // right bottom coordinates of rectangle
 
     // for debug
     std::vector<vec3d> debugPoints;
