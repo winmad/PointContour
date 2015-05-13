@@ -38,6 +38,7 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
   include
   coarseSuf/include
+  sufTune/include
   src
   GUI
   external/include
@@ -76,6 +77,7 @@ set(ALL_LIBS
   libwx_osx_cocoau_gl-3.0.a
   libtet.a
   libsuf.a
+  libsufTune.a
 )
 
 AUX_SOURCE_DIRECTORY(src/ CPP_SOURCES)

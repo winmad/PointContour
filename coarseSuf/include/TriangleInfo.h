@@ -8,8 +8,8 @@
 // 41569.2, 
 // 3}
 // 
-#ifndef _TRIANGLE_INFO_H_
-#define _TRIANGLE_INFO_H_
+#ifndef _COARSESUF_TRIANGLE_INFO_H_
+#define _COARSESUF_TRIANGLE_INFO_H_
 
 namespace coarseSuf
 {

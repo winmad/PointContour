@@ -1,8 +1,8 @@
 // 
 // Hole class
 // 
-#ifndef _HOLE_H_
-#define _HOLE_H_
+#ifndef _COARSESUF_HOLE_H_
+#define _COARSESUF_HOLE_H_
 
 #include <cmath>
 #include <vector>

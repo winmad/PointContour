@@ -8,6 +8,7 @@
 #include "nvVector.h"
 #include "colormap.h"
 #include "CoarseSuf.h"
+#include "SufTune.h"
 #include "pclUtils.h"
 #include "macros.h"
 
@@ -1413,18 +1414,16 @@ void PointCloudRenderer::afterCurveNetUpdate()
     // dispCurveNet->collinearSet.printLog();
     // dispCurveNet->collinearSet.test();
 
-    /*
     // find cycle
     printf("start cycle discovery\n");
     cycleDisc();
 
-#ifdef __APPLE__
+//#ifdef __APPLE__
     // reconstruct surface
     printf("surface reconstruction\n");
     surfacingUnsavedCycles();
-#endif
+//#endif
     evalUnsavedCycles();
-    */
 }
 
 void PointCloudRenderer::pickPoint(int mouseX , int mouseY , int op)
@@ -2409,9 +2408,18 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	float *_pPositions;
 	float *_pNormals;
 	int *_pFaceIndices;
-	coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
-		true , true , false ,
-		0.f , 0.f , 0.f , 1.f , numPositions , numFaces ,
+	std::vector<int> sizeField(3 , 0);
+	for (int i = 0; i < 3; i++) sizeField[i] = pcUtils->sizeOriginF[i];
+	
+// 	coarseSuf::coarseSuf(numPoints , inCurves , inNorms ,
+// 		true , true , false ,
+// 		0.f , 0.f , 0.f , 1.f , numPositions , numFaces ,
+// 		&_pPositions , &_pNormals , &_pFaceIndices);
+	
+	coarseSuf::genInitTriangulation(numPoints , inCurves , inNorms ,
+		sizeField , pcUtils->extXval , pcUtils->extYval , pcUtils->extZval ,
+		pcUtils->f , true , true , true ,
+		0.f , 0.f , 0.f , 0.f , 1.f , numPositions , numFaces ,
 		&_pPositions , &_pNormals , &_pFaceIndices);
 	mesh.clear();
 	meshNormals.clear();
@@ -2433,14 +2441,10 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
     fclose(fout);
 #endif
 
-    bool smoothing;
-#ifdef _WIN32
-    smoothing = true;
-#else
-    smoothing = false;
-#endif
+    bool smoothing_Nathan = false;
+	bool smoothing_Ming = true;
 
-    if (smoothing)
+    if (smoothing_Nathan)
 	{
 #ifdef _WIN32
         SP::Mesh spMesh,outputMesh;
@@ -2563,6 +2567,25 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	}
 	else
 	{
+		if (smoothing_Ming)
+		{
+			int _numPositions_smoothed;
+			int _numFaces_smoothed;
+			float* _pPositions_smoothed;
+			int* _pFaceIndices_smoothed;
+
+			SufTune::sufTune(numPositions , numFaces , _pPositions , _pFaceIndices ,
+				sizeField , pcUtils->extXval , pcUtils->extYval , pcUtils->extZval ,
+				pcUtils->f , 0 , 1.414 , 0.5 , 0.0025 , 10 , 50 , 10 , true ,
+				_numPositions_smoothed , _numFaces_smoothed ,
+				&_pPositions_smoothed , &_pFaceIndices_smoothed);
+			delete[] _pPositions;
+			delete[] _pFaceIndices;
+			numPositions = _numPositions_smoothed;
+			numFaces = _numFaces_smoothed;
+			_pPositions = _pPositions_smoothed;
+			_pFaceIndices = _pFaceIndices_smoothed;
+		}
 		for (int j = 0; j < numFaces; j++)
 		{
 			vec3i face(_pFaceIndices[3 * j] , _pFaceIndices[3 * j + 1] , _pFaceIndices[3 * j + 2]);
@@ -2574,9 +2597,9 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 				p.x = _pPositions[3 * face[k]];
 				p.y = _pPositions[3 * face[k] + 1];
 				p.z = _pPositions[3 * face[k] + 2];
-				n.x = _pNormals[3 * face[k]];
-				n.y = _pNormals[3 * face[k] + 1];
-				n.z = _pNormals[3 * face[k] + 2];
+// 				n.x = _pNormals[3 * face[k]];
+// 				n.y = _pNormals[3 * face[k] + 1];
+// 				n.z = _pNormals[3 * face[k] + 2];
                 triPos.push_back(p);
 				triNorm.push_back(n);
 			}
@@ -2586,7 +2609,7 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
 	}
 
 #if (OUTPUT_MESH)
-    fout = fopen("coarse_mesh.txt" , "w");
+    FILE* fout = fopen("coarse_mesh.txt" , "w");
     fprintf(fout , "%d\n" , numPositions);
     for (int i = 0; i < numPositions; i++)
     {
@@ -2607,6 +2630,10 @@ void PointCloudRenderer::surfaceBuilding(std::vector<int> &numPoints, std::vecto
     }
     fclose(fout);
 #endif
+
+	delete[] _pPositions;
+	delete[] _pNormals;
+	delete[] _pFaceIndices;
 }
 
 int PointCloudRenderer::ctrlNodeSelectionByRay(int mouseX , int mouseY , int& nodeIndex)
@@ -2831,7 +2858,8 @@ void PointCloudRenderer::autoGenByRotation(double offset)
 
 void PointCloudRenderer::autoGenByICP()
 {
-#if defined(__APPLE__)
+// #if defined(__APPLE__)
+#if 0
     autoGenOriginPaths.clear();
     autoGenPaths.clear();
     autoGenBsp.clear();

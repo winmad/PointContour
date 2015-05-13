@@ -14,8 +14,8 @@
 // {2.47009, 2.75679, 2.8269, 2.85489, 2.78478, 3.07148}, 
 // {}}
 // 
-#ifndef _EDGE_INFO_H_
-#define _EDGE_INFO_H_
+#ifndef _COARSESUF_EDGE_INFO_H_
+#define _COARSESUF_EDGE_INFO_H_
 
 namespace coarseSuf
 {

@@ -1,8 +1,8 @@
 // 
 // Boundary class
 // 
-#ifndef _BOUNDARY_H_
-#define _BOUNDARY_H_
+#ifndef _COARSESUF_BOUNDARY_H_
+#define _COARSESUF_BOUNDARY_H_
 
 #include "SubKey.h"
 #include "Configure.h"

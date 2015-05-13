@@ -5,6 +5,57 @@ namespace coarseSuf
 
 extern float timeNew;
 
+void DMWT::buildTriPtScores(){
+	tri2ptScore.resize(numoftris);
+	for(int i=0; i<numoftris; ++i){
+		tri2ptScore[i] = calcTriPtScore(i);
+	}
+}
+float DMWT::calcTriPtScore(int ti){
+	vector<vector<float> > sPts;
+	sampleOnTri(ti, sPts);
+	float xyz[3];
+	float score = 0.0f;
+	for(size_t i=0; i<sPts.size(); ++i){
+		xyz[0] = sPts[i][0];
+		xyz[1] = sPts[i][1];
+		xyz[2] = sPts[i][2];
+		score += Utility::getVolValAtPos(xyz,inGrid);
+	}
+	//score /= sPts.size();
+	//cout << score << " " << score/sPts.size() << endl;
+	return score/sPts.size();
+}
+void DMWT::sampleOnTri(int ti, vector<vector<float> >& sPts){
+	vector<float> onePt(3);
+	sPts.clear();
+	sPts.reserve(4);
+	for(int i=0; i<3; ++i){
+		int vi = triangle(ti,i);
+		for(int j=0; j<3; j++){
+			onePt[j] = vertex(vi, j);
+		}
+		sPts.push_back(onePt);
+	}
+	for(int i=0; i<3; ++i){
+		onePt[i] = (sPts[0][i]+sPts[1][i]+sPts[2][i])/3;
+	}
+	sPts.push_back(onePt);
+	for(int i=0; i<3; ++i){
+		onePt[i] = (sPts[0][i]+sPts[1][i]+sPts[3][i])/3;
+	}
+	sPts.push_back(onePt);
+	for(int i=0; i<3; ++i){
+		onePt[i] = (sPts[0][i]+sPts[2][i]+sPts[3][i])/3;
+	}
+	sPts.push_back(onePt);
+	for(int i=0; i<3; ++i){
+		onePt[i] = (sPts[2][i]+sPts[1][i]+sPts[3][i])/3;
+	}
+	sPts.push_back(onePt);
+}
+
+
 DMWT::~DMWT(){
 	//todo
 }
@@ -14,7 +65,7 @@ DMWT::~DMWT(){
 void DMWT::tile(){
 	if (badInput) return;
 	if (numofvertices == 3){
-		optCost = CostAllE(0) + CostT(0);
+		optCost = CostAllE(0) + CostT(0) + CostTPt(0);
 		optTile.push_back(0);
 		//saveTiling(); //FOR LIFAN, seperate saveTiling() with tile() to allow more flexibility
 		return;
@@ -338,7 +389,7 @@ int DMWT::computeTriangulation(Boundary<MAXK>& B, Hole& H){
 									if (useMinMaxDihedral){
 										newCost = findMax(CostBI(e, fi, ffi), C1, C2);
 									} else {
-										newCost = CostT(ff) + costE + CostBI(e, fi, ffi) + C1 + C2;
+										newCost = CostT(ff) + CostTPt(ff) + costE + CostBI(e, fi, ffi) + C1 + C2;
 									}
 									if (useWE){
 										RecoverListFromBitKey(allWE1, WEK1,newList);
@@ -417,7 +468,7 @@ int DMWT::computeTriangulation(Boundary<MAXK>& B, Hole& H){
 									newCost = CC;
 								}
 							} else {
-								newCost = CostT(ff) + costE + CostBI(e, fi, ffi) + CC;
+								newCost = CostT(ff) + CostTPt(ff) + costE + CostBI(e, fi, ffi) + CC;
 							}
 							
 							if (useWE){
@@ -820,6 +871,7 @@ void DMWT::buildList(){
 void DMWT::readCurveFile(const char* file){
 	// extract the name of the curve
 	filename = new char[300]; 
+	//strcpy_s(filename,300,file);
 	strcpy(filename,file);
 	char* dot=strrchr(filename,'.'); *dot = '\0';
 	
@@ -899,13 +951,12 @@ void DMWT::readNormalFile(const char* file){
 
 }
 
-//FOR LIFAN
 void DMWT::loadCurves(vector<int> &numPoints, vector<double*> &inCurves){
 	// MING: please do not delete the following line (easier hack), 
 	// filename is a member element of DMWT,
 	// this part of memory will be released later
 	filename = new char[300]; 
-	
+
 	// read curves
 	//reader >> numofcurves;
 	//reader >> numofvertices;
@@ -935,7 +986,7 @@ void DMWT::loadCurves(vector<int> &numPoints, vector<double*> &inCurves){
 		curveInfo[i].start = pt;
 		curveInfo[i].end   = pt + nPt - 1;
 		curveInfo[i].len = nPt;
-        double* _curve = inCurves[i];
+		double* _curve = inCurves[i];
 		for (int j=0; j<nPt; j++) {
 			//reader >> x >> y >> z;
 			x = _curve[j*3];
@@ -979,12 +1030,107 @@ void DMWT::loadNormals(vector<int> &numPoints, vector<double*> &inNorms){
 	for (int i=0; i<numofcurves; i++){
 		//reader >> nPt;
 		nPt = numPoints[i];
-        double* _norm = inNorms[i];
+		double* _norm = inNorms[i];
 		for (int j=0; j<nPt; j++) {
 			//reader >> x >> y >> z;
 			x = _norm[j*3];
 			y = _norm[j*3+1];
 			z = _norm[j*3+2];
+			tempNorm.push_back(Vector3(x,y,z));
+			newNorm[0] = pt; newNorm[1] = pt-1;
+			tempAdjNorm.push_back(newNorm);
+			pt++;
+		}
+		//tempAdjNorm[vi][0] itself; [1] index smaller than vi
+		tempAdjNorm[curveInfo[i].start][1] = curveInfo[i].end;
+	}
+	//reader.close();
+}
+
+//FOR LIFAN
+void DMWT::loadCurves(vector<vector<vec3d> > &inCurves){
+	// MING: please do not delete the following line (easier hack), 
+	// filename is a member element of DMWT,
+	// this part of memory will be released later
+	filename = new char[300]; 
+	
+	// read curves
+	//reader >> numofcurves;
+	//reader >> numofvertices;
+	numofcurves = inCurves.size();
+	numofvertices = 0;
+	for(size_t i=0; i<inCurves.size(); ++i){
+		numofvertices += inCurves[i].size();
+	}
+	orgnumofvertices = numofvertices;
+	curveInfo    = new CurveInfo[numofcurves];
+	vertex2curve = new int[numofvertices];
+	vertices = new double[3 * numofvertices];
+	tempC.reserve(numofvertices);
+	tempOrgC.reserve(numofvertices);
+	tempAdj.reserve(numofvertices);
+	radius.reserve(numofvertices);
+	orgradius.reserve(numofvertices);
+	cliped.reserve(numofvertices);
+	newEdge.push_back(0); newEdge.push_back(0);
+	newAdj.push_back(0); newAdj.push_back(0);
+	newClip.push_back(0); newClip.push_back(0);
+	int pt = 0;
+	double x,y,z;
+	for (int i=0; i<numofcurves; i++){
+		//reader >> nPt;
+		nPt = inCurves[i].size();
+		curveInfo[i].start = pt;
+		curveInfo[i].end   = pt + nPt - 1;
+		curveInfo[i].len = nPt;
+		for (int j=0; j<nPt; j++) {
+			//reader >> x >> y >> z;
+			x = inCurves[i][j].x;
+			y = inCurves[i][j].y;
+			z = inCurves[i][j].z;
+			tempC.push_back(Point3(x,y,z));
+			tempOrgC.push_back(Point3(x,y,z));
+			newAdj[0] = pt+1; newAdj[1] = pt-1; 
+			tempAdj.push_back(newAdj);
+			vertex2curve[pt] = i;
+			vertices[pt*3] = x;
+			vertices[pt*3+1] = y;
+			vertices[pt*3+2] = z;
+			pt++;
+		}
+		//tempAdj[vi][0] pt index larger than vi; [1] smaller than vi
+		tempAdj[curveInfo[i].start][1] = curveInfo[i].end;
+		tempAdj[curveInfo[i].end][0] = curveInfo[i].start;
+	}
+	//reader.close();
+	if (numofvertices < 3 ){
+		exit(1);
+	}
+}
+
+void DMWT::loadNormals(vector<vector<vec3d> > &inNorms){
+
+	// read curve normals
+	//reader >> numofcurves;
+	//reader >> numofnormals;
+	numofnormals = 0;
+	for(size_t i=0; i<inNorms.size(); ++i){
+		numofnormals += inNorms[i].size();
+	}
+	newNorm.push_back(0); newNorm.push_back(0);
+	//MING: clear the mem after EP. 
+	tempNorm.reserve(numofnormals);
+	tempAdjNorm.reserve(numofvertices);
+	int pt = 0;
+	double x,y,z;
+	for (int i=0; i<numofcurves; i++){
+		//reader >> nPt;
+		nPt = inNorms[i].size();
+		for (int j=0; j<nPt; j++) {
+			//reader >> x >> y >> z;
+			x = inNorms[i][j].x;
+			y = inNorms[i][j].y;
+			z = inNorms[i][j].z;
 			tempNorm.push_back(Vector3(x,y,z));
 			newNorm[0] = pt; newNorm[1] = pt-1;
 			tempAdjNorm.push_back(newNorm);
@@ -1057,13 +1203,17 @@ void DMWT::readCanTFile(const char* file){
 
 void DMWT::saveTiling(){
 	char * tilefile = new char[300];
+	//strcpy_s(tilefile,300,filename);
 	strcpy(tilefile,filename);
 	if (useDT) {
+		//strcat_s(tilefile,300,"_dyn");
 		strcat(tilefile,"_dyn");
 	} else {
+		//strcat_s(tilefile,300,"_all");
 		strcat(tilefile,"_all");
 	}
 	if (saveObj){
+		//strcat_s(tilefile,300,".obj");
 		strcat(tilefile,".obj");
 		saveTilingObj(tilefile);
 	}
@@ -1083,7 +1233,7 @@ void DMWT::saveTiling(char* tilefile){
 	else writer << optTile[n-1]+1 << "}\n";
 	writer.close();
 }
-void DMWT::saveTilingObj(char* tilefile){
+void DMWT::saveTilingObj(const char* tilefile){
 	int n = (int) optTile.size();
 	std::ofstream writer(tilefile, std::ofstream::out);
 	if (!writer.good()) exit(1);
@@ -1112,45 +1262,46 @@ void DMWT::saveResults(
 	int** _pFaceIndices
 	){
 
-    // saveTilingObj("test.obj");
-	_numofpoints = numofvertices;
-	_numoftilingtris = (int) optTile.size();
-    float *pPos = new float [_numofpoints*3];
-    float *pNorm = new float [_numofpoints*3];
-    int *pFace = new int [_numoftilingtris*3];
-	
-	// write vertices & normals
-	for(int i=0; i<_numofpoints; i++){
-		pPos[i*3] = vertex(i,0);
-        pPos[i*3+1] = vertex(i,1);
-        pPos[i*3+2] = vertex(i,2);
+		// saveTilingObj("test.obj");
+		_numofpoints = numofvertices;
+		_numoftilingtris = (int) optTile.size();
+		float *pPos = new float [_numofpoints*3];
+		float *pNorm = new float [_numofpoints*3];
+		int *pFace = new int [_numoftilingtris*3];
 
-		if(useNormal){
-			pNorm[i*3] = normal(i,0);
-			pNorm[i*3+1] = normal(i,1);
-			pNorm[i*3+2] = normal(i,2);
+		// write vertices & normals
+		for(int i=0; i<_numofpoints; i++){
+			pPos[i*3] = vertex(i,0);
+			pPos[i*3+1] = vertex(i,1);
+			pPos[i*3+2] = vertex(i,2);
+
+			if(useNormal){
+				pNorm[i*3] = normal(i,0);
+				pNorm[i*3+1] = normal(i,1);
+				pNorm[i*3+2] = normal(i,2);
+			}
+
+			//writer << "v "<< vertex(i,0) << " " << vertex(i,1) << " " << vertex(i,2) <<"\n";
+		}
+		// write faces
+		int t = 0;
+		for (int i=0; i<_numoftilingtris; i++){
+			t = optTile[i];
+			pFace[i*3] = triangle(t,0);
+			pFace[i*3+1] = triangle(t,1);
+			pFace[i*3+2] = triangle(t,2);
+
+			//indexes start from 1 in OBJ file, so +1
+			//writer << "f " << triangle(t,0)+1 << " " << triangle(t,1)+1 << " " << triangle(t,2)+1 <<"\n";
 		}
 
-		//writer << "v "<< vertex(i,0) << " " << vertex(i,1) << " " << vertex(i,2) <<"\n";
-	}
-	// write faces
-	int t = 0;
-	for (int i=0; i<_numoftilingtris; i++){
-		t = optTile[i];
-		pFace[i*3] = triangle(t,0);
-		pFace[i*3+1] = triangle(t,1);
-		pFace[i*3+2] = triangle(t,2);
+		*_pPositions = pPos;
+		*_pNormals = pNorm;
+		*_pFaceIndices = pFace;
 
-		//indexes start from 1 in OBJ file, so +1
-		//writer << "f " << triangle(t,0)+1 << " " << triangle(t,1)+1 << " " << triangle(t,2)+1 <<"\n";
-	}
-
-    *_pPositions = pPos;
-	*_pNormals = pNorm;
-	*_pFaceIndices = pFace;
-
-	//writer.close();
+		//writer.close();
 }
+
 //==================================Weight Functions============================//
 
 void DMWT::setWeights(float wtri, float wedge, float wbitri, float wtribd){
@@ -1158,6 +1309,28 @@ void DMWT::setWeights(float wtri, float wedge, float wbitri, float wtribd){
 	weightEdge = wedge;
 	weightBiTri = wbitri;
 	weightTriBd = wtribd;
+	weightPt = 0.0f;
+	if((weightBiTri==0.0f)&&(weightTriBd==0.0f)) {
+		useBiTri = false;
+		useMinMaxDihedral = false;
+	} else {
+		useBiTri = true;
+		if (weightTriBd!=0.0f){
+			weightBiTri=1.0f;
+			useMinMaxDihedral = true;
+		} else {
+			useMinMaxDihedral = false;
+		}
+	}
+}
+
+//for LIFAN
+void DMWT::setWeights(float wtri, float wedge, float wbitri, float wtribd, float wpt){
+	weightTri = wtri;
+	weightEdge = wedge;
+	weightBiTri = wbitri;
+	weightTriBd = wtribd;
+	weightPt = wpt;
 	if((weightBiTri==0.0f)&&(weightTriBd==0.0f)) {
 		useBiTri = false;
 		useMinMaxDihedral = false;
@@ -1233,7 +1406,11 @@ __forceinline float DMWT::CostT(int t){
 	float measure = measureTri(triangle(t,0), triangle(t,1), triangle(t,2));
 	return costTri(measure);
 }
-
+__forceinline float DMWT::CostTPt(int t){
+	if(weightPt==0) return 0.0f;
+	//cout << "TPT: " << tri2ptScore[t] << ": " << weightPt << endl;
+	return weightPt * tri2ptScore[t];
+}
 __forceinline float DMWT::CostBI(int e, short fi1, short fi2){
 	if(!useBiTri) return 0.0f;
 	if(fi1==-1||fi2==-1) return 0.0f;
@@ -1844,6 +2021,5 @@ bool DMWT::passTetGen(){
 
 void DMWT::statistics(){
 }
-    
-}
 
+}

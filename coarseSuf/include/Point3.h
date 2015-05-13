@@ -1,5 +1,5 @@
-#ifndef Point3_h
-#define Point3_h
+#ifndef COARSESUF_Point3_h
+#define COARSESUF_Point3_h
 
 #include "Vector3.h"
 #include <iostream>

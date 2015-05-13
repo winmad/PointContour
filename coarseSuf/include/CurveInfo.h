@@ -2,8 +2,8 @@
 // . the start/end vertex index
 // {3, 10}
 // 
-#ifndef _CURVE_INFO_H_
-#define _CURVE_INFO_H_
+#ifndef _COARSESUF_CURVE_INFO_H_
+#define _COARSESUF_CURVE_INFO_H_
 
 namespace coarseSuf
 {

@@ -1,8 +1,8 @@
 // 
 // Implement simple linked list
 // 
-#ifndef _SUB_KEY_H_
-#define _SUB_KEY_H_
+#ifndef _COARSESUF_SUB_KEY_H_
+#define _COARSESUF_SUB_KEY_H_
 
 namespace coarseSuf
 {

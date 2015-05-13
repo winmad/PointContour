@@ -1445,7 +1445,7 @@ void CurveNet::loadCurveNet(const char* fileName)
     fclose(fp);
     printf("Curve loaded!\n");
 
-#ifdef OUTPUT_CURVE_NET
+#if (OUTPUT_CURVE_NET)
     FILE *fout = fopen("curve_net.txt" , "w");
     fprintf(fout , "%d\n" , numPolyLines);
     for (int i = 0; i < numPolyLines; i++)

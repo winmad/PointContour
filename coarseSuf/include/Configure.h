@@ -1,3 +1,10 @@
+#ifndef _COARSESUF_CONFIGURE_H_
+#define _COARSESUF_CONFIGURE_H_
+
+#ifndef COARSESUF_OUTPUT
+#define COARSESUF_OUTPUT 0
+#endif
+
 namespace coarseSuf
 {
     
@@ -16,10 +23,12 @@ namespace coarseSuf
 #define BADEDGE_LIMIT 30
 #define hfPI 1.570796
 
-#ifdef _WIN32
+#if _WIN32
     typedef __int64 int64;
 #else
     typedef long long int64;
 #endif
     
 }
+
+#endif

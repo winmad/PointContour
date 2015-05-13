@@ -4,7 +4,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/registration/icp.h>
+//#include <pcl/registration/icp.h>
 
 #if defined(__MACH__) && defined(__APPLE__)
 #include <pcl/surface/on_nurbs/fitting_curve_2d.h>

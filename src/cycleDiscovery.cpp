@@ -140,19 +140,19 @@ void cycleDiscovery(std::vector<std::vector<Point> > &inCurves,
         outCycleToBeSurfacing.push_back(true);
     }
 #ifdef _WIN32
-	outMeshes.swap(m_cycleUtil->m_triangleSurface);
-	outNormals.swap(m_cycleUtil->m_triangleSurfaceNormal);
-	
-    for (int i = 0; i < deleteSeq.size(); i++)
-    {
-        int j = deleteSeq[i];
-        outMeshes.erase(outMeshes.begin() + j);
-        outNormals.erase(outNormals.begin() + j);
-    }
+// 	outMeshes.swap(m_cycleUtil->m_triangleSurface);
+// 	outNormals.swap(m_cycleUtil->m_triangleSurfaceNormal);
+// 	
+//     for (int i = 0; i < deleteSeq.size(); i++)
+//     {
+//         int j = deleteSeq[i];
+//         outMeshes.erase(outMeshes.begin() + j);
+//         outNormals.erase(outNormals.begin() + j);
+//     }
 	
 #endif
 
-#ifdef OUTPUT_CURVE_NET_WITH_NORMAL 
+#if (OUTPUT_CURVE_NET_WITH_NORMAL)
     FILE* fout = fopen("curve_net_with_normal.txt" , "w");
     fprintf(fout , "%d\n" , inCurveNums.size());
     for (int i = 0; i < inCurveNums.size(); i++)
@@ -3297,8 +3297,8 @@ void cycleUtils::surfaceBuilding(std::vector<int> &inCurveNums,
 		*/
 		if(m_normalsTable.empty())
 		{
-			res=DrT::delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
-			&tile_list,&tileNum,weights,dosmooth,subs,laps);
+			//res=DrT::delaunayRestrictedTriangulation(points,point_num,&newPoints,&newPointNum,
+			//&tile_list,&tileNum,weights,dosmooth,subs,laps);
 		}
 #endif
 
@@ -3460,8 +3460,8 @@ void cycleUtils::surfaceBuilding(std::vector<int> &inCurveNums,
 
             // inCurveNormals.push_back(normals_d);
 #ifdef _WIN32
-			res=DrT::delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
-				dosmooth,subs,laps);
+			//res=DrT::delaunayRestrictedTriangulation(points,normals,point_num,&newPoints,&newNormals,&newPointNum,&tile_list,&tileNum,weights,
+			//	dosmooth,subs,laps);
 #endif
 		
 			LinearCurveNet cycleNormalForVis = cycleNormal;

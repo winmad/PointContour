@@ -1,5 +1,5 @@
-#ifndef Vector3_h
-#define Vector3_h
+#ifndef COARSESUF_Vector3_h
+#define COARSESUF_Vector3_h
 
 #include <iostream>
 

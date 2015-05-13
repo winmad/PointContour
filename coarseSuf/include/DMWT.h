@@ -1,5 +1,5 @@
-#ifndef _DMWT_H_
-#define _DMWT_H_
+#ifndef _COARSESUF_DMWT_H_
+#define _COARSESUF_DMWT_H_
 #include "tetgen.h"
 #include "Point3.h"
 #include "Vector3.h"
@@ -23,10 +23,11 @@
 #include <stdio.h>
 #include <time.h>
 #include "nvVector.h"
+#include "Utility.h"
 
 namespace coarseSuf
 {
-/*
+
 #define point(v) Point3((float)vertices[v*3],(float)vertices[v*3+1],(float)vertices[v*3+2])
 #define triangle(t,i) tris[t*3+i]
 #define vertex(v,i) vertices[v*3+i]
@@ -37,8 +38,7 @@ namespace coarseSuf
 #define TIinT(ti,ei) triangleInfoList[ti]->triInd[ei]
 #define isBoardE(e) edgeInfoList[e]->isBD
 #define PI 3.1415926f
-*/
-using namespace std;
+
 typedef boost::unordered_map< int64, size_t> wekhashmap;
 
 typedef boost::unordered_map< SubKey<MAXK>, int, MySubKeyHash<MAXK>,  MySubKeyEq<MAXK> > hashmap;
@@ -49,21 +49,55 @@ public:
 	~DMWT();
 	//FOR LIFAN
 	DMWT(
-    vector<int> &numPoints,
+		vector<int> &numPoints,
+		vector<double*> &inCurves,
+		vector<double*> &inNorms,
+		bool uDelaunay,
+		bool uMinSet,
+		bool uNormal){
+			useNormal = uNormal;
+			badInput = false;
+			isDeGen = false;
+
+			//readCurveFile(curvefile);
+			//readNormalFile(normalfile);
+			loadCurves(numPoints, inCurves);
+			if (uNormal){
+				loadNormals(numPoints, inNorms);
+			}
+			if (uDelaunay){
+				genDTTriCandidates();
+			}else{
+				genAllTriCandidates();
+			}
+			useWE = 1;
+			useDT = uDelaunay;
+			paraDP    = 0;
+			filterWE = uMinSet;
+			useMinMaxDihedral = false;
+			saveObj = 1;
+
+			numoftilingtris = 0;
+	}
+	//FOR LIFAN
+	DMWT(
+	vector<int> &numPoints,
 	vector<double*> &inCurves,
 	vector<double*> &inNorms,
+	Volume  * _inGrid,
 	bool uDelaunay,
 	bool uMinSet,
 	bool uNormal){
 		useNormal = uNormal;
 		badInput = false;
 		isDeGen = false;
+		inGrid = _inGrid;
 
 		//readCurveFile(curvefile);
 		//readNormalFile(normalfile);
-		loadCurves(numPoints, inCurves);
+		loadCurves(numPoints , inCurves);
 		if (uNormal){
-			loadNormals(numPoints, inNorms);
+			loadNormals(numPoints , inNorms);
 		}
 		if (uDelaunay){
 			genDTTriCandidates();
@@ -79,7 +113,6 @@ public:
 
 		numoftilingtris = 0;
 	}
-
 	// use candidate triangle file
 	DMWT(char* curvefile, char* canTfile, const bool pDP, const bool uWE, const bool fWE, const bool sObj){
 		useNormal = false;
@@ -163,6 +196,11 @@ public:
 	float timeTotal;
 	float timeTetgen;
 
+	Volume * inGrid;
+	vector<float> tri2ptScore;
+	void buildTriPtScores();
+	float calcTriPtScore(int ti);
+	void sampleOnTri(int ti, vector<vector<float> >& sPts);
 
 //protected:
 	//-------------variables--------------//
@@ -207,6 +245,7 @@ public:
 	float weightEdge;
 	float weightBiTri;
 	float weightTriBd;
+	float weightPt;
 	bool useMinMaxDihedral;
 
 	int maxTriPerEdge;
@@ -231,9 +270,10 @@ public:
 	void buildStrip();
 	void tile();
 	void setWeights(float wtri, float wedge, float wbitri, float wtribd);
+	void setWeights(float wtri, float wedge, float wbitri, float wtribd, float wpt);
 	void saveTiling();
 	void saveTiling(char* tilefile);
-	void saveTilingObj(char* tilefile);
+	void saveTilingObj(const char* tilefile);
 	void saveTiling(int OTid);
 	void statistics();
 
@@ -242,6 +282,9 @@ public:
 	void readNormalFile(const char* file);
 
 	//FOR LIFAN
+	void loadCurves(vector<vector<vec3d> > &inCurves);
+	void loadNormals(vector<vector<vec3d> > &inNorms);
+	
 	void loadCurves(vector<int> &numPoints, vector<double*> &inCurves);
 	void loadNormals(vector<int> &numPoints, vector<double*> &inNorms);
 	void saveResults(int &_numofpoints, int &_numoftilingtris, float** _pPositions, float** _pNormals, int** _pFaceIndices);
@@ -261,6 +304,7 @@ public:
 	float CostE(int e);
 	float CostAllE(int t);
 	float CostT(int t);
+	float CostTPt(int t);
 	float CostBI(int e, short fi1, short fi2);
 	float CostBD(int e, int i);
 

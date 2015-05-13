@@ -1,8 +1,8 @@
 // 
 // Tile class
 // 
-#ifndef _Tile_H_
-#define _Tile_H_
+#ifndef _COARSESUF_Tile_H_
+#define _COARSESUF_Tile_H_
 #include <float.h>
 #include <stdlib.h>
 #include <vector>
