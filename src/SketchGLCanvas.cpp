@@ -1408,6 +1408,30 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         }
         else if (uc == 'Q')
         {
+            std::vector<int> curveIndices;
+            m_pcUtils->opt.init(pcRenderer->dispCurveNet , m_pcUtils);
+            if (pcRenderer->markMode == 1)
+            {
+                for (int i = 0; i < pcRenderer->dispCurveNet->numPolyLines; i++)
+                {
+                    if (pcRenderer->isCurvesChosen[i] &&
+                        pcRenderer->dispCurveNet->curveType[i] == 1)
+                    {
+                        curveIndices.push_back(i);
+                    }
+                }
+                for (int i = 0; i < curveIndices.size(); i++)
+                {
+                    printf("%d " , curveIndices[i]);
+                }
+                printf("\n");
+                for (int i = 1; i < curveIndices.size(); i++)
+                {
+                    m_pcUtils->opt.addParallelConstraint(curveIndices[0] , curveIndices[i] ,
+                        314);
+                }
+            }
+            m_pcUtils->opt.run(pcRenderer->dispCurveNet);
         }
         else if (uc == 'R') // rotation mode
         {
@@ -1492,6 +1516,26 @@ void SketchGLCanvas::OnKeyDown(wxKeyEvent &event)
         else if (uc == ' ') // optimization
         {
             m_pcUtils->pcRenderer->optUpdate(true);
+        }
+        else if (uc == '1') // parallel
+        {
+            printf("parallel\n");
+            pcRenderer->markMode = 1;
+        }
+        else if (uc == '2') // coplanar
+        {
+            printf("coplanar\n");
+            pcRenderer->markMode = 2;
+        }
+        else if (uc == '3') // orthogonal
+        {
+            printf("orthogonal\n");
+            pcRenderer->markMode = 3;
+        }
+        else if (uc == '4') // tangent
+        {
+            printf("tangent\n");
+            pcRenderer->markMode = 4;
         }
 	}
 	else

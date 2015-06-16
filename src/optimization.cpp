@@ -64,7 +64,7 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
         }
         else if (net->nodesEditType[i] == 1)
         {
-            weight = 1;
+            weight = 3;
         }
         else if (net->nodesEditType[i] == 2)
         {
@@ -83,7 +83,7 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
         }
         else if (net->bspEditType[i] == 1)
         {
-            weight = 1;
+            weight = 3;
         }
         else if (net->bspEditType[i] == 2)
         {
@@ -468,7 +468,8 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
 
                         if (isAllConst(u1 , u2 , v1 , v2)) continue;
                         bool flag = (u1 == v1) || (u1 == v2) || (u2 == v1) || (u2 == v2);
-                        assert(flag);
+                        // assert(flag);
+                        if (!flag) continue;
                         int x0 , x1 , x2;
                         if (u1 == v1)
                         {
@@ -528,19 +529,19 @@ void Optimization::init(CurveNet *_net , PointCloudUtils *_pcUtils)
     {
         if (cons[i].type == st_collinear)
         {
-            cons[i].weight = 1.0 / ConstraintDetector::collinearThr;
+            cons[i].weight *= 1.0 / ConstraintDetector::collinearThr;
         }
         else if (cons[i].type == st_parallel)
         {
-            cons[i].weight = 1.0 / ConstraintDetector::parallelThr;
+            cons[i].weight *= 1.0 / ConstraintDetector::parallelThr;
         }
         else if (cons[i].type == st_ortho)
         {
-            cons[i].weight = 1.0 / ConstraintDetector::orthoThr;
+            cons[i].weight *= 1.0 / ConstraintDetector::orthoThr;
         }
         else if (cons[i].type == st_tangent)
         {
-            cons[i].weight = 1.0 / ConstraintDetector::tangentThr;
+            cons[i].weight *= 1.0 / ConstraintDetector::tangentThr;
         }
     }
 
@@ -802,7 +803,7 @@ void Optimization::generateMOD(string file)
 
 	fout << "\n# objective\n";
 	fout << "minimize total_cost:\n";
-	fout << "100 * (sum {i in 0..N, t in Dim3} "
+	fout << "50 * (sum {i in 0..N, t in Dim3} "
 		 << "p_weight[i] * (p[i, t] - init_p[i, t]) ^ 2)\n";
     /*
 	fout << "+ 1 * (sum{i in 0..SN} p_weight[sidx[i,2]] * (sum{j in 0..SPN[i]}"
@@ -812,7 +813,7 @@ void Optimization::generateMOD(string file)
 		<< ")^2"
 		<< ")/SPN[i])\n";
     */
-    fout << generateStraightLineDist(100);
+    fout << generateStraightLineDist(50);
     /*
 	fout << "+ 1 * (sum{i in 0..BN} p_weight[bidx[i,0]] * (sum{j in 0..BPN[i]}"
 		 << "sum{t in Dim3}("
@@ -820,7 +821,7 @@ void Optimization::generateMOD(string file)
 		 << ")^2"
 		 << ")/BPN[i])\n";
     */
-    fout << generateBsplineDist(100);
+    fout << generateBsplineDist(50);
 	for (int i = 0; i < numCons; ++ i)
 	{
         fout << "+ ";
@@ -1584,4 +1585,17 @@ std::pair<OptVariable , OptVariable> Optimization::bsp2var(int bspIndex , int cu
 bool Optimization::isAllConst(int u1 , int u2 , int v1 , int v2)
 {
     return (!vars[u1].isVar) && (!vars[u2].isVar) && (!vars[v1].isVar) && (!vars[v2].isVar);
+}
+
+void Optimization::addParallelConstraint(int l1 , int l2 , double weight)
+{
+    PolyLineIndex u = net->polyLinesIndex[l1];
+    PolyLineIndex v = net->polyLinesIndex[l2];
+    int u1 = getOptVarIndex(OptVariable(0 , u.ni[0]));
+    int u2 = getOptVarIndex(OptVariable(0 , u.ni[1]));
+    int v1 = getOptVarIndex(OptVariable(0 , v.ni[0]));
+    int v2 = getOptVarIndex(OptVariable(0 , v.ni[1]));
+    if (isAllConst(u1 , u2 , v1 , v2)) return;
+    cons.push_back(OptConstraints(u1 , u2 , v1 , v2 , st_parallel , weight));
+    numCons++;
 }

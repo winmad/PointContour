@@ -50,9 +50,10 @@ struct OptConstraints
     OptConstraints() {}
     
     OptConstraints(int _u1 , int _u2 , int _v1 , int _v2 ,
-        ConstraintsType _type)
+        ConstraintsType _type , double _weight = 1.0)
     {
         u1 = _u1; u2 = _u2; v1 = _v1; v2 = _v2; type = _type;
+        weight = _weight;
     }
 };
 
@@ -74,6 +75,8 @@ public:
     int numStartPoints;
     double maxRealTime;
     double largeBound , smallBound;
+
+    void addParallelConstraint(int l1 , int l2 , double weight = 1.0);
 
 private:
     std::string var2str(int varIndex , int k);

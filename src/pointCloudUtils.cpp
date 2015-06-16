@@ -1735,17 +1735,15 @@ void PointCloudUtils::optimizeJunction(CurveNet* cn , const vec3d& pos)
 double PointCloudUtils::calcPatchScore(std::vector<std::vector<vec3d> >& mesh)
 {
 	double numer = 0 , denom = 0;
-	for (int i = 0; i < mesh.size(); i++)
+    std::vector<vec3d> samples = samplePointsFromPatch(mesh);
+	for (int i = 0; i < samples.size(); i++)
 	{
-		for (int j = 0; j < mesh[i].size(); j++)
-		{
-			vec3d pos = mesh[i][j];
-			DistQuery q;
-			q.maxSqrDis = 1e30;
-			tree->searchKnn(0 , pos , q);
-			numer += q.maxSqrDis;
-			denom += 1;
-		}
+        vec3d pos = samples[i];
+        DistQuery q;
+        q.maxSqrDis = 1e30;
+        tree->searchKnn(0 , pos , q);
+        numer += q.maxSqrDis;
+        denom += 1;
 	}
 	return numer / denom;
 }
@@ -1759,7 +1757,6 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 	std::vector<PatchPointData> patchPointData;
 	for (int i = 0; i < meshes.size(); i++)
 	{
-		// area importance sampling
 		std::vector<vec3d> samples;
 		samples = samplePointsFromPatch(meshes[i]);
 		for (int j = 0; j < samples.size(); j++)
@@ -1820,6 +1817,22 @@ void PointCloudUtils::calcPatchScores(std::vector<std::vector<std::vector<vec3d>
 	}
 }
 
+std::vector<vec3d> PointCloudUtils::samplePointsFromPatchSimple(std::vector<std::vector<vec3d> >& mesh)
+{
+    std::vector<vec3d> res;
+    for (int i = 0; i < mesh.size(); i++)
+    {
+        for (int j = 0; j < mesh[i].size(); j++)
+        {
+            vec3d triCenter;
+            for (int k = 0; k < mesh[i][j].size(); k++) triCenter += mesh[i][j][k];
+            if (mesh[i][j].size() > 0) triCenter /= (double)mesh[i][j].size();
+            res.push_back(triCenter);
+        }
+    }
+    return res;
+}
+
 std::vector<vec3d> PointCloudUtils::samplePointsFromPatch(std::vector<std::vector<vec3d> >& mesh)
 {
 	std::vector<vec3d> res;
@@ -1833,14 +1846,13 @@ std::vector<vec3d> PointCloudUtils::samplePointsFromPatch(std::vector<std::vecto
 		totArea += triArea;
 	}
 
-	int totSamples = std::min((int)mesh.size() , 500);
-	for (int i = 0; i < mesh.size(); i++)
+	int totSamples = (int)(1000 * totArea);
+	for (int c = 0; c < totSamples; c++)
 	{
-		int k = std::max(1 , (int)((double)totSamples * areas[i] / totArea));
-		for (int j = 0; j < k; j++)
-		{
-			res.push_back(RandGenerator::genRandTrianglePosition(mesh[i][0] , mesh[i][1] , mesh[i][2]));
-		}
+        float rn = RandGenerator::genFloat() * totArea;
+        int i = std::lower_bound(areas.begin() , areas.end() , (double)rn) - areas.begin();
+        if (i >= areas.size()) i = (int)areas.size() - 1;
+        res.push_back(RandGenerator::genRandTrianglePosition(mesh[i][0] , mesh[i][1] , mesh[i][2]));
 	}
 
 	return res;

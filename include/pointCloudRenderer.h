@@ -238,6 +238,9 @@ public:
     // 7: fix part of curveNet
     int copyMode;
 
+    // 1: parallel, 2: coplanar, 3: orthogonal, 4: tangent
+    int markMode;
+
     std::vector<Cycle> unsavedCycles;
     std::vector<bool> toBeSurfacing;
     std::vector<std::vector<Path> > unsavedCyclePoints;
@@ -254,6 +257,9 @@ public:
     
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedMeshes;
 	std::vector<std::vector<std::vector<cycle::Point> > > unsavedNormals;
+
+    std::vector<std::vector<vec3d> > unsavedMeshesPoints;
+    std::vector<PointKDTree<PointData>* > unsavedMeshesPointTree;
 
     // true: if not be picked
     std::vector<bool> unsavedStatus;

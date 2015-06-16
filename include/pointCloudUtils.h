@@ -39,6 +39,12 @@ struct Data
     int index;
 };
 
+struct PointData
+{
+    vec3d pos;
+    int index;
+};
+
 struct PatchPointData
 {
 	vec3d pos;
@@ -57,6 +63,13 @@ struct DistQuery
     vec3d nearest;
 
     void process(Data* d , double& dist2)
+    {
+        nearest = d->pos;
+        maxSqrDis = dist2;
+        pointIndex = d->index;
+    }
+
+    void process(PointData* d , double& dist2)
     {
         nearest = d->pos;
         maxSqrDis = dist2;
@@ -324,8 +337,13 @@ public:
 	void calcPatchScores(std::vector<std::vector<std::vector<vec3d> > >& meshes ,
 		std::vector<double>& scores);
 
+    // choose center of each triangle
+    std::vector<vec3d> samplePointsFromPatchSimple(std::vector<std::vector<vec3d> >& mesh);
+
+    // first: sample triangle according to area, then: unifrom sample points from triangle
 	std::vector<vec3d> samplePointsFromPatch(std::vector<std::vector<vec3d> >& mesh);
-	void pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes);
+
+    void pcSegmentByPatches(std::vector<std::vector<std::vector<vec3d> > >& meshes);
 };
 
 #endif

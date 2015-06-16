@@ -63,6 +63,7 @@ void PointCloudRenderer::init()
     crossPlane.setNull();
     drawMode = 0;
     copyMode = 0;
+    markMode = 0;
     lt_x = lt_y = -1;
 
     pathVertex.clear();
@@ -1423,6 +1424,7 @@ void PointCloudRenderer::afterCurveNetUpdate()
     printf("surface reconstruction\n");
     surfacingUnsavedCycles();
 //#endif
+    printf("cycle evaluation\n");
     evalUnsavedCycles();
 }
 
@@ -1855,6 +1857,11 @@ void PointCloudRenderer::evalUnsavedCycles()
         unsavedCycleScores.clear();
 		unsavedCycleScoreRanks.clear();
         pcUtils->calcPatchScores(unsavedMeshes , unsavedCycleScores);
+        printf("\nAvg dist score:\n");
+        for (int i = 0; i < unsavedMeshes.size(); i++)
+        {
+            printf("cycle %d: %.2f\n" , i , pcUtils->calcPatchScore(unsavedMeshes[i]));
+        }
 
         for (int i = 0; i < unsavedMeshes.size(); i++)
         {
